@@ -34,7 +34,9 @@ def create_initial_state(user_query: str) -> GraphState:
     """
     return GraphState(
         user_query=user_query,
-        ticker="",
+        ticker=None,
+        status="pending",
+        executed_nodes=[],
         market_data={},
         report="",
         errors=[],
