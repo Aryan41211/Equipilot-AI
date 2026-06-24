@@ -85,18 +85,23 @@ class ReportGenerationRequest(BaseModel):
     model: str = "gpt-4o"
 
 
-class ReportFormat(str):
+class ReportFormat(BaseModel):
     """Report output format."""
 
-    MARKDOWN = "markdown"
-    HTML = "html"
-    JSON = "json"
-    PDF = "pdf"
+    MARKDOWN: str = "markdown"
+    HTML: str = "html"
+    JSON: str = "json"
+    PDF: str = "pdf"
+
+    def __init__(self, **data):
+        super().__init__(**data)
+
+    model_config = {"extra": "forbid"}
 
 
 class ReportExportRequest(BaseModel):
     """Request to export report in specific format."""
 
     report_id: str
-    format: ReportFormat = ReportFormat.MARKDOWN
+    format: str = "markdown"
     include_metadata: bool = True
