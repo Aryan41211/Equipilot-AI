@@ -1,0 +1,180 @@
+# EquiPilot AI - Progress Tracker Component
+# Real-time research progress display
+
+import streamlit as st
+import time
+from typing import Optional, Dict, Any, Callable
+from datetime import datetime
+
+
+# Step definitions with display names
+RESEARCH_STEPS = [
+    ("initialized", "Initializing", "🔄"),
+    ("routing_complete", "Query Routed", "🎯"),
+    ("market_data_complete", "Market Data Fetched", "📊"),
+    ("news_complete", "News Fetched", "📰"),
+    ("sentiment_complete", "Sentiment Analyzed", "😊"),
+    ("synthesis_complete", "Report Generated", "📝"),
+    ("completed", "Completed", "✅"),
+]
+
+
+def render_progress(
+    current_step: str,
+    status: str = "in_progress",
+    message: str = "",
+    show_steps: bool = True,
+    show_spinner: bool = True,
+):
+    """
+    Render progress tracker for research workflow.
+
+    Args:
+        current_step: Current step identifier
+        status: "pending", "in_progress", "completed", "failed"
+        message: Optional status message
+        show_steps: Show step progress bar
+        show_spinner: Show spinner for in-progress
+    """
+    # Status indicator
+    status_colors = {
+        "pending": "🟡",
+        "in_progress": "🔄",
+        "completed": "✅",
+        "failed": "❌",
+    }
+    status_icon = status_colors.get(status, "❓")
+
+    # Header
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.subheader(f"{status_icon} Research {status.title()}")
+    with col2:
+        if status == "in_progress" and show_spinner:
+            st.spinner("Processing...")
+
+    if message:
+        st.info(message)
+
+    # Step progress
+    if show_steps:
+        _render_step_progress(current_step)
+
+    # Progress bar
+    step_index = _get_step_index(current_step)
+    progress = (step_index + 1) / len(RESEARCH_STEPS)
+    st.progress(min(progress, 1.0))
+
+
+def _render_step_progress(current_step: str):
+    """Render visual step progress."""
+    step_index = _get_step_index(current_step)
+
+    cols = st.columns(len(RESEARCH_STEPS))
+    for i, (step_id, step_name, icon) in enumerate(RESEARCH_STEPS):
+        with cols[i]:
+            if i < step_index:
+                # Completed
+                st.markdown(f"""
+                <div style="text-align: center; padding: 10px;">
+                    <div style="color: green; font-size: 24px;">{icon}</div>
+                    <div style="font-size: 12px; color: gray;">{step_name}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            elif i == step_index:
+                # Current
+                st.markdown(f"""
+                <div style="text-align: center; padding: 10px;">
+                    <div style="color: blue; font-size: 24px;">{icon}</div>
+                    <div style="font-size: 12px; font-weight: bold;">{step_name}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                # Pending
+                st.markdown(f"""
+                <div style="text-align: center; padding: 10px;">
+                    <div style="color: lightgray; font-size: 24px;">{icon}</div>
+                    <div style="font-size: 12px; color: lightgray;">{step_name}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+
+def _get_step_index(step_id: str) -> int:
+    """Get index of step in RESEARCH_STEPS."""
+    for i, (sid, _, _) in enumerate(RESEARCH_STEPS):
+        if sid == step_id:
+            return i
+    return -1
+
+
+def render_polling_progress(
+    check_status_fn: Callable[[], Optional[Dict[str, Any]]],
+    request_id: str,
+    poll_interval: float = 2.0,
+    max_polls: int = 60,
+    on_complete: Optional[Callable[[Dict[str, Any]], None]] = None,
+    on_error: Optional[Callable[[str], None]] = None,
+):
+    """
+    Render auto-polling progress tracker.
+
+    Args:
+        check_status_fn: Function that returns status dict or None
+        request_id: Request identifier
+        poll_interval: Seconds between polls
+        max_polls: Maximum number of polls
+        on_complete: Callback(report_dict) when completed
+        on_error: Callback(error_message) when failed
+    """
+    # Placeholders
+    progress_placeholder = st.empty()
+    status_placeholder = st.empty()
+    error_placeholder = st.empty()
+
+    for i in range(max_polls):
+        status_data = check_status_fn()
+
+        if status_data:
+            current_step = status_data.get("current_step", "initialized")
+            status = status_data.get("status", "in_progress")
+
+            with progress_placeholder.container():
+                render_progress(current_step, status)
+
+            if status == "completed":
+                status_placeholder.success("✅ Research completed!")
+                if on_complete:
+                    on_complete(status_data)
+                return status_data
+
+            elif status == "failed":
+                error = status_data.get("error", "Unknown error")
+                status_placeholder.error(f"❌ Research failed: {error}")
+                if on_error:
+                    on_error(error)
+                return status_data
+
+        else:
+            with status_placeholder.container():
+                st.warning("Waiting for status...")
+
+        time.sleep(poll_interval)
+
+    # Timeout
+    error_placeholder.warning("⏱️ Research is taking longer than expected. Check History tab.")
+    return None
+
+
+def render_simple_progress(
+    completed_steps: int,
+    total_steps: int,
+    current_step_name: str = "",
+):
+    """Render simple progress bar with step info."""
+    progress = completed_steps / total_steps if total_steps > 0 else 0
+    st.progress(progress)
+
+    if current_step_name:
+        st.caption(f"Step {completed_steps}/{total_steps}: {current_step_name}")
+    else:
+        st.caption(f"Progress: {completed_steps}/{total_steps} steps")
