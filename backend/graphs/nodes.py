@@ -9,17 +9,25 @@ from backend.graphs.state import GraphState
 _TICKER_RE = re.compile(r"\b([A-Z]{1,5})\b")
 
 
-def _fail(state: GraphState, message: str, *, node_name: str, err: Optional[Exception] = None) -> GraphState:
-    errors = list(state.get("errors", []))
-    if err is not None:
-        errors.append(f"{node_name} error: {err}")
-    else:
-        errors.append(message)
-
-    # status must be failed on any exception (and also on extraction failure)
+def _success(state: GraphState, *, node_name: str) -> GraphState:
     executed_nodes = list(state.get("executed_nodes", []))
     if node_name not in executed_nodes:
         executed_nodes.append(node_name)
+
+    return {
+        **state,
+        "executed_nodes": executed_nodes,
+        "status": "success",
+    }
+
+
+def _fail(state: GraphState, *, node_name: str, error_message: str) -> GraphState:
+    executed_nodes = list(state.get("executed_nodes", []))
+    if node_name not in executed_nodes:
+        executed_nodes.append(node_name)
+
+    errors = list(state.get("errors", []))
+    errors.append(error_message)
 
     return {
         **state,
@@ -31,19 +39,23 @@ def _fail(state: GraphState, message: str, *, node_name: str, err: Optional[Exce
 
 def router_node(state: GraphState) -> GraphState:
     """
-    Route the user query to identify a ticker.
+    START -> router -> market_data
 
     Placeholder behavior:
-    - Extract the first uppercase token that looks like a ticker (1-5 chars).
-    - If extraction fails: ticker=None, append exact error message and status=failed.
+    - Extract ticker from the query via a simple heuristic.
+    - If extraction fails:
+      ticker=None
+      status="failed"
+      append "Ticker could not be extracted from query."
     """
     try:
-        executed_nodes = list(state.get("executed_nodes", []))
-        executed_nodes.append("router")
-
         user_query = state["user_query"]
         match = _TICKER_RE.search(user_query.upper())
         ticker: Optional[str] = match.group(1) if match else None
+
+        executed_nodes = list(state.get("executed_nodes", []))
+        if "router" not in executed_nodes:
+            executed_nodes.append("router")
 
         if ticker is None:
             errors = list(state.get("errors", []))
@@ -63,34 +75,38 @@ def router_node(state: GraphState) -> GraphState:
             "executed_nodes": executed_nodes,
         }
     except Exception as e:
-        return _fail(state, "Router error", node_name="router", err=e)
+        # Single try/except as required.
+        return _fail(state, node_name="router", error_message=str(e))
 
 
 def market_data_node(state: GraphState) -> GraphState:
     """
-    Fetch market data for the ticker.
+    router -> market_data
 
     Placeholder behavior:
     - No external calls.
-    - Returns minimal market_data containing ticker + timestamp.
+    - Populates market_data when ticker is present.
     """
     try:
         executed_nodes = list(state.get("executed_nodes", []))
-        executed_nodes.append("market_data")
+        if "market_data" not in executed_nodes:
+            executed_nodes.append("market_data")
 
         ticker = state.get("ticker")
         if not ticker:
-            return _fail(
-                state,
-                "Ticker could not be extracted from query.",
-                node_name="market_data",
-            )
+            errors = list(state.get("errors", []))
+            errors.append("Ticker could not be extracted from query.")
+            return {
+                **state,
+                "status": "failed",
+                "executed_nodes": executed_nodes,
+                "errors": errors,
+            }
 
-        now = datetime.utcnow().isoformat()
         market_data: Dict[str, Any] = {
             "ticker": ticker,
             "source": "placeholder",
-            "data_as_of": now,
+            "data_as_of": datetime.utcnow().isoformat(),
         }
 
         return {
@@ -100,23 +116,23 @@ def market_data_node(state: GraphState) -> GraphState:
             "executed_nodes": executed_nodes,
         }
     except Exception as e:
-        return _fail(state, "Market data error", node_name="market_data", err=e)
+        return _fail(state, node_name="market_data", error_message=str(e))
 
 
 def research_node(state: GraphState) -> GraphState:
     """
-    Generate the research report.
+    market_data -> research -> END
 
     Placeholder behavior:
     - No LLM.
-    - Returns a deterministic placeholder report string.
-    - If prior nodes failed, this node will propagate failure.
+    - If state is already failed, propagate failure.
+    - Otherwise set a placeholder report and status="success".
     """
     try:
         executed_nodes = list(state.get("executed_nodes", []))
-        executed_nodes.append("research")
+        if "research" not in executed_nodes:
+            executed_nodes.append("research")
 
-        # If earlier nodes failed, keep failed status and avoid producing a report.
         if state.get("status") == "failed":
             return {
                 **state,
@@ -137,5 +153,4 @@ def research_node(state: GraphState) -> GraphState:
             "executed_nodes": executed_nodes,
         }
     except Exception as e:
-        # On exception, mark failed.
-        return _fail(state, "Research error", node_name="research", err=e)
+        return _fail(state, node_name="research", error_message=str(e))
