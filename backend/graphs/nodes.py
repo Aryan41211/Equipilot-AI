@@ -2,13 +2,36 @@ from __future__ import annotations
 
 import re
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from backend.graphs.state import GraphState
 from backend.tools.market_data_tool import fetch_market_data
 from backend.tools.news_tool import fetch_news
+from backend.tools.sentiment_tool import analyze_sentiment
 
 _TICKER_RE = re.compile(r"\b([A-Z]{1,5})\b")
+
+_FUNDAMENTALS_KEYWORDS = {
+    "fundamental", "financial", "earnings", "revenue", "profit", "valuation",
+    "pe", "p/e", "margin", "balance", "cash flow", "dividend", "growth",
+    "ROE", "ROI", "debt", "asset", "liability", "income", "expense",
+    "fundamentals", "balance sheet", "income statement",
+}
+
+_NEWS_KEYWORDS = {
+    "news", "headline", "article", "announcement", "press", "media",
+    "report", "update",
+}
+
+_SENTIMENT_KEYWORDS = {
+    "sentiment", "bullish", "bearish", "mood", "outlook", "optimistic",
+    "pessimistic",
+}
+
+_MARKET_OVERVIEW_KEYWORDS = {
+    "overview", "summary", "general", "how is", "what is happening",
+    "market", "update on",
+}
 
 
 def _ensure_execution_metadata(state: GraphState) -> Dict[str, Any]:
@@ -71,19 +94,61 @@ def _append_error(state: GraphState, error_message: str) -> GraphState:
     return {**state, "errors": errors}
 
 
+def _classify_intent(query: str) -> str:
+    """Classify user query into a research intent using deterministic rules."""
+    q = query.lower()
+
+    if any(kw in q for kw in _FUNDAMENTALS_KEYWORDS):
+        return "fundamentals"
+    if any(kw in q for kw in _SENTIMENT_KEYWORDS):
+        return "sentiment"
+    if any(kw in q for kw in _NEWS_KEYWORDS):
+        return "news"
+    if any(kw in q for kw in _MARKET_OVERVIEW_KEYWORDS):
+        return "market_overview"
+
+    return "full_research"
+
+
+def _select_tools(intent: str) -> tuple:
+    """Return (selected_tools, skipped_tools) for a given intent."""
+    if intent == "fundamentals":
+        return (["market_data_tool"], ["news_tool", "sentiment_tool"])
+    if intent in ("news", "sentiment", "market_overview"):
+        return (["news_tool", "sentiment_tool"], ["market_data_tool"])
+    return (["market_data_tool", "news_tool", "sentiment_tool"], [])
+
+
 def router_node(state: GraphState) -> GraphState:
     """
     START -> router
 
-    Extract ticker from query via a simple heuristic.
+    Deterministic rule-based router that validates input, extracts the ticker,
+    classifies intent, and returns a structured routing decision.
     """
     state = _record_node_start(state, "router")
     try:
         user_query = state["user_query"]
+
+        # Validate empty query
+        if not user_query or not user_query.strip():
+            executed_nodes = list(state.get("executed_nodes", []))
+            if "router" not in executed_nodes:
+                executed_nodes.append("router")
+            state = _append_error(state, "Query is empty.")
+            state = {
+                **state,
+                "ticker": None,
+                "status": "failed",
+                "executed_nodes": executed_nodes,
+            }
+            state = _record_node_finish(state, "router", ok=False, error="Empty query")
+            return state
+
+        # Extract ticker from query via simple heuristic
         matches = _TICKER_RE.findall(user_query.upper())
 
         # Avoid common English uppercase false positives in heuristic extraction.
-        # (Needed for integration test case like: "What is happening? No explicit ticker here")
         common_non_tickers = {
             "GIVE",
             "WHAT",
@@ -104,7 +169,6 @@ def router_node(state: GraphState) -> GraphState:
         }
 
         filtered = [m for m in matches if m not in common_non_tickers]
-        # Pick the most likely ticker mention by using the last all-caps token.
         ticker: Optional[str] = filtered[-1] if filtered else None
 
         executed_nodes = list(state.get("executed_nodes", []))
@@ -117,17 +181,34 @@ def router_node(state: GraphState) -> GraphState:
             state = _record_node_finish(state, "router", ok=False, error="Ticker extraction failed")
             return state
 
+        detected_intent = _classify_intent(user_query)
+        selected_tools, skipped_tools = _select_tools(detected_intent)
+
+        execution_summary = {
+            "intent": detected_intent,
+            "tool_count": len(selected_tools),
+            "skipped_count": len(skipped_tools),
+            "routing_reason": f"Query classified as {detected_intent}",
+        }
+
         state = {
             **state,
             "ticker": ticker,
+            "detected_intent": detected_intent,
+            "selected_tools": selected_tools,
+            "skipped_tools": skipped_tools,
+            "execution_summary": execution_summary,
             "status": state.get("status", "pending"),
             "executed_nodes": executed_nodes,
         }
         state = _record_node_finish(state, "router", ok=True)
         return state
     except Exception as e:
+        executed_nodes = list(state.get("executed_nodes", []))
+        if "router" not in executed_nodes:
+            executed_nodes.append("router")
         state = _append_error(state, f"Router error: {str(e)}")
-        state = {**state, "status": "failed"}
+        state = {**state, "status": "failed", "executed_nodes": executed_nodes}
         state = _record_node_finish(state, "router", ok=False, error=str(e))
         return state
 
@@ -265,30 +346,76 @@ async def news_tool_node(state: GraphState) -> GraphState:
         return state
 
 
+async def sentiment_tool_node(state: GraphState) -> GraphState:
+    """
+    news_tool -> Sentiment Tool
+    """
+    state = _record_node_start(state, "sentiment_tool")
+
+    executed_nodes = list(state.get("executed_nodes", []))
+    if "sentiment_tool" not in executed_nodes:
+        executed_nodes.append("sentiment_tool")
+
+    ticker = state.get("ticker")
+    news_result = state.get("news", {})
+    articles = news_result.get("articles", []) if isinstance(news_result, dict) else []
+
+    started_at = datetime.utcnow().isoformat()
+    try:
+        result = await analyze_sentiment(
+            articles=articles,
+            tickers=[ticker] if ticker else [],
+        )
+        finished_at = datetime.utcnow().isoformat()
+
+        ok = result.get("ok", False)
+        state = _record_tool_result(
+            state,
+            tool_name="sentiment_tool",
+            ok=ok,
+            started_at=started_at,
+            finished_at=finished_at,
+            result=result,
+        )
+
+        if not ok:
+            state = _append_error(state, f"Sentiment Tool failed: {result.get('error')}")
+            state = {**state, "sentiment": {}, "status": state.get("status", "pending")}
+        else:
+            state = {**state, "sentiment": result, "status": state.get("status", "pending")}
+
+        state = _record_node_finish(state, "sentiment_tool", ok=ok)
+        state = {**state, "executed_nodes": executed_nodes}
+        return state
+    except Exception as e:
+        finished_at = datetime.utcnow().isoformat()
+        state = _record_tool_result(
+            state,
+            tool_name="sentiment_tool",
+            ok=False,
+            started_at=started_at,
+            finished_at=finished_at,
+            result={"error": str(e)},
+        )
+        state = _append_error(state, f"Sentiment Tool exception: {str(e)}")
+        state = {**state, "sentiment": {}, "status": state.get("status", "pending"), "executed_nodes": executed_nodes}
+        state = _record_node_finish(state, "sentiment_tool", ok=False, error=str(e))
+        return state
+
+
 def merge_results_node(state: GraphState) -> GraphState:
     """
-    Market Data + News -> Merge Results
+    Merge results from executed tools.
 
-    For this milestone, merging is implicit: keep outputs in state.
+    Stubbed for backwards compatibility; new dynamic routing no longer requires
+    a dedicated merge node.
     """
     state = _record_node_start(state, "merge_results")
-
     executed_nodes = list(state.get("executed_nodes", []))
     if "merge_results" not in executed_nodes:
         executed_nodes.append("merge_results")
-
-    # Determine overall success/failure:
-    # - If both tools failed => status failed
-    # - Else => status success (research placeholder can still be produced)
-    has_market = bool(state.get("market_data"))
-    has_news = bool(state.get("news"))
-
-    ok = has_market or has_news
-    new_status = "success" if ok else "failed"
-    state = {**state, "status": new_status, "executed_nodes": executed_nodes}
-
-    state = _record_node_finish(state, "merge_results", ok=ok, error=None if ok else "Both tools failed")
-    return state
+    state = _record_node_finish(state, "merge_results", ok=True)
+    return {**state, "executed_nodes": executed_nodes}
 
 
 def research_node(state: GraphState) -> GraphState:
@@ -311,12 +438,16 @@ def research_node(state: GraphState) -> GraphState:
 
     state = {**state, "report": report, "executed_nodes": executed_nodes}
 
-    # If both tools failed, keep status failed; otherwise success.
+    # Determine success based on available tool data and error state.
     state_status = state.get("status", "pending")
     if state_status not in ("success", "failed"):
-        state_status = "success" if (state.get("market_data") or state.get("news")) else "failed"
+        has_data = bool(state.get("market_data") or state.get("news"))
+        has_errors = bool(state.get("errors"))
+        state_status = "success" if has_data and not has_errors else "failed"
         state = {**state, "status": state_status}
 
     ok = state_status == "success"
+    if not ok:
+        state = _append_error(state, "Research produced but no tool data available")
     state = _record_node_finish(state, "research", ok=ok, error=None if ok else "Research produced but no tool data")
     return state

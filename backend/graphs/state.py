@@ -5,16 +5,23 @@ from typing import TypedDict, List, Dict, Any, Optional
 # We must not create nodes whose name collides with these keys (e.g. "market_data").
 class GraphState(TypedDict):
     """
-    State schema for the tool-integration milestone (Market Data + News).
+    State schema for the dynamically routed tool-integration milestone.
     """
 
-    # Required by task
+    # Input
     user_query: str
     ticker: Optional[str]
 
-    # Tool outputs (extend graph state only where necessary)
+    # Routing
+    detected_intent: str  # fundamentals | news | sentiment | full_research | market_overview
+    selected_tools: List[str]
+    skipped_tools: List[str]
+    execution_summary: Dict[str, Any]
+
+    # Tool outputs
     market_data: Dict[str, Any]
     news: Dict[str, Any]
+    sentiment: Dict[str, Any]
 
     # Placeholder research output
     report: str

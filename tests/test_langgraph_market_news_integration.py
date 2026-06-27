@@ -10,7 +10,7 @@ from backend.graphs.graph import create_first_graph, create_initial_state
 
 
 def _base_query_with_ticker(ticker: str = "TCS") -> str:
-    return f"Give me updates about {ticker}"
+    return f"Analyze {ticker}"
 
 
 @pytest.mark.asyncio
@@ -20,7 +20,9 @@ async def test_market_and_news_success():
 
     with patch(
         "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
-    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn:
+    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn, patch(
+        "backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock
+    ) as ss:
         mm.return_value = {"ticker": "TCS", "price": 123}
         nn.return_value = {
             "query": "",
@@ -28,6 +30,7 @@ async def test_market_and_news_success():
             "articles": [],
             "total_results": 0,
         }
+        ss.return_value = {"ok": True, "result": {"overall_sentiment": {"label": "neutral"}}, "error": None}
 
         result = await graph.ainvoke(state)
 
@@ -40,18 +43,19 @@ async def test_market_and_news_success():
     assert "router" in result["executed_nodes"]
     assert "market_data_tool" in result["executed_nodes"]
     assert "news_tool" in result["executed_nodes"]
-    assert "merge_results" in result["executed_nodes"]
+    assert "sentiment_tool" in result["executed_nodes"]
     assert "research" in result["executed_nodes"]
 
     em = result["execution_metadata"]
     assert em["nodes"]["router"]["ok"] is True
     assert em["nodes"]["market_data_tool"]["ok"] is True
     assert em["nodes"]["news_tool"]["ok"] is True
-    assert em["nodes"]["merge_results"]["ok"] is True
+    assert em["nodes"]["sentiment_tool"]["ok"] is True
     assert em["nodes"]["research"]["ok"] is True
 
     assert em["tools"]["market_data_tool"]["ok"] is True
     assert em["tools"]["news_tool"]["ok"] is True
+    assert em["tools"]["sentiment_tool"]["ok"] is True
 
 
 @pytest.mark.asyncio
@@ -61,9 +65,12 @@ async def test_market_success_news_fails():
 
     with patch(
         "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
-    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn:
+    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn, patch(
+        "backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock
+    ) as ss:
         mm.return_value = {"ticker": "TCS", "price": 123}
         nn.return_value = {"error": "news failed", "error_type": "service_error"}
+        ss.return_value = {"ok": True, "result": {"overall_sentiment": {"label": "neutral"}}, "error": None}
 
         result = await graph.ainvoke(state)
 
@@ -78,11 +85,12 @@ async def test_market_success_news_fails():
     em = result["execution_metadata"]
     assert em["nodes"]["market_data_tool"]["ok"] is True
     assert em["nodes"]["news_tool"]["ok"] is False
+    assert em["nodes"]["sentiment_tool"]["ok"] is True
     assert em["nodes"]["research"]["ok"] is True
-    assert em["nodes"]["merge_results"]["ok"] is True
 
     assert em["tools"]["market_data_tool"]["ok"] is True
     assert em["tools"]["news_tool"]["ok"] is False
+    assert em["tools"]["sentiment_tool"]["ok"] is True
 
 
 @pytest.mark.asyncio
@@ -92,7 +100,9 @@ async def test_market_fails_news_success():
 
     with patch(
         "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
-    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn:
+    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn, patch(
+        "backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock
+    ) as ss:
         mm.return_value = {"error": "market failed", "error_type": "service_error"}
         nn.return_value = {
             "query": "",
@@ -100,6 +110,7 @@ async def test_market_fails_news_success():
             "articles": [],
             "total_results": 0,
         }
+        ss.return_value = {"ok": True, "result": {"overall_sentiment": {"label": "neutral"}}, "error": None}
 
         result = await graph.ainvoke(state)
 
@@ -115,11 +126,12 @@ async def test_market_fails_news_success():
     em = result["execution_metadata"]
     assert em["nodes"]["market_data_tool"]["ok"] is False
     assert em["nodes"]["news_tool"]["ok"] is True
+    assert em["nodes"]["sentiment_tool"]["ok"] is True
     assert em["nodes"]["research"]["ok"] is True
-    assert em["nodes"]["merge_results"]["ok"] is True
 
     assert em["tools"]["market_data_tool"]["ok"] is False
     assert em["tools"]["news_tool"]["ok"] is True
+    assert em["tools"]["sentiment_tool"]["ok"] is True
 
 
 @pytest.mark.asyncio
@@ -129,9 +141,12 @@ async def test_both_fail():
 
     with patch(
         "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
-    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn:
+    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn, patch(
+        "backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock
+    ) as ss:
         mm.return_value = {"error": "market failed", "error_type": "service_error"}
         nn.return_value = {"error": "news failed", "error_type": "service_error"}
+        ss.return_value = {"ok": True, "result": {"overall_sentiment": {"label": "neutral"}}, "error": None}
 
         result = await graph.ainvoke(state)
 
@@ -144,11 +159,12 @@ async def test_both_fail():
     em = result["execution_metadata"]
     assert em["nodes"]["market_data_tool"]["ok"] is False
     assert em["nodes"]["news_tool"]["ok"] is False
-    assert em["nodes"]["merge_results"]["ok"] is False
+    assert em["nodes"]["sentiment_tool"]["ok"] is True
     assert em["nodes"]["research"]["ok"] is False
 
     assert em["tools"]["market_data_tool"]["ok"] is False
     assert em["tools"]["news_tool"]["ok"] is False
+    assert em["tools"]["sentiment_tool"]["ok"] is True
 
 
 @pytest.mark.asyncio
@@ -159,11 +175,14 @@ async def test_router_fails_to_extract_ticker():
     # Tools should not be called; patch anyway to detect unexpected calls
     with patch(
         "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
-    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn:
+    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn, patch(
+        "backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock
+    ) as ss:
         result = await graph.ainvoke(state)
 
         mm.assert_not_called()
         nn.assert_not_called()
+        ss.assert_not_called()
 
     assert result["status"] == "failed"
     assert result["ticker"] is None
