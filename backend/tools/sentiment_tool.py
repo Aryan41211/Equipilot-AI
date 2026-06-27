@@ -85,4 +85,6 @@ class SentimentTool:
 
 
 # Export tool functions for LangGraph
+# NOTE: Expose the tool function itself (not a bound method) so calling conventions in tests/agents
+# don't break due to BaseTool.__call__ kwarg handling.
 analyze_sentiment = SentimentTool().analyze_sentiment

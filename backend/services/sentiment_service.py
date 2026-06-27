@@ -111,7 +111,6 @@ class SentimentService:
         Uses LLMService.analyze_sentiment(text, tickers), then maps into our
         SentimentAnalysis schema.
         """
-        # LLMService expects text + tickers; we provide headlines-only text.
         text = "\n\n".join(
             [f"- {a.title or ''}" for a in articles if (a.title or "").strip()]
         )
@@ -125,6 +124,9 @@ class SentimentService:
             )
         except asyncio.TimeoutError as e:
             raise SentimentTimeoutError(str(e))
+        except (SentimentTimeoutError, SentimentMalformedResponseError, SentimentValidationError) as e:
+            # Preserve typed exceptions from parsing/validation.
+            raise
         except Exception as e:
             msg = str(e)
             if "timeout" in msg.lower():
@@ -198,7 +200,11 @@ class SentimentService:
         except (TypeError, ValueError) as e:
             raise SentimentMalformedResponseError(f"Malformed LLM response: {str(e)}")
         except Exception as e:
-            raise SentimentValidationError(str(e))
+            # Distinguish schema validation problems from generic malformed payloads.
+            # Pydantic validation errors indicate "validation" (typed).
+            if "validation error" in str(e).lower():
+                raise SentimentValidationError(str(e))
+            raise SentimentMalformedResponseError(f"Malformed LLM response: {str(e)}")
 
     def _empty_analysis(self, tickers: List[str]) -> SentimentAnalysis:
         # Provide deterministic empty sentiment output.
