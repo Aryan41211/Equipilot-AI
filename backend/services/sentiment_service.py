@@ -1,219 +1,218 @@
-# EquiPilot AI - Sentiment Service
-# Sentiment analysis orchestration
+from __future__ import annotations
 
+import asyncio
+import json
 from datetime import datetime
-from typing import List, Dict, Any, Optional
-from backend.services.llm_service import get_llm_service
-from backend.schemas.sentiment import (
-    SentimentAnalysis,
-    SentimentScore,
-    ArticleSentiment,
-)
-from backend.schemas.news import NewsArticle
-from backend.utils.logger import get_logger
+from typing import Any, Dict, List, Optional, Sequence
 
-logger = get_logger(__name__)
+from backend.exceptions.sentiment_exceptions import (
+    SentimentMalformedResponseError,
+    SentimentProviderError,
+    SentimentTimeoutError,
+    SentimentValidationError,
+)
+from backend.prompts.sentiment_prompt import SENTIMENT_SYSTEM_PROMPT, SENTIMENT_USER_PROMPT
+from backend.services.llm_service import get_llm_service
+from backend.schemas.news import NewsArticle
+from backend.schemas.sentiment import (
+    HeadlineSentiment,
+    SentimentAnalysis,
+    SentimentProcessingMetadata,
+    SentimentScore,
+)
+
+# Keep parsing/validation strictly typed to ensure deterministic failures.
 
 
 class SentimentService:
-    """Service for orchestrating sentiment analysis on news articles."""
+    """Production-ready sentiment analysis service for news headlines."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        *,
+        max_retries: int = 2,
+        retry_backoff_seconds: float = 0.2,
+        llm_timeout_seconds: float = 30.0,
+    ) -> None:
         self.llm = get_llm_service()
+        self.max_retries = max_retries
+        self.retry_backoff_seconds = retry_backoff_seconds
+        self.llm_timeout_seconds = llm_timeout_seconds
 
     async def analyze_articles(
         self,
-        articles: List[NewsArticle],
-        tickers: List[str],
+        articles: Sequence[NewsArticle],
+        tickers: Sequence[str],
     ) -> SentimentAnalysis:
         """
-        Analyze sentiment across multiple news articles.
+        Analyze sentiment for normalized news articles.
 
         Args:
-            articles: List of news articles to analyze
-            tickers: Tickers of interest for focused analysis
+            articles: normalized news articles
+            tickers: tickers to focus on
 
         Returns:
-            Aggregated SentimentAnalysis
+            Structured SentimentAnalysis.
+
+        Raises:
+            SentimentTimeoutError: on provider timeout
+            SentimentProviderError: on provider operational failure
+            SentimentMalformedResponseError: on non-JSON or missing keys
+            SentimentValidationError: on schema validation errors
         """
         if not articles:
-            return self._empty_analysis(tickers)
+            return self._empty_analysis(tickers=list(tickers))
 
-        logger.info("Starting sentiment analysis", article_count=len(articles))
+        tickers_list = [t for t in tickers]
+        articles_list = list(articles)
 
-        # Analyze each article
-        article_sentiments = []
-        for article in articles:
+        last_error: Optional[Exception] = None
+        for attempt in range(self.max_retries + 1):
             try:
-                sentiment = await self._analyze_single_article(article, tickers)
-                article_sentiments.append(sentiment)
-            except Exception as e:
-                logger.warning(
-                    "Failed to analyze article",
-                    article_title=article.title,
-                    error=str(e),
+                parsed = await asyncio.wait_for(
+                    self._call_llm(
+                        articles=articles_list,
+                        tickers=tickers_list,
+                    ),
+                    timeout=self.llm_timeout_seconds,
                 )
+                return parsed
+            except SentimentTimeoutError as e:
+                last_error = e
+                if attempt >= self.max_retries:
+                    raise
+            except (SentimentMalformedResponseError, SentimentValidationError):
+                # Deterministic: do not retry malformed/validation errors.
+                raise
+            except SentimentProviderError as e:
+                last_error = e
+                if attempt >= self.max_retries:
+                    raise
+            except Exception as e:
+                last_error = e
+                if attempt >= self.max_retries:
+                    raise SentimentProviderError(str(e))
 
-        # Aggregate results
-        return self._aggregate_sentiments(article_sentiments, tickers, articles)
+            await asyncio.sleep(self.retry_backoff_seconds * (attempt + 1))
 
-    async def _analyze_single_article(
+        if last_error:
+            raise SentimentProviderError(str(last_error))
+        raise SentimentProviderError("Sentiment analysis failed unexpectedly.")
+
+    async def _call_llm(
         self,
-        article: NewsArticle,
+        *,
+        articles: List[NewsArticle],
         tickers: List[str],
-    ) -> ArticleSentiment:
-        """Analyze sentiment for a single article."""
-        # Combine title and description for analysis
-        text = f"{article.title}\n\n{article.description or ''}\n\n{article.content or ''}"
+    ) -> SentimentAnalysis:
+        """
+        Calls LLM using existing llm_service. Do not duplicate provider logic.
 
-        # Call LLM for sentiment
-        result = await self.llm.analyze_sentiment(text, tickers)
-
-        # Parse overall sentiment
-        overall = result.get("overall", {})
-        overall_sentiment = SentimentScore(
-            label=overall.get("label", "neutral"),
-            score=overall.get("score", 0.0),
-            confidence=overall.get("confidence", 0.5),
+        Uses LLMService.analyze_sentiment(text, tickers), then maps into our
+        SentimentAnalysis schema.
+        """
+        # LLMService expects text + tickers; we provide headlines-only text.
+        text = "\n\n".join(
+            [f"- {a.title or ''}" for a in articles if (a.title or "").strip()]
         )
 
-        # Parse ticker sentiments
-        ticker_sentiments = {}
-        for ticker, data in result.get("ticker_sentiments", {}).items():
-            ticker_sentiments[ticker] = SentimentScore(
-                label=data.get("label", "neutral"),
-                score=data.get("score", 0.0),
-                confidence=data.get("confidence", 0.5),
+        try:
+            llm_payload = await self.llm.analyze_sentiment(text=text, tickers=tickers)
+            return self._parse_and_validate(
+                llm_payload,
+                tickers=tickers,
+                article_count=len(articles),
+            )
+        except asyncio.TimeoutError as e:
+            raise SentimentTimeoutError(str(e))
+        except Exception as e:
+            msg = str(e)
+            if "timeout" in msg.lower():
+                raise SentimentTimeoutError(msg)
+            raise SentimentProviderError(msg)
+
+    def _parse_and_validate(
+        self,
+        payload: Dict[str, Any],
+        tickers: List[str],
+        article_count: int,
+    ) -> SentimentAnalysis:
+        """
+        Convert llm_service.analyze_sentiment() payload into SentimentAnalysis schema.
+
+        Expected llm_service output shape:
+        {
+          "overall": {"label": ..., "score": ..., "confidence": ...},
+          "ticker_sentiments": { "TICKER": {"label","score","confidence"}, ...},
+          "key_themes": [{"theme","sentiment","relevance"}, ...]
+        }
+        """
+        try:
+            overall_raw = payload["overall"]
+            overall_score = SentimentScore(
+                label=str(overall_raw["label"]),
+                confidence=float(overall_raw["confidence"]),
+                score=float(overall_raw["score"]),
             )
 
-        return ArticleSentiment(
-            article_id=str(hash(article.url)),
-            article_title=article.title,
-            article_url=str(article.url),
-            published_at=article.published_at,
-            sentiment=overall_sentiment,
-            ticker_sentiments=ticker_sentiments,
-        )
-
-    def _aggregate_sentiments(
-        self,
-        article_sentiments: List[ArticleSentiment],
-        tickers: List[str],
-        articles: List[NewsArticle],
-    ) -> SentimentAnalysis:
-        """Aggregate individual article sentiments into overall analysis."""
-        if not article_sentiments:
-            return self._empty_analysis(tickers)
-
-        # Overall sentiment (weighted by confidence)
-        total_weight = sum(s.sentiment.confidence for s in article_sentiments)
-        if total_weight > 0:
-            weighted_score = sum(
-                s.sentiment.score * s.sentiment.confidence for s in article_sentiments
-            ) / total_weight
-            avg_confidence = total_weight / len(article_sentiments)
-        else:
-            weighted_score = 0.0
-            avg_confidence = 0.0
-
-        # Determine label
-        if weighted_score > 0.1:
-            overall_label = "positive"
-        elif weighted_score < -0.1:
-            overall_label = "negative"
-        else:
-            overall_label = "neutral"
-
-        overall_sentiment = SentimentScore(
-            label=overall_label,
-            score=weighted_score,
-            confidence=avg_confidence,
-        )
-
-        # Per-ticker aggregation
-        ticker_sentiments = {}
-        for ticker in tickers:
-            ticker_scores = []
-            ticker_confidences = []
-            for s in article_sentiments:
-                if ticker in s.ticker_sentiments:
-                    ts = s.ticker_sentiments[ticker]
-                    ticker_scores.append(ts.score * ts.confidence)
-                    ticker_confidences.append(ts.confidence)
-
-            if ticker_confidences:
-                total_ticker_weight = sum(ticker_confidences)
-                weighted_ticker_score = sum(ticker_scores) / total_ticker_weight
-                avg_ticker_confidence = total_ticker_weight / len(ticker_confidences)
-
-                if weighted_ticker_score > 0.1:
-                    label = "positive"
-                elif weighted_ticker_score < -0.1:
-                    label = "negative"
-                else:
-                    label = "neutral"
-
-                ticker_sentiments[ticker] = SentimentScore(
-                    label=label,
-                    score=weighted_ticker_score,
-                    confidence=avg_ticker_confidence,
+            ticker_sentiments_raw = payload.get("ticker_sentiments") or {}
+            headline_sentiments: List[HeadlineSentiment] = []
+            # We do not synthesize per-headline sentiment without per-headline data.
+            # Instead, we attach ticker-level sentiment entries as "headline" rows
+            # using a deterministic placeholder headline.
+            for t, ts in ticker_sentiments_raw.items():
+                headline_sentiments.append(
+                    HeadlineSentiment(
+                        headline=f"Ticker sentiment for {t}",
+                        ticker=t,
+                        label=str(ts["label"]),
+                        confidence=float(ts["confidence"]),
+                        reasoning=f"Derived from ticker-level sentiment.",
+                    )
                 )
 
-        # Count sentiments
-        positive_count = sum(1 for s in article_sentiments if s.sentiment.label == "positive")
-        negative_count = sum(1 for s in article_sentiments if s.sentiment.label == "negative")
-        neutral_count = sum(1 for s in article_sentiments if s.sentiment.label == "neutral")
+            key_themes_raw = payload.get("key_themes") or []
+            if key_themes_raw:
+                # Use themes to build reasoning deterministically.
+                reasoning = "; ".join(
+                    [f"{kt.get('theme','')}={kt.get('sentiment','neutral')}" for kt in key_themes_raw]
+                )
+            else:
+                reasoning = "No key themes provided by LLM."
 
-        # Extract key themes (simplified - could use LLM for better extraction)
-        key_themes = self._extract_themes(article_sentiments, articles)
+            confidence = float(overall_raw["confidence"])
+            processing_metadata = SentimentProcessingMetadata(
+                article_count=article_count,
+                tickers_provided=list(tickers),
+            )
 
-        # Date range
-        dates = [a.published_at for a in articles if a.published_at]
-        date_from = min(dates) if dates else None
-        date_to = max(dates) if dates else None
-
-        return SentimentAnalysis(
-            overall_sentiment=overall_sentiment,
-            article_sentiments=article_sentiments,
-            ticker_sentiments=ticker_sentiments,
-            key_themes=key_themes,
-            total_articles=len(article_sentiments),
-            positive_count=positive_count,
-            negative_count=negative_count,
-            neutral_count=neutral_count,
-            average_confidence=avg_confidence,
-            date_from=date_from,
-            date_to=date_to,
-            analyzed_at=datetime.utcnow(),
-        )
-
-    def _extract_themes(
-        self,
-        article_sentiments: List[ArticleSentiment],
-        articles: List[NewsArticle],
-    ) -> List[Dict[str, Any]]:
-        """Extract key themes from articles (placeholder implementation)."""
-        # TODO: Implement proper theme extraction using LLM
-        # For now, return empty list
-        return []
+            return SentimentAnalysis(
+                overall_sentiment=overall_score,
+                confidence=confidence,
+                reasoning=reasoning,
+                headline_sentiments=headline_sentiments,
+                processing_metadata=processing_metadata,
+            )
+        except KeyError as e:
+            raise SentimentMalformedResponseError(f"Missing key in LLM response: {str(e)}")
+        except (TypeError, ValueError) as e:
+            raise SentimentMalformedResponseError(f"Malformed LLM response: {str(e)}")
+        except Exception as e:
+            raise SentimentValidationError(str(e))
 
     def _empty_analysis(self, tickers: List[str]) -> SentimentAnalysis:
-        """Return empty sentiment analysis."""
-        neutral = SentimentScore(label="neutral", score=0.0, confidence=0.0)
-        ticker_sentiments = {t: neutral for t in tickers}
-
+        # Provide deterministic empty sentiment output.
+        neutral = SentimentScore(label="neutral", confidence=0.0, score=0.0)
         return SentimentAnalysis(
             overall_sentiment=neutral,
-            article_sentiments=[],
-            ticker_sentiments=ticker_sentiments,
-            key_themes=[],
-            total_articles=0,
-            positive_count=0,
-            negative_count=0,
-            neutral_count=0,
-            average_confidence=0.0,
+            confidence=0.0,
+            reasoning="No articles provided; sentiment defaults to neutral.",
+            headline_sentiments=[],
+            processing_metadata=SentimentProcessingMetadata(
+                article_count=0, tickers_provided=tickers
+            ),
         )
 
 
-# Singleton instance
+# Singleton instance for existing import patterns
 sentiment_service = SentimentService()

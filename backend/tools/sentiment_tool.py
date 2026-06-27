@@ -1,84 +1,88 @@
-# EquiPilot AI - Sentiment Tool
-# LangGraph tool wrapper for sentiment analysis
+from __future__ import annotations
 
-from typing import List, Dict, Any
+from typing import Any, Dict, List, Optional
+
 from langchain_core.tools import tool
-from backend.services.sentiment_service import sentiment_service
+
 from backend.schemas.news import NewsArticle
+from backend.services.sentiment_service import SentimentService
 from backend.utils.logger import get_logger
+from backend.exceptions.sentiment_exceptions import SentimentError
 
 logger = get_logger(__name__)
 
+# Singleton for existing patterns.
+sentiment_service = SentimentService()
+
 
 class SentimentTool:
-    """LangGraph-compatible tool for sentiment analysis."""
+    """LangGraph-compatible tool wrapper for sentiment analysis."""
 
     @tool
     async def analyze_sentiment(
+        self,
         articles: List[Dict[str, Any]],
-        tickers: List[str],
+        tickers: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
-        Analyze sentiment of news articles.
+        Analyze sentiment for provided normalized news articles.
 
         Args:
-            articles: List of article dictionaries with title, description, content, url
-            tickers: Tickers of interest
+            articles: List of normalized articles (expects keys compatible with NewsArticle)
+            tickers: tickers to focus on
 
         Returns:
-            Dictionary with sentiment analysis results
+            Structured response contract:
+            {
+              "ok": bool,
+              "result": <SentimentAnalysis dict> | null,
+              "error": {"type": "...", "message": "..."} | null
+            }
         """
-        logger.info("Tool: analyze_sentiment", article_count=len(articles))
+        tickers = tickers or []
 
         try:
-            # Convert dict articles to NewsArticle objects
-            news_articles = []
+            normalized_articles: List[NewsArticle] = []
             for a in articles:
-                news_articles.append(NewsArticle(
-                    title=a.get("title", ""),
-                    description=a.get("description"),
-                    content=a.get("content"),
-                    url=a.get("url", ""),
-                    source=a.get("source", "Unknown"),
-                    author=a.get("author"),
-                    published_at=a.get("published_at"),
-                    category=a.get("category"),
-                ))
+                # NewsArticle model tolerates extra fields? We pass only expected.
+                normalized_articles.append(
+                    NewsArticle(
+                        title=a.get("title"),
+                        description=a.get("description"),
+                        content=a.get("content"),
+                        url=a.get("url"),
+                        source=a.get("source", ""),
+                        author=a.get("author"),
+                        published_at=a.get("published_at"),
+                        category=a.get("category"),
+                        relevance_score=a.get("relevance_score"),
+                        tickers_mentioned=a.get("tickers_mentioned", []),
+                        ticker=a.get("ticker"),
+                    )
+                )
 
-            analysis = await sentiment_service.analyze_articles(news_articles, tickers)
-
+            result = await sentiment_service.analyze_articles(
+                normalized_articles,
+                tickers=tickers,
+            )
+            return {"ok": True, "result": result.model_dump(), "error": None}
+        except SentimentError as e:
+            # Exception-to-response mapping; never propagate raw exceptions.
+            logger.warning("Sentiment tool failed", error=str(e))
             return {
-                "overall_sentiment": {
-                    "label": analysis.overall_sentiment.label,
-                    "score": analysis.overall_sentiment.score,
-                    "confidence": analysis.overall_sentiment.confidence,
-                },
-                "ticker_sentiments": {
-                    ticker: {
-                        "label": sent.label,
-                        "score": sent.score,
-                        "confidence": sent.confidence,
-                    }
-                    for ticker, sent in analysis.ticker_sentiments.items()
-                },
-                "key_themes": analysis.key_themes,
-                "statistics": {
-                    "total_articles": analysis.total_articles,
-                    "positive_count": analysis.positive_count,
-                    "negative_count": analysis.negative_count,
-                    "neutral_count": analysis.neutral_count,
-                    "average_confidence": analysis.average_confidence,
-                },
-                "date_range": {
-                    "from": analysis.date_from.isoformat() if analysis.date_from else None,
-                    "to": analysis.date_to.isoformat() if analysis.date_to else None,
-                },
+                "ok": False,
+                "result": None,
+                "error": {"type": e.__class__.__name__, "message": str(e)},
+            }
+        except Exception as e:
+            # Ensure contract stability.
+            logger.error("Unexpected sentiment tool error", error=str(e))
+            return {
+                "ok": False,
+                "result": None,
+                "error": {"type": "UnexpectedError", "message": str(e)},
             }
 
-        except Exception as e:
-            logger.error("Tool error: analyze_sentiment", error=str(e))
-            return {"error": str(e)}
 
-
-# Export tool function for LangGraph
-analyze_sentiment = SentimentTool.analyze_sentiment
+# Export tool functions for LangGraph
+analyze_sentiment = SentimentTool().analyze_sentiment
