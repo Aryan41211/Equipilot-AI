@@ -1,12 +1,33 @@
 # EquiPilot AI - Synthesis Agent
 # Research report generation agent
 
-from typing import List, Dict, Any, Optional
-from backend.services.llm_service import get_llm_service
-from backend.schemas.report import ResearchReport, ReportSection, Citation
+import asyncio
+from typing import Any, Dict, List, Optional
+
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
+
+from backend.exceptions.synthesis_exceptions import (
+    SynthesisMalformedResponseError,
+    SynthesisProviderError,
+    SynthesisTimeoutError,
+    SynthesisValidationError,
+)
+from backend.prompts.research_prompt import (
+    REPORT_SYSTEM_PROMPT,
+    STRUCTURED_OUTPUT_INSTRUCTIONS,
+    build_report_prompt,
+)
 from backend.schemas.market_data import MarketData
 from backend.schemas.news import NewsArticle
+from backend.schemas.report import Citation, ReportSection, ResearchReport
+from backend.schemas.research_report import SynthesizedReport
 from backend.schemas.sentiment import SentimentAnalysis
+from backend.services.llm_service import get_llm_service
 from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -43,8 +64,7 @@ class SynthesisAgent:
         """
         logger.info("Generating report", query=query[:100], tickers=tickers)
 
-        # Build prompt with all data
-        prompt = self._build_prompt(
+        prompt = build_report_prompt(
             query=query,
             tickers=tickers,
             market_data=market_data,
@@ -53,15 +73,20 @@ class SynthesisAgent:
             max_length=max_length,
         )
 
-        # Generate report using LLM
-        report_text = await self.llm.generate_report(prompt)
+        schema = SynthesizedReport.model_json_schema()
 
-        # Parse and structure the report
-        report = self._parse_report(
-            request_id="",  # Will be filled by caller
+        json_data = await self._call_llm_with_retry(prompt, schema)
+
+        try:
+            synthesized = SynthesizedReport.model_validate(json_data)
+        except Exception as e:
+            logger.error("Failed to validate synthesized report", error=str(e))
+            raise SynthesisValidationError(f"Schema validation failed: {e}")
+
+        report = self._synthesized_to_research_report(
+            synthesized=synthesized,
             query=query,
             tickers=tickers,
-            report_text=report_text,
             market_data=market_data,
             news_articles=news_articles,
             sentiment_analysis=sentiment_analysis,
@@ -69,130 +94,130 @@ class SynthesisAgent:
 
         return report
 
-    def _build_prompt(
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((SynthesisProviderError, SynthesisTimeoutError)),
+    )
+    async def _call_llm_with_retry(self, prompt: str, schema: Dict[str, Any]) -> Dict[str, Any]:
+        """Call the LLM with retry logic for transient failures."""
+        try:
+            return await self.llm.structured_completion(
+                system_prompt=REPORT_SYSTEM_PROMPT.format(max_length=5000) + STRUCTURED_OUTPUT_INSTRUCTIONS,
+                user_prompt=prompt,
+                schema=schema,
+                model=self.llm.default_model,
+                temperature=0.3,
+            )
+        except Exception as e:
+            error_str = str(e).lower()
+            if "timeout" in error_str or isinstance(e, asyncio.TimeoutError):
+                raise SynthesisTimeoutError(str(e))
+            raise SynthesisProviderError(str(e))
+
+    def _synthesized_to_research_report(
         self,
+        synthesized: SynthesizedReport,
         query: str,
         tickers: List[str],
-        market_data: Dict[str, MarketData],
-        news_articles: List[NewsArticle],
-        sentiment_analysis: Optional[SentimentAnalysis],
-        max_length: int,
-    ) -> str:
-        """Build the prompt for report generation."""
-
-        # Format market data
-        market_summary = ""
-        for ticker, data in market_data.items():
-            market_summary += f"\n### {ticker} ({data.company_name or 'N/A'})\n"
-            if data.current_price:
-                market_summary += f"- Current Price: ${data.current_price:.2f}\n"
-            if data.change_percent is not None:
-                market_summary += f"- Change: {data.change_percent:+.2f}%\n"
-            if data.fundamentals:
-                fund = data.fundamentals
-                market_summary += f"- Market Cap: ${fund.market_cap:,.0f}\n" if fund.market_cap else ""
-                market_summary += f"- P/E Ratio: {fund.pe_ratio:.2f}\n" if fund.pe_ratio else ""
-                market_summary += f"- Dividend Yield: {fund.dividend_yield:.2%}\n" if fund.dividend_yield else ""
-
-        # Format news
-        news_summary = ""
-        for article in news_articles[:10]:  # Limit to top 10
-            news_summary += f"\n- **{article.title}** ({article.source}, {article.published_at.strftime('%Y-%m-%d')})\n"
-            if article.description:
-                news_summary += f"  {article.description[:200]}...\n"
-
-        # Format sentiment
-        sentiment_summary = ""
-        if sentiment_analysis:
-            sent = sentiment_analysis.overall_sentiment
-            sentiment_summary = f"\nOverall Sentiment: {sent.label} ({sent.score:.2f}, confidence: {sent.confidence:.2f})\n"
-            for ticker, t_sent in sentiment_analysis.ticker_sentiments.items():
-                sentiment_summary += f"- {ticker}: {t_sent.label} ({t_sent.score:.2f})\n"
-
-        prompt = f"""
-        Research Query: {query}
-        Tickers: {', '.join(tickers)}
-
-        MARKET DATA:
-        {market_summary}
-
-        NEWS ARTICLES:
-        {news_summary}
-
-        SENTIMENT ANALYSIS:
-        {sentiment_summary}
-
-        INSTRUCTIONS:
-        Generate a comprehensive equity research report addressing the query.
-        Maximum length: {max_length} characters.
-
-        Structure the report with:
-        1. Executive Summary
-        2. Company Overview (for each ticker)
-        3. Financial Analysis
-        4. Market Position & Competitive Landscape
-        5. News & Sentiment Analysis
-        6. Key Risks
-        7. Conclusion
-
-        Requirements:
-        - Use professional, objective tone
-        - Cite specific data points from the provided sources
-        - Present balanced analysis (bull and bear cases)
-        - Include appropriate disclaimers
-        - Output in markdown format with clear headings
-        """
-
-        return prompt
-
-    def _parse_report(
-        self,
-        request_id: str,
-        query: str,
-        tickers: List[str],
-        report_text: str,
         market_data: Dict[str, MarketData],
         news_articles: List[NewsArticle],
         sentiment_analysis: Optional[SentimentAnalysis],
     ) -> ResearchReport:
-        """Parse generated report text into structured ResearchReport."""
-        # For now, return a basic structure
-        # TODO: Implement proper parsing of LLM output into sections
+        """Map SynthesizedReport into the existing ResearchReport structure."""
+        sections = [
+            ReportSection(
+                id="executive_summary",
+                title="Executive Summary",
+                level=1,
+                content=synthesized.executive_summary,
+                order=1,
+            ),
+            ReportSection(
+                id="market_snapshot",
+                title="Market Snapshot",
+                level=1,
+                content=synthesized.market_snapshot or "No market data available.",
+                order=2,
+            ),
+            ReportSection(
+                id="news_summary",
+                title="News Summary",
+                level=1,
+                content=synthesized.news_summary or "No news articles available.",
+                order=3,
+            ),
+            ReportSection(
+                id="sentiment_summary",
+                title="Sentiment Analysis",
+                level=1,
+                content=synthesized.sentiment_summary or "No sentiment data available.",
+                order=4,
+            ),
+            ReportSection(
+                id="key_observations",
+                title="Key Observations",
+                level=1,
+                content="\n".join(f"- {obs}" for obs in synthesized.key_observations) if synthesized.key_observations else "None.",
+                order=5,
+            ),
+            ReportSection(
+                id="risks",
+                title="Risk Factors",
+                level=1,
+                content="\n".join(f"- {risk}" for risk in synthesized.risks) if synthesized.risks else "None identified.",
+                order=6,
+            ),
+        ]
+
+        market_data_sources = [
+            Citation(
+                id=f"market_{t}",
+                type="market_data",
+                title=f"{t} Market Data",
+                source="yfinance",
+            )
+            for t in tickers
+        ]
+
+        news_sources = [
+            Citation(
+                id=f"news_{i}",
+                type="news",
+                title=a.title,
+                url=str(a.url),
+                source=a.source,
+                date=a.published_at,
+            )
+            for i, a in enumerate(news_articles[:20])
+        ]
+
+        sentiment_sources = []
+        if sentiment_analysis:
+            sentiment_sources.append(
+                Citation(
+                    id="sentiment_overall",
+                    type="sentiment",
+                    title="Overall Sentiment Analysis",
+                    source="llm",
+                )
+            )
+
+        total_citations = len(news_articles) + len(tickers) + len(sentiment_sources)
+        unique_sources = len(set(a.source for a in news_articles)) + (1 if sentiment_analysis else 0) + (1 if market_data else 0)
 
         return ResearchReport(
-            request_id=request_id,
+            request_id="",
             query=query,
             tickers=tickers,
-            executive_summary="Report generated successfully. Full parsing pending.",
-            sections=[
-                ReportSection(
-                    id="full_report",
-                    title="Full Report",
-                    level=1,
-                    content=report_text,
-                    order=1,
-                )
-            ],
-            market_data_sources=[
-                Citation(
-                    id=f"market_{t}",
-                    type="market_data",
-                    title=f"{t} Market Data",
-                    source="yfinance",
-                )
-                for t in tickers
-            ],
-            news_sources=[
-                Citation(
-                    id=f"news_{i}",
-                    type="news",
-                    title=a.title,
-                    url=str(a.url),
-                    source=a.source,
-                    date=a.published_at,
-                )
-                for i, a in enumerate(news_articles[:20])
-            ],
-            total_citations=len(news_articles) + len(tickers),
-            unique_sources=len(set(a.source for a in news_articles)) + 1,
+            generated_at=synthesized.generated_at,
+            executive_summary=synthesized.executive_summary,
+            sections=sections,
+            market_data_sources=market_data_sources,
+            news_sources=news_sources,
+            sentiment_sources=sentiment_sources,
+            total_citations=total_citations,
+            unique_sources=unique_sources,
+            confidence_score=synthesized.confidence,
+            disclaimer=synthesized.disclaimer,
         )
