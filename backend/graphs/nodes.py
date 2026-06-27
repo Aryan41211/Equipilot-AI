@@ -80,8 +80,10 @@ def router_node(state: GraphState) -> GraphState:
     state = _record_node_start(state, "router")
     try:
         user_query = state["user_query"]
-        match = _TICKER_RE.search(user_query.upper())
-        ticker: Optional[str] = match.group(1) if match else None
+        matches = _TICKER_RE.findall(user_query.upper())
+        # Pick the most likely ticker mention by using the last all-caps token
+        # (e.g. "Give me updates about TCS" => "TCS", not "GIVE").
+        ticker: Optional[str] = matches[-1] if matches else None
 
         executed_nodes = list(state.get("executed_nodes", []))
         if "router" not in executed_nodes:

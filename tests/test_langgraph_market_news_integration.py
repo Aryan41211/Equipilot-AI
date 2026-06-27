@@ -18,13 +18,18 @@ async def test_market_and_news_success():
     graph = create_first_graph()
     state = create_initial_state(_base_query_with_ticker("TCS"))
 
-    with patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm, patch(
-        "backend.graphs.nodes.fetch_news", new_callable=AsyncMock
-    ) as nn:
+    with patch(
+        "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
+    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn:
         mm.return_value = {"ticker": "TCS", "price": 123}
-        nn.return_value = {"query": "", "tickers": ["TCS"], "articles": [], "total_results": 0}
+        nn.return_value = {
+            "query": "",
+            "tickers": ["TCS"],
+            "articles": [],
+            "total_results": 0,
+        }
 
-        result = graph.invoke(state)
+        result = await graph.ainvoke(state)
 
     assert result["status"] == "success"
     assert result["ticker"] == "TCS"
@@ -54,19 +59,21 @@ async def test_market_success_news_fails():
     graph = create_first_graph()
     state = create_initial_state(_base_query_with_ticker("TCS"))
 
-    with patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm, patch(
-        "backend.graphs.nodes.fetch_news", new_callable=AsyncMock
-    ) as nn:
+    with patch(
+        "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
+    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn:
         mm.return_value = {"ticker": "TCS", "price": 123}
         nn.return_value = {"error": "news failed", "error_type": "service_error"}
 
-        result = graph.invoke(state)
+        result = await graph.ainvoke(state)
 
     assert result["status"] == "success"
     assert result["ticker"] == "TCS"
     assert result["market_data"]
     assert result["news"] == {}
-    assert any("News Tool failed" in e or "News Tool exception" in e for e in result["errors"])
+    assert any(
+        "News Tool failed" in e or "News Tool exception" in e for e in result["errors"]
+    )
 
     em = result["execution_metadata"]
     assert em["nodes"]["market_data_tool"]["ok"] is True
@@ -83,19 +90,27 @@ async def test_market_fails_news_success():
     graph = create_first_graph()
     state = create_initial_state(_base_query_with_ticker("TCS"))
 
-    with patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm, patch(
-        "backend.graphs.nodes.fetch_news", new_callable=AsyncMock
-    ) as nn:
+    with patch(
+        "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
+    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn:
         mm.return_value = {"error": "market failed", "error_type": "service_error"}
-        nn.return_value = {"query": "", "tickers": ["TCS"], "articles": [], "total_results": 0}
+        nn.return_value = {
+            "query": "",
+            "tickers": ["TCS"],
+            "articles": [],
+            "total_results": 0,
+        }
 
-        result = graph.invoke(state)
+        result = await graph.ainvoke(state)
 
     assert result["status"] == "success"
     assert result["ticker"] == "TCS"
     assert result["market_data"] == {}
     assert result["news"]
-    assert any("Market Data Tool failed" in e or "Market Data Tool exception" in e for e in result["errors"])
+    assert any(
+        "Market Data Tool failed" in e or "Market Data Tool exception" in e
+        for e in result["errors"]
+    )
 
     em = result["execution_metadata"]
     assert em["nodes"]["market_data_tool"]["ok"] is False
@@ -112,13 +127,13 @@ async def test_both_fail():
     graph = create_first_graph()
     state = create_initial_state(_base_query_with_ticker("TCS"))
 
-    with patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm, patch(
-        "backend.graphs.nodes.fetch_news", new_callable=AsyncMock
-    ) as nn:
+    with patch(
+        "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
+    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn:
         mm.return_value = {"error": "market failed", "error_type": "service_error"}
         nn.return_value = {"error": "news failed", "error_type": "service_error"}
 
-        result = graph.invoke(state)
+        result = await graph.ainvoke(state)
 
     assert result["status"] == "failed"
     assert result["ticker"] == "TCS"
@@ -142,10 +157,10 @@ async def test_router_fails_to_extract_ticker():
     state = create_initial_state("What is happening? No explicit ticker here")
 
     # Tools should not be called; patch anyway to detect unexpected calls
-    with patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm, patch(
-        "backend.graphs.nodes.fetch_news", new_callable=AsyncMock
-    ) as nn:
-        result = graph.invoke(state)
+    with patch(
+        "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
+    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn:
+        result = await graph.ainvoke(state)
 
         mm.assert_not_called()
         nn.assert_not_called()
