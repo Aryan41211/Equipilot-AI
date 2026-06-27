@@ -1,9 +1,15 @@
-tatussfrom __future__ import annotations
+from __future__ import annotations
 
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
 
-from backend.graphs.nodes import router_node, market_data_tool_node, news_tool_node, merge_results_node, research_node
+from backend.graphs.nodes import (
+    router_node,
+    market_data_tool_node,
+    news_tool_node,
+    merge_results_node,
+    research_node,
+)
 from backend.graphs.state import GraphState
 
 
@@ -28,10 +34,8 @@ def create_first_graph():
     workflow.add_edge("merge_results", "research")
     workflow.add_edge("research", END)
 
-    memory = MemorySaver()
-    # (LangGraph's MemorySaver in this environment expects configurable keys.)
+    # Avoid checkpointer configuration issues in test/runtime environments.
     return workflow.compile(checkpointer=False)
-    return workflow.compile(checkpointer=memory)
 
 
 def create_initial_state(user_query: str) -> GraphState:
