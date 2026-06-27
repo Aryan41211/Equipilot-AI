@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from langchain_core.tools import tool
@@ -20,7 +21,6 @@ class SentimentTool:
 
     @tool
     async def analyze_sentiment(
-        self,
         articles: List[Dict[str, Any]],
         tickers: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
@@ -44,20 +44,18 @@ class SentimentTool:
         try:
             normalized_articles: List[NewsArticle] = []
             for a in articles:
-                # NewsArticle model tolerates extra fields? We pass only expected.
                 normalized_articles.append(
                     NewsArticle(
-                        title=a.get("title"),
+                        title=a.get("title", ""),
                         description=a.get("description"),
                         content=a.get("content"),
-                        url=a.get("url"),
+                        url=a.get("url") or "http://example.com/unknown",
                         source=a.get("source", ""),
                         author=a.get("author"),
-                        published_at=a.get("published_at"),
+                        published_at=a.get("published_at") or datetime.utcnow(),
                         category=a.get("category"),
                         relevance_score=a.get("relevance_score"),
                         tickers_mentioned=a.get("tickers_mentioned", []),
-                        ticker=a.get("ticker"),
                     )
                 )
 
@@ -87,4 +85,4 @@ class SentimentTool:
 # Export tool functions for LangGraph
 # NOTE: Expose the tool function itself (not a bound method) so calling conventions in tests/agents
 # don't break due to BaseTool.__call__ kwarg handling.
-analyze_sentiment = SentimentTool().analyze_sentiment
+analyze_sentiment = SentimentTool.analyze_sentiment
