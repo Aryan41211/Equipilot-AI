@@ -61,7 +61,7 @@ class NewsService:
                 articles=[],
                 total_results=0,
                 provider=self.provider,
-                errors=["News API key=["News API key not configured"],
+                errors=["News API key not configured"],
             )
 
         # Set default date range

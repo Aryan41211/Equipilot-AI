@@ -1,7 +1,7 @@
 # EquiPilot AI - Market Data Tool Schema
 # Pydantic schema for market data tool responses
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 
@@ -24,7 +24,10 @@ class MarketDataResponse(BaseModel):
     )
     sector: Optional[str] = Field(default=None, description="Company sector")
     industry: Optional[str] = Field(default=None, description="Company industry")
-    data_as_of: datetime = Field(default_factory=datetime.utcnow, description="Data timestamp")
+    data_as_of: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Data timestamp"
+    )
 
     @field_validator("ticker")
     @classmethod
