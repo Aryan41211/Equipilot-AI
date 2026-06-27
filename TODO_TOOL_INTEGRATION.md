@@ -1,0 +1,21 @@
+# TODO - LangGraph Tool Integration (Market Data + News)
+
+- [ ] Update `backend/graphs/state.py`:
+  - Extend `GraphState` to include:
+    - `market_data`
+    - `news`
+    - `execution_metadata`
+- [ ] Update `backend/graphs/graph.py` / workflow edges:
+  - Add nodes for `market_data_tool` and `news_tool` (while preserving existing router/research structure)
+- [ ] Update `backend/graphs/nodes.py`:
+  - Implement:
+    - router preparation for both tools (based on extracted ticker; do not add sentiment/synthesis)
+    - resilient tool execution (one tool failure must not crash the graph if the other succeeds)
+    - node execution tracking + execution metadata
+- [ ] Add integration tests under `tests/`:
+  - Market Data only
+  - News only
+  - Both tools successful
+  - One tool fails
+  - Both tools fail
+- [ ] Run tests and ensure they pass
