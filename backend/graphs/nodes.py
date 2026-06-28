@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import re
+import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from backend.graphs.state import GraphState
+from backend.graphs.state import GraphState, _get_timestamp
 from backend.tools.market_data_tool import fetch_market_data
 from backend.tools.news_tool import fetch_news
 from backend.tools.sentiment_tool import analyze_sentiment
+from backend.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 _TICKER_RE = re.compile(r"\b([A-Z]{1,5})\b")
 
@@ -37,6 +41,7 @@ def _ensure_execution_metadata(state: GraphState) -> Dict[str, Any]:
     execution_metadata = dict(state.get("execution_metadata", {}) or {})
     execution_metadata.setdefault("nodes", {})
     execution_metadata.setdefault("tools", {})
+    execution_metadata.setdefault("traces", [])
     return execution_metadata
 
 
@@ -44,9 +49,11 @@ def _record_node_start(state: GraphState, node_name: str) -> GraphState:
     execution_metadata = _ensure_execution_metadata(state)
     nodes = dict(execution_metadata.get("nodes", {}) or {})
     node_meta = nodes.get(node_name, {})
-    node_meta["started_at"] = datetime.utcnow().isoformat()
+    started_at = _get_timestamp()
+    node_meta["started_at"] = started_at
     nodes[node_name] = node_meta
     execution_metadata["nodes"] = nodes
+    logger.info("Node started", node=node_name, request_id=state.get("request_id"))
     return {**state, "execution_metadata": execution_metadata}
 
 
@@ -69,6 +76,12 @@ def _record_tool_result(
         "result": result,
     }
     execution_metadata["tools"] = tools
+    logger.info(
+        "Tool completed",
+        tool=tool_name,
+        ok=ok,
+        request_id=state.get("request_id"),
+    )
     return {**state, "execution_metadata": execution_metadata}
 
 
@@ -81,9 +94,39 @@ def _record_node_finish(
     node_meta["ok"] = ok
     if error:
         node_meta["error"] = error
-    node_meta["finished_at"] = datetime.utcnow().isoformat()
+    node_meta["finished_at"] = _get_timestamp()
     nodes[node_name] = node_meta
     execution_metadata["nodes"] = nodes
+
+    traces = list(execution_metadata.get("traces", []))
+    started_at = node_meta.get("started_at")
+    duration_ms = None
+    if started_at:
+        try:
+            start = datetime.fromisoformat(started_at)
+            end = datetime.fromisoformat(node_meta["finished_at"])
+            duration_ms = (end - start).total_seconds() * 1000
+        except Exception:
+            pass
+    traces.append({
+        "node_name": node_name,
+        "start_time": started_at,
+        "end_time": node_meta["finished_at"],
+        "duration_ms": duration_ms,
+        "success": ok,
+        "error": error,
+    })
+    execution_metadata["traces"] = traces
+
+    if ok:
+        logger.info("Node completed", node=node_name, ok=True, request_id=state.get("request_id"))
+    else:
+        logger.warning(
+            "Node failed",
+            node=node_name,
+            error=error,
+            request_id=state.get("request_id"),
+        )
     return {**state, "execution_metadata": execution_metadata}
 
 
@@ -195,23 +238,24 @@ def router_node(state: GraphState) -> GraphState:
         detected_intent = _classify_intent(user_query)
         selected_tools, skipped_tools = _select_tools(detected_intent)
 
-        execution_summary = {
-            "intent": detected_intent,
-            "tool_count": len(selected_tools),
-            "skipped_count": len(skipped_tools),
-            "routing_reason": f"Query classified as {detected_intent}",
-        }
-
         state = {
             **state,
             "ticker": ticker,
             "detected_intent": detected_intent,
             "selected_tools": selected_tools,
             "skipped_tools": skipped_tools,
-            "execution_summary": execution_summary,
+            "completed_tools": [],
+            "failed_tools": [],
             "status": state.get("status", "pending"),
             "executed_nodes": executed_nodes,
         }
+        logger.info(
+            "Routing decision",
+            intent=detected_intent,
+            selected_tools=selected_tools,
+            skipped_tools=skipped_tools,
+            request_id=state.get("request_id"),
+        )
         state = _record_node_finish(state, "router", ok=True)
         return state
     except Exception as e:
@@ -248,12 +292,15 @@ async def market_data_tool_node(state: GraphState) -> GraphState:
         state = _append_error(state, "Ticker missing; cannot run Market Data Tool.")
         state = {**state, "market_data": {}, "executed_nodes": executed_nodes}
         state = _record_node_finish(state, "market_data_tool", ok=False, error="No ticker")
-        return state
+        failed_tools = list(state.get("failed_tools", []))
+        if "market_data_tool" not in failed_tools:
+            failed_tools.append("market_data_tool")
+        return {**state, "failed_tools": failed_tools}
 
-    started_at = datetime.utcnow().isoformat()
+    started_at = _get_timestamp()
     try:
         result = await fetch_market_data(ticker)
-        finished_at = datetime.utcnow().isoformat()
+        finished_at = _get_timestamp()
 
         ok = "error" not in result
         state = _record_tool_result(
@@ -265,6 +312,13 @@ async def market_data_tool_node(state: GraphState) -> GraphState:
             result=result,
         )
 
+        completed_tools = list(state.get("completed_tools", []))
+        failed_tools = list(state.get("failed_tools", []))
+        if ok and "market_data_tool" not in completed_tools:
+            completed_tools.append("market_data_tool")
+        elif not ok and "market_data_tool" not in failed_tools:
+            failed_tools.append("market_data_tool")
+
         if not ok:
             state = _append_error(state, f"Market Data Tool failed: {result.get('error')}")
             state = {**state, "market_data": {}, "status": state.get("status", "pending")}
@@ -272,10 +326,10 @@ async def market_data_tool_node(state: GraphState) -> GraphState:
             state = {**state, "market_data": result, "status": state.get("status", "pending")}
 
         state = _record_node_finish(state, "market_data_tool", ok=ok)
-        state = {**state, "executed_nodes": executed_nodes}
+        state = {**state, "executed_nodes": executed_nodes, "completed_tools": completed_tools, "failed_tools": failed_tools}
         return state
     except Exception as e:
-        finished_at = datetime.utcnow().isoformat()
+        finished_at = _get_timestamp()
         state = _record_tool_result(
             state,
             tool_name="market_data_tool",
@@ -285,11 +339,17 @@ async def market_data_tool_node(state: GraphState) -> GraphState:
             result={"error": str(e)},
         )
         state = _append_error(state, f"Market Data Tool exception: {str(e)}")
+        completed_tools = list(state.get("completed_tools", []))
+        failed_tools = list(state.get("failed_tools", []))
+        if "market_data_tool" not in failed_tools:
+            failed_tools.append("market_data_tool")
         state = {
             **state,
             "market_data": {},
             "status": state.get("status", "pending"),
             "executed_nodes": executed_nodes,
+            "completed_tools": completed_tools,
+            "failed_tools": failed_tools,
         }
         state = _record_node_finish(state, "market_data_tool", ok=False, error=str(e))
         return state
@@ -312,7 +372,7 @@ async def news_tool_node(state: GraphState) -> GraphState:
         state = _record_node_finish(state, "news_tool", ok=False, error="No ticker")
         return state
 
-    started_at = datetime.utcnow().isoformat()
+    started_at = _get_timestamp()
     try:
         result = await fetch_news(
             tickers=[ticker],
@@ -320,7 +380,7 @@ async def news_tool_node(state: GraphState) -> GraphState:
             date_to=None,
             limit=20,
         )
-        finished_at = datetime.utcnow().isoformat()
+        finished_at = _get_timestamp()
 
         ok = "error" not in result
         state = _record_tool_result(
@@ -332,6 +392,13 @@ async def news_tool_node(state: GraphState) -> GraphState:
             result=result,
         )
 
+        completed_tools = list(state.get("completed_tools", []))
+        failed_tools = list(state.get("failed_tools", []))
+        if ok and "news_tool" not in completed_tools:
+            completed_tools.append("news_tool")
+        elif not ok and "news_tool" not in failed_tools:
+            failed_tools.append("news_tool")
+
         if not ok:
             state = _append_error(state, f"News Tool failed: {result.get('error')}")
             state = {**state, "news": {}, "status": state.get("status", "pending")}
@@ -339,10 +406,10 @@ async def news_tool_node(state: GraphState) -> GraphState:
             state = {**state, "news": result, "status": state.get("status", "pending")}
 
         state = _record_node_finish(state, "news_tool", ok=ok)
-        state = {**state, "executed_nodes": executed_nodes}
+        state = {**state, "executed_nodes": executed_nodes, "completed_tools": completed_tools, "failed_tools": failed_tools}
         return state
     except Exception as e:
-        finished_at = datetime.utcnow().isoformat()
+        finished_at = _get_timestamp()
         state = _record_tool_result(
             state,
             tool_name="news_tool",
@@ -352,7 +419,11 @@ async def news_tool_node(state: GraphState) -> GraphState:
             result={"error": str(e)},
         )
         state = _append_error(state, f"News Tool exception: {str(e)}")
-        state = {**state, "news": {}, "status": state.get("status", "pending"), "executed_nodes": executed_nodes}
+        completed_tools = list(state.get("completed_tools", []))
+        failed_tools = list(state.get("failed_tools", []))
+        if "news_tool" not in failed_tools:
+            failed_tools.append("news_tool")
+        state = {**state, "news": {}, "status": state.get("status", "pending"), "executed_nodes": executed_nodes, "completed_tools": completed_tools, "failed_tools": failed_tools}
         state = _record_node_finish(state, "news_tool", ok=False, error=str(e))
         return state
 
@@ -371,13 +442,13 @@ async def sentiment_tool_node(state: GraphState) -> GraphState:
     news_result = state.get("news", {})
     articles = news_result.get("articles", []) if isinstance(news_result, dict) else []
 
-    started_at = datetime.utcnow().isoformat()
+    started_at = _get_timestamp()
     try:
         result = await analyze_sentiment(
             articles=articles,
             tickers=[ticker] if ticker else [],
         )
-        finished_at = datetime.utcnow().isoformat()
+        finished_at = _get_timestamp()
 
         ok = result.get("ok", False)
         state = _record_tool_result(
@@ -389,6 +460,13 @@ async def sentiment_tool_node(state: GraphState) -> GraphState:
             result=result,
         )
 
+        completed_tools = list(state.get("completed_tools", []))
+        failed_tools = list(state.get("failed_tools", []))
+        if ok and "sentiment_tool" not in completed_tools:
+            completed_tools.append("sentiment_tool")
+        elif not ok and "sentiment_tool" not in failed_tools:
+            failed_tools.append("sentiment_tool")
+
         if not ok:
             state = _append_error(state, f"Sentiment Tool failed: {result.get('error')}")
             state = {**state, "sentiment": {}, "status": state.get("status", "pending")}
@@ -396,10 +474,10 @@ async def sentiment_tool_node(state: GraphState) -> GraphState:
             state = {**state, "sentiment": result, "status": state.get("status", "pending")}
 
         state = _record_node_finish(state, "sentiment_tool", ok=ok)
-        state = {**state, "executed_nodes": executed_nodes}
+        state = {**state, "executed_nodes": executed_nodes, "completed_tools": completed_tools, "failed_tools": failed_tools}
         return state
     except Exception as e:
-        finished_at = datetime.utcnow().isoformat()
+        finished_at = _get_timestamp()
         state = _record_tool_result(
             state,
             tool_name="sentiment_tool",
@@ -409,7 +487,11 @@ async def sentiment_tool_node(state: GraphState) -> GraphState:
             result={"error": str(e)},
         )
         state = _append_error(state, f"Sentiment Tool exception: {str(e)}")
-        state = {**state, "sentiment": {}, "status": state.get("status", "pending"), "executed_nodes": executed_nodes}
+        completed_tools = list(state.get("completed_tools", []))
+        failed_tools = list(state.get("failed_tools", []))
+        if "sentiment_tool" not in failed_tools:
+            failed_tools.append("sentiment_tool")
+        state = {**state, "sentiment": {}, "status": state.get("status", "pending"), "executed_nodes": executed_nodes, "completed_tools": completed_tools, "failed_tools": failed_tools}
         state = _record_node_finish(state, "sentiment_tool", ok=False, error=str(e))
         return state
 

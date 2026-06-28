@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from typing import Literal
 
 from langgraph.graph import StateGraph, START, END
@@ -12,7 +13,7 @@ from backend.graphs.nodes import (
     merge_results_node,
     research_node,
 )
-from backend.graphs.state import GraphState
+from backend.graphs.state import GraphState, _get_timestamp
 
 
 def route_after_router(state: GraphState) -> Literal["market_data_tool", "news_tool", "__end__"]:
@@ -125,10 +126,15 @@ def create_initial_state(user_query: str) -> GraphState:
     return GraphState(
         user_query=user_query,
         ticker=None,
+        request_id=str(uuid.uuid4()),
+        started_at=_get_timestamp(),
+        completed_at=None,
+        execution_duration_ms=None,
         detected_intent="full_research",
         selected_tools=[],
         skipped_tools=[],
-        execution_summary={},
+        completed_tools=[],
+        failed_tools=[],
         market_data={},
         news={},
         sentiment={},

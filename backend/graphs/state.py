@@ -1,4 +1,19 @@
 from typing import TypedDict, List, Dict, Any, Optional
+from datetime import datetime
+
+
+def _get_timestamp() -> str:
+    return datetime.utcnow().isoformat()
+
+
+class ExecutionTrace(TypedDict):
+    """Structured execution trace for a single node."""
+    node_name: str
+    start_time: str
+    end_time: Optional[str]
+    duration_ms: Optional[float]
+    success: bool
+    error: Optional[str]
 
 
 # NOTE: `langgraph.StateGraph` treats TypedDict keys as *channels/state keys*.
@@ -12,11 +27,18 @@ class GraphState(TypedDict):
     user_query: str
     ticker: Optional[str]
 
+    # Request metadata
+    request_id: str
+    started_at: str
+    completed_at: Optional[str]
+    execution_duration_ms: Optional[float]
+
     # Routing
     detected_intent: str  # fundamentals | news | sentiment | full_research | market_overview
     selected_tools: List[str]
     skipped_tools: List[str]
-    execution_summary: Dict[str, Any]
+    completed_tools: List[str]
+    failed_tools: List[str]
 
     # Tool outputs
     market_data: Dict[str, Any]
