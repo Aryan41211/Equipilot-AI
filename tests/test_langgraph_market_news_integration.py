@@ -3,14 +3,13 @@ import os
 import pytest
 from unittest.mock import patch, AsyncMock
 
-# Ensure backend imports work
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from backend.graphs.graph import create_first_graph, create_initial_state
 
 
 def _base_query_with_ticker(ticker: str = "TCS") -> str:
-    return f"Analyze {ticker}"
+    return f"Full analysis of {ticker}"
 
 
 @pytest.mark.asyncio
@@ -44,6 +43,7 @@ async def test_market_and_news_success():
     assert "market_data_tool" in result["executed_nodes"]
     assert "news_tool" in result["executed_nodes"]
     assert "sentiment_tool" in result["executed_nodes"]
+    assert "merge_results" in result["executed_nodes"]
     assert "research" in result["executed_nodes"]
 
     em = result["execution_metadata"]
@@ -51,6 +51,7 @@ async def test_market_and_news_success():
     assert em["nodes"]["market_data_tool"]["ok"] is True
     assert em["nodes"]["news_tool"]["ok"] is True
     assert em["nodes"]["sentiment_tool"]["ok"] is True
+    assert em["nodes"]["merge_results"]["ok"] is True
     assert em["nodes"]["research"]["ok"] is True
 
     assert em["tools"]["market_data_tool"]["ok"] is True
@@ -86,6 +87,7 @@ async def test_market_success_news_fails():
     assert em["nodes"]["market_data_tool"]["ok"] is True
     assert em["nodes"]["news_tool"]["ok"] is False
     assert em["nodes"]["sentiment_tool"]["ok"] is True
+    assert em["nodes"]["merge_results"]["ok"] is True
     assert em["nodes"]["research"]["ok"] is True
 
     assert em["tools"]["market_data_tool"]["ok"] is True
@@ -127,6 +129,7 @@ async def test_market_fails_news_success():
     assert em["nodes"]["market_data_tool"]["ok"] is False
     assert em["nodes"]["news_tool"]["ok"] is True
     assert em["nodes"]["sentiment_tool"]["ok"] is True
+    assert em["nodes"]["merge_results"]["ok"] is True
     assert em["nodes"]["research"]["ok"] is True
 
     assert em["tools"]["market_data_tool"]["ok"] is False
@@ -160,6 +163,7 @@ async def test_both_fail():
     assert em["nodes"]["market_data_tool"]["ok"] is False
     assert em["nodes"]["news_tool"]["ok"] is False
     assert em["nodes"]["sentiment_tool"]["ok"] is True
+    assert em["nodes"]["merge_results"]["ok"] is True
     assert em["nodes"]["research"]["ok"] is False
 
     assert em["tools"]["market_data_tool"]["ok"] is False
@@ -172,7 +176,6 @@ async def test_router_fails_to_extract_ticker():
     graph = create_first_graph()
     state = create_initial_state("What is happening? No explicit ticker here")
 
-    # Tools should not be called; patch anyway to detect unexpected calls
     with patch(
         "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
     ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn, patch(

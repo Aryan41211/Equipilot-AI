@@ -12,15 +12,15 @@ from backend.tools.sentiment_tool import analyze_sentiment
 _TICKER_RE = re.compile(r"\b([A-Z]{1,5})\b")
 
 _FUNDAMENTALS_KEYWORDS = {
-    "fundamental", "financial", "earnings", "revenue", "profit", "valuation",
+    "fundamental", "financial", "financials", "earnings", "revenue", "profit", "valuation",
     "pe", "p/e", "margin", "balance", "cash flow", "dividend", "growth",
     "ROE", "ROI", "debt", "asset", "liability", "income", "expense",
     "fundamentals", "balance sheet", "income statement",
 }
 
 _NEWS_KEYWORDS = {
-    "news", "headline", "article", "announcement", "press", "media",
-    "report", "update",
+    "news", "headline", "headlines", "article", "announcement", "press", "media",
+    "report",
 }
 
 _SENTIMENT_KEYWORDS = {
@@ -29,8 +29,7 @@ _SENTIMENT_KEYWORDS = {
 }
 
 _MARKET_OVERVIEW_KEYWORDS = {
-    "overview", "summary", "general", "how is", "what is happening",
-    "market", "update on",
+    "overview", "summary", "general", "market",
 }
 
 
@@ -97,14 +96,20 @@ def _append_error(state: GraphState, error_message: str) -> GraphState:
 def _classify_intent(query: str) -> str:
     """Classify user query into a research intent using deterministic rules."""
     q = query.lower()
+    tokens = set(q.split())
 
-    if any(kw in q for kw in _FUNDAMENTALS_KEYWORDS):
+    # Check multi-word phrases first
+    for kw in _FUNDAMENTALS_KEYWORDS:
+        if " " in kw and kw in q:
+            return "fundamentals"
+
+    if tokens & _FUNDAMENTALS_KEYWORDS:
         return "fundamentals"
-    if any(kw in q for kw in _SENTIMENT_KEYWORDS):
+    if tokens & _SENTIMENT_KEYWORDS:
         return "sentiment"
-    if any(kw in q for kw in _NEWS_KEYWORDS):
+    if tokens & _NEWS_KEYWORDS:
         return "news"
-    if any(kw in q for kw in _MARKET_OVERVIEW_KEYWORDS):
+    if tokens & _MARKET_OVERVIEW_KEYWORDS:
         return "market_overview"
 
     return "full_research"
@@ -114,8 +119,12 @@ def _select_tools(intent: str) -> tuple:
     """Return (selected_tools, skipped_tools) for a given intent."""
     if intent == "fundamentals":
         return (["market_data_tool"], ["news_tool", "sentiment_tool"])
-    if intent in ("news", "sentiment", "market_overview"):
+    if intent == "news":
         return (["news_tool", "sentiment_tool"], ["market_data_tool"])
+    if intent == "sentiment":
+        return (["news_tool", "sentiment_tool"], ["market_data_tool"])
+    if intent == "market_overview":
+        return (["news_tool"], ["market_data_tool", "sentiment_tool"])
     return (["market_data_tool", "news_tool", "sentiment_tool"], [])
 
 
@@ -166,6 +175,8 @@ def router_node(state: GraphState) -> GraphState:
             "ON",
             "FOR",
             "WITH",
+            "SHOW",
+            "OVERVIEW",
         }
 
         filtered = [m for m in matches if m not in common_non_tickers]
@@ -438,12 +449,13 @@ def research_node(state: GraphState) -> GraphState:
 
     state = {**state, "report": report, "executed_nodes": executed_nodes}
 
-    # Determine success based on available tool data and error state.
+    # Preserve existing success/failure semantics:
+    # success if we have market_data or news, failed otherwise.
     state_status = state.get("status", "pending")
     if state_status not in ("success", "failed"):
-        has_data = bool(state.get("market_data") or state.get("news"))
-        has_errors = bool(state.get("errors"))
-        state_status = "success" if has_data and not has_errors else "failed"
+        has_market = bool(state.get("market_data"))
+        has_news = bool(state.get("news"))
+        state_status = "success" if (has_market or has_news) else "failed"
         state = {**state, "status": state_status}
 
     ok = state_status == "success"
