@@ -208,6 +208,11 @@ def render_report(report: dict):
 
     st.success("✅ Research Complete!")
 
+    # Execution Timeline
+    render_execution_timeline(report)
+
+    st.divider()
+
     # Report metadata
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -219,14 +224,16 @@ def render_report(report: dict):
 
     st.divider()
 
+    # Tool Output Panels
+    render_tool_output_panels(report)
+
+    st.divider()
+
     # Report content
     if report.get("report"):
         st.markdown(report["report"])
     elif report.get("sections"):
-        for section in report["sections"]:
-            level = "#" * section.get("level", 2)
-            st.markdown(f"{level} {section.get('title', 'Section')}")
-            st.markdown(section.get("content", ""))
+        render_structured_sections(report["sections"])
 
     # Citations
     if report.get("citations"):
@@ -235,6 +242,138 @@ def render_report(report: dict):
                 st.markdown(f"- **{cite.get('title', 'Source')}** ({cite.get('source', 'Unknown')})")
                 if cite.get("url"):
                     st.markdown(f"  [{cite['url']}]({cite['url']})")
+
+
+def render_execution_timeline(report: dict):
+    """Render agent execution timeline with step durations."""
+    st.subheader("Agent Execution Timeline")
+
+    execution_metadata = report.get("execution_metadata", {})
+    traces = execution_metadata.get("traces", [])
+
+    # Calculate step durations
+    step_times = {}
+    for trace in traces:
+        step_id = trace.get("step", "")
+        duration = trace.get("duration_ms", 0)
+        step_times[step_id] = duration
+
+    total_time = sum(step_times.values()) / 1000 if step_times else 0
+
+    # Main steps
+    steps = [
+        ("router", "Entity Resolution", "🎯"),
+        ("market_data", "Market Data", "📊"),
+        ("news", "News", "📰"),
+        ("sentiment", "Sentiment", "😊"),
+        ("synthesis", "Research", "📝"),
+    ]
+
+    cols = st.columns(len(steps))
+    for i, (step_id, step_name, icon) in enumerate(steps):
+        with cols[i]:
+            duration = step_times.get(step_id, 0)
+            st.markdown(f"""
+            <div style="text-align: center; padding: 10px;">
+                <div style="font-size: 24px;">{icon}</div>
+                <div style="font-size: 12px; font-weight: bold;">{step_name}</div>
+                <div style="font-size: 10px; color: gray;">{duration:.0f}ms</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # Total execution time
+    st.markdown(f"**Total Execution Time: {total_time:.2f}s**")
+
+    # Execution trace details
+    if traces:
+        with st.expander("🔍 Execution Trace"):
+            for trace in traces:
+                step = trace.get("step", "unknown")
+                duration = trace.get("duration_ms", 0)
+                status = trace.get("status", "unknown")
+                timestamp = trace.get("timestamp", "")
+                st.markdown(f"- **{step}**: {duration:.0f}ms ({status}) - {timestamp[:19]}")
+
+
+def render_structured_sections(sections: list):
+    """Render structured report sections."""
+    for section in sections:
+        level = section.get("level", 2)
+        title = section.get("title", "")
+        content = section.get("content", "")
+
+        if title == "Executive Summary":
+            st.subheader("📋 Executive Summary")
+            st.markdown(content)
+        elif title == "Market Snapshot":
+            st.subheader("📈 Market Snapshot")
+            st.markdown(content)
+        elif title == "News Summary":
+            st.subheader("📰 News Summary")
+            st.markdown(content)
+        elif title == "Sentiment Summary":
+            st.subheader("😊 Sentiment Summary")
+            st.markdown(content)
+        elif title == "Risks":
+            st.subheader("⚠️ Risks")
+            st.markdown(content)
+        elif title == "Opportunities":
+            st.subheader("📈 Opportunities")
+            st.markdown(content)
+        elif title == "Disclaimer":
+            st.caption(content)
+        else:
+            st.markdown(f"{'#' * level} {title}")
+            st.markdown(content)
+
+
+def render_tool_output_panels(report: dict):
+    """Render expandable tool output panels."""
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        if st.button("📊 Market Data", use_container_width=True):
+            st.session_state.show_market = not st.session_state.get("show_market", False)
+
+    with col2:
+        if st.button("📰 News", use_container_width=True):
+            st.session_state.show_news = not st.session_state.get("show_news", False)
+
+    with col3:
+        if st.button("😊 Sentiment", use_container_width=True):
+            st.session_state.show_sentiment = not st.session_state.get("show_sentiment", False)
+
+    st.divider()
+
+    # Market Data panel
+    if st.session_state.get("show_market"):
+        with st.expander("📊 Market Data Output", expanded=True):
+            if report.get("market_data"):
+                st.json(report["market_data"])
+            elif report.get("market_data_summary"):
+                st.json(report["market_data_summary"])
+            else:
+                st.info("No market data available")
+
+    # News panel
+    if st.session_state.get("show_news"):
+        with st.expander("📰 News Output", expanded=True):
+            if report.get("news_data"):
+                st.json(report["news_data"])
+            elif report.get("news_summary"):
+                st.json(report["news_summary"])
+            else:
+                st.info("No news data available")
+
+    # Sentiment panel
+    if st.session_state.get("show_sentiment"):
+        with st.expander("😊 Sentiment Output", expanded=True):
+            if report.get("sentiment_data"):
+                st.json(report["sentiment_data"])
+            elif report.get("sentiment_summary"):
+                st.json(report["sentiment_summary"])
+            else:
+                st.info("No sentiment data available")
 
 
 def render_history_tab():

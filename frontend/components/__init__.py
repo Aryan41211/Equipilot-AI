@@ -3,12 +3,14 @@
 
 from frontend.components.query_form import render_query_form
 from frontend.components.report_display import render_report
-from frontend.components.progress_tracker import render_progress
+from frontend.components.progress_tracker import render_progress, render_polling_progress, render_simple_progress
 from frontend.components.sidebar import render_sidebar
 
 __all__ = [
     "render_query_form",
     "render_report",
     "render_progress",
+    "render_polling_progress",
+    "render_simple_progress",
     "render_sidebar",
 ]
