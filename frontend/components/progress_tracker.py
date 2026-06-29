@@ -4,17 +4,14 @@
 import streamlit as st
 import time
 from typing import Optional, Dict, Any, Callable
-from datetime import datetime
 
 
-# Step definitions with display names
 RESEARCH_STEPS = [
-    ("initialized", "Initializing", "🔄"),
-    ("routing_complete", "Query Routed", "🎯"),
-    ("market_data_complete", "Market Data Fetched", "📊"),
-    ("news_complete", "News Fetched", "📰"),
-    ("sentiment_complete", "Sentiment Analyzed", "😊"),
-    ("synthesis_complete", "Report Generated", "📝"),
+    ("router", "Entity Resolution", "🎯"),
+    ("market_data_tool", "Market Data", "📊"),
+    ("news_tool", "News", "📰"),
+    ("sentiment_tool", "Sentiment", "😊"),
+    ("research", "Research", "📝"),
     ("completed", "Completed", "✅"),
 ]
 
@@ -36,7 +33,6 @@ def render_progress(
         show_steps: Show step progress bar
         show_spinner: Show spinner for in-progress
     """
-    # Status indicator
     status_colors = {
         "pending": "🟡",
         "in_progress": "🔄",
@@ -45,7 +41,6 @@ def render_progress(
     }
     status_icon = status_colors.get(status, "❓")
 
-    # Header
     col1, col2 = st.columns([3, 1])
     with col1:
         st.subheader(f"{status_icon} Research {status.title()}")
@@ -56,11 +51,9 @@ def render_progress(
     if message:
         st.info(message)
 
-    # Step progress
     if show_steps:
         _render_step_progress(current_step)
 
-    # Progress bar
     step_index = _get_step_index(current_step)
     progress = (step_index + 1) / len(RESEARCH_STEPS)
     st.progress(min(progress, 1.0))
@@ -74,7 +67,6 @@ def _render_step_progress(current_step: str):
     for i, (step_id, step_name, icon) in enumerate(RESEARCH_STEPS):
         with cols[i]:
             if i < step_index:
-                # Completed
                 st.markdown(f"""
                 <div style="text-align: center; padding: 10px;">
                     <div style="color: green; font-size: 24px;">{icon}</div>
@@ -82,7 +74,6 @@ def _render_step_progress(current_step: str):
                 </div>
                 """, unsafe_allow_html=True)
             elif i == step_index:
-                # Current
                 st.markdown(f"""
                 <div style="text-align: center; padding: 10px;">
                     <div style="color: blue; font-size: 24px;">{icon}</div>
@@ -90,10 +81,9 @@ def _render_step_progress(current_step: str):
                 </div>
                 """, unsafe_allow_html=True)
             else:
-                # Pending
                 st.markdown(f"""
-                <div style="text-align: center; padding: 10px;">
-                    <div style="color: lightgray; font-size: 24px;">{icon}</div>
+                <div style="text-align: center; padding: 10px; opacity: 0.3;">
+                    <div style="font-size: 24px;">{icon}</div>
                     <div style="font-size: 12px; color: lightgray;">{step_name}</div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -108,7 +98,7 @@ def _get_step_index(step_id: str) -> int:
 
 
 def render_polling_progress(
-    check_status_fn: Callable[[], Optional[Dict[str, Any]]],
+    check_status_fn: Callable[[str], Optional[Dict[str, Any]]],
     request_id: str,
     poll_interval: float = 2.0,
     max_polls: int = 60,
@@ -119,29 +109,28 @@ def render_polling_progress(
     Render auto-polling progress tracker.
 
     Args:
-        check_status_fn: Function that returns status dict or None
+        check_status_fn: Function that takes request_id and returns status dict or None
         request_id: Request identifier
         poll_interval: Seconds between polls
         max_polls: Maximum number of polls
         on_complete: Callback(report_dict) when completed
         on_error: Callback(error_message) when failed
     """
-    # Placeholders
     progress_placeholder = st.empty()
     status_placeholder = st.empty()
     error_placeholder = st.empty()
 
-    for i in range(max_polls):
-        status_data = check_status_fn()
+    for _ in range(max_polls):
+        status_data = check_status_fn(request_id)
 
         if status_data:
-            current_step = status_data.get("current_step", "initialized")
+            current_step = status_data.get("current_step", "router")
             status = status_data.get("status", "in_progress")
 
             with progress_placeholder.container():
                 render_progress(current_step, status)
 
-            if status == "completed":
+            if status in ("completed", "success"):
                 status_placeholder.success("✅ Research completed!")
                 if on_complete:
                     on_complete(status_data)
@@ -160,7 +149,6 @@ def render_polling_progress(
 
         time.sleep(poll_interval)
 
-    # Timeout
     error_placeholder.warning("⏱️ Research is taking longer than expected. Check History tab.")
     return None
 

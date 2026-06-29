@@ -24,17 +24,14 @@ def render_query_form(
         Form data dict if submitted, None otherwise
     """
     with st.form(key):
-        # Query input
         query = st.text_area(
             "Research Query",
             value=default_query,
             placeholder="e.g., Analyze AAPL's competitive position and upcoming catalysts",
             height=100,
-            help="Describe what you want to research. Include tickers or company names.",
             key=f"{key}_query",
         )
 
-        # Options
         col1, col2 = st.columns(2)
 
         with col1:
@@ -45,16 +42,13 @@ def render_query_form(
             include_sentiment = st.checkbox("Include Sentiment", value=True, key=f"{key}_sentiment")
             include_technicals = st.checkbox("Include Technicals", value=False, key=f"{key}_technicals")
 
-        # Explicit tickers
         ticker_input = st.text_input(
             "Explicit Tickers (optional, comma-separated)",
             value=", ".join(default_tickers) if default_tickers else "",
             placeholder="AAPL, MSFT, GOOGL",
-            help="Override automatic ticker extraction",
             key=f"{key}_tickers",
         )
 
-        # Advanced options
         with st.expander("Advanced Options"):
             max_length = st.slider(
                 "Max Report Length",
@@ -65,17 +59,6 @@ def render_query_form(
                 key=f"{key}_max_length",
             )
 
-            date_from = st.date_input(
-                "News From Date",
-                value=None,
-                key=f"{key}_date_from",
-            )
-            date_to = st.date_input(
-                "News To Date",
-                value=None,
-                key=f"{key}_date_to",
-            )
-
         submitted = st.form_submit_button("🚀 Start Research", type="primary", use_container_width=True)
 
         if submitted:
@@ -83,7 +66,6 @@ def render_query_form(
                 st.error("Please enter a research query")
                 return None
 
-            # Parse tickers
             tickers = [t.strip().upper() for t in ticker_input.split(",") if t.strip()]
 
             form_data = {
@@ -94,8 +76,6 @@ def render_query_form(
                 "include_fundamentals": include_fundamentals,
                 "include_technicals": include_technicals,
                 "max_report_length": max_length,
-                "date_from": date_from.isoformat() if date_from else None,
-                "date_to": date_to.isoformat() if date_to else None,
             }
 
             if on_submit:
@@ -104,3 +84,17 @@ def render_query_form(
             return form_data
 
     return None
+
+
+def render_quick_stats(tickers: List[str], status: str, execution_time: Optional[float] = None):
+    """Render quick statistics for a research request."""
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Tickers", len(tickers))
+    with col2:
+        st.metric("Status", status.title())
+    with col3:
+        if execution_time:
+            st.metric("Time", f"{execution_time:.2f}s")
+        else:
+            st.metric("Time", "N/A")

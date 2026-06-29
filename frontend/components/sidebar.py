@@ -2,7 +2,6 @@
 # Navigation, recent reports, and system status
 
 import streamlit as st
-from typing import Optional
 
 API_BASE_URL = "http://localhost:8000/api/v1"
 
@@ -11,21 +10,26 @@ def render_sidebar():
     """Render sidebar with navigation and status."""
     st.header("Navigation")
 
+    # Current Model
     st.subheader("Current Model")
-    st.caption("gpt-4-turbo")
+    model_name = st.session_state.get("model_name", "gpt-4o")
+    st.caption(model_name)
 
     st.divider()
 
+    # System Status
     st.subheader("System Status")
     render_system_status()
 
     st.divider()
 
+    # Recent Reports
     st.subheader("Recent Reports")
     render_recent_reports()
 
     st.divider()
 
+    # About
     st.subheader("About EquiPilot AI")
     st.caption(
         "Agentic equity research system using LangGraph orchestration "
@@ -45,11 +49,11 @@ def render_system_status():
             if services.get("openai"):
                 st.caption("✓ OpenAI API")
             else:
-                st.caption("✗ OpenAI API (not configured)")
+                st.caption("○ OpenAI API (optional)")
             if services.get("news_api"):
                 st.caption("✓ News API")
             else:
-                st.caption("✗ News API (not configured)")
+                st.caption("○ News API (optional)")
         else:
             st.error("🔴 Error")
     except Exception:
@@ -58,7 +62,7 @@ def render_system_status():
 
 
 def render_recent_reports():
-    """Render session-only report history."""
+    """Render session-only report history in sidebar."""
     history = st.session_state.get("research_history", [])
 
     if not history:
@@ -67,8 +71,9 @@ def render_recent_reports():
 
     for item in history[-5:]:
         req_id = item.get("request_id", "")[:8]
-        query = item.get("query", "Unknown")[:50]
-        if st.button(f"📄 {query}...", key=f"history_{req_id}", use_container_width=True):
+        query = item.get("query", "Unknown")[:40]
+        if st.button(f"📄 {query}...", key=f"sidebar_report_{req_id}", use_container_width=True):
             st.session_state.current_request_id = item.get("request_id")
-            st.session_state.polling = True
+            st.session_state.is_processing = False
+            st.session_state.current_report = None
             st.rerun()

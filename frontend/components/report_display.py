@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any, List
 
 
 def render_report(
-    report: Dict[str, Any],
+    report: Optional[Dict[str, Any]],
     show_metadata: bool = True,
     show_citations: bool = True,
     expandable: bool = True,
@@ -24,7 +24,6 @@ def render_report(
         st.warning("No report data available")
         return
 
-    # Metadata
     if show_metadata:
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -40,9 +39,7 @@ def render_report(
 
         st.divider()
 
-    # Main report content
     if report.get("report"):
-        # Single markdown report
         if expandable:
             with st.expander("📄 Full Report", expanded=True):
                 st.markdown(report["report"])
@@ -50,44 +47,86 @@ def render_report(
             st.markdown(report["report"])
 
     elif report.get("sections"):
-        # Structured sections
-        for i, section in enumerate(report["sections"]):
-            level = section.get("level", 2)
-            title = section.get("title", f"Section {i+1}")
-            content = section.get("content", "")
+        render_structured_sections(report["sections"], expandable)
 
-            if expandable:
-                with st.expander(f"{'#' * level} {title}", expanded=(i == 0)):
-                    st.markdown(content)
-            else:
-                st.markdown(f"{'#' * level} {title}")
-                st.markdown(content)
+    elif report.get("executive_summary"):
+        render_synthesized_report(report)
 
     else:
         st.info("Report content not available in expected format")
-        with st.expander("Raw Report Data"):
-            st.json(report)
 
-    # Citations
     if show_citations and report.get("citations"):
         with st.expander("📚 Sources & Citations"):
             for i, cite in enumerate(report["citations"]):
                 _render_citation(cite, i)
 
-    # Market data summary
-    if report.get("market_data_summary"):
-        with st.expander("📈 Market Data Summary"):
-            st.json(report["market_data_summary"])
 
-    # News summary
+def render_structured_sections(sections: List[Dict[str, Any]], expandable: bool = True):
+    """Render structured report sections."""
+    for i, section in enumerate(sections):
+        title = section.get("title", f"Section {i+1}")
+        content = section.get("content", "")
+
+        if title == "Executive Summary":
+            st.subheader("📋 Executive Summary")
+            st.markdown(content)
+        elif title == "Market Snapshot":
+            st.subheader("📈 Market Snapshot")
+            st.markdown(content)
+        elif title == "News Summary":
+            st.subheader("📰 News Summary")
+            st.markdown(content)
+        elif title == "Sentiment Analysis" or title == "Sentiment Summary":
+            st.subheader("😊 Sentiment Summary")
+            st.markdown(content)
+        elif title == "Risk Factors" or title == "Risks":
+            st.subheader("⚠️ Risks")
+            st.markdown(content)
+        elif title == "Opportunities":
+            st.subheader("📈 Opportunities")
+            st.markdown(content)
+        elif title == "Disclaimer":
+            st.caption(f"*{content}*")
+        else:
+            st.markdown(f"**{title}**")
+            st.markdown(content)
+
+
+def render_synthesized_report(report: Dict[str, Any]):
+    """Render a synthesized report (LLM output format)."""
+    if report.get("executive_summary"):
+        st.subheader("📋 Executive Summary")
+        st.markdown(report["executive_summary"])
+
+    if report.get("market_snapshot"):
+        st.subheader("📈 Market Snapshot")
+        st.markdown(report["market_snapshot"])
+
     if report.get("news_summary"):
-        with st.expander("📰 News Summary"):
-            st.json(report["news_summary"])
+        st.subheader("📰 News Summary")
+        st.markdown(report["news_summary"])
 
-    # Sentiment summary
     if report.get("sentiment_summary"):
-        with st.expander("😊 Sentiment Summary"):
-            st.json(report["sentiment_summary"])
+        st.subheader("😊 Sentiment Summary")
+        st.markdown(report["sentiment_summary"])
+
+    if report.get("risks"):
+        st.subheader("⚠️ Risks")
+        if isinstance(report["risks"], list):
+            for risk in report["risks"]:
+                st.markdown(f"- {risk}")
+        else:
+            st.markdown(report["risks"])
+
+    if report.get("opportunities"):
+        st.subheader("📈 Opportunities")
+        if isinstance(report["opportunities"], list):
+            for opp in report["opportunities"]:
+                st.markdown(f"- {opp}")
+        else:
+            st.markdown(report["opportunities"])
+
+    st.caption(report.get("disclaimer", "This is not investment advice."))
 
 
 def _render_citation(citation: Dict[str, Any], index: int):
@@ -98,7 +137,6 @@ def _render_citation(citation: Dict[str, Any], index: int):
     url = citation.get("url")
     date = citation.get("date")
 
-    # Type icon
     type_icons = {
         "market_data": "📊",
         "news": "📰",
@@ -136,5 +174,3 @@ def render_report_card(
             if st.button("View", key=f"view_{report.get('request_id')}", use_container_width=True):
                 if on_click:
                     on_click(report.get("request_id"))
-
-        st.caption(f"ID: {report.get('request_id', 'N/A')[:12]}... | {report.get('created_at', '')[:16]}")
