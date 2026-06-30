@@ -1,19 +1,12 @@
 # EquiPilot AI - Market Data Service Tests
 
-import sys
 import os
 import asyncio
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+import json
 
 import pytest
 from datetime import datetime, timezone
 from unittest.mock import patch, MagicMock
-
-# Mock yfinance before importing service
-sys.modules['yfinance'] = MagicMock()
-
-from backend.schemas.market_data_schema import MarketDataResponse
-from backend.services.market_data_service import MarketDataService, InvalidTickerError, NetworkError, DataUnavailableError, RateLimitError
 
 
 class TestMarketDataService:
@@ -32,7 +25,8 @@ class TestMarketDataService:
             pytest.fail(f"Service module import failed: {e}")
 
     def test_schema_direct_instantiation(self):
-        """Test schema can be created without external dependencies."""
+        from backend.schemas.market_data_schema import MarketDataResponse
+
         data = MarketDataResponse(
             ticker="RELIANCE.NS",
             company_name="Reliance Industries Limited",
@@ -52,7 +46,8 @@ class TestMarketDataService:
         assert data.current_price == 2500.0
 
     def test_schema_handles_none_values(self):
-        """Test that None values are handled gracefully."""
+        from backend.schemas.market_data_schema import MarketDataResponse
+
         data = MarketDataResponse(ticker="TEST.NS")
 
         assert data.ticker == "TEST.NS"
@@ -61,27 +56,32 @@ class TestMarketDataService:
         assert data.previous_close is None
 
     def test_schema_ticker_normalization(self):
-        """Test ticker symbol is normalized."""
+        from backend.schemas.market_data_schema import MarketDataResponse
+
         data = MarketDataResponse(ticker="  infy.ns  ")
         assert data.ticker == "INFY.NS"
 
     def test_schema_ticker_validation(self):
-        """Test empty ticker raises validation error."""
+        from backend.schemas.market_data_schema import MarketDataResponse
+
         with pytest.raises(ValueError):
             MarketDataResponse(ticker="")
 
     def test_schema_negative_price_rejected(self):
-        """Test that negative price values are rejected."""
+        from backend.schemas.market_data_schema import MarketDataResponse
+
         with pytest.raises(ValueError):
             MarketDataResponse(ticker="TEST.NS", current_price=-100.0)
 
     def test_schema_negative_market_cap_rejected(self):
-        """Test that negative market cap values are rejected."""
+        from backend.schemas.market_data_schema import MarketDataResponse
+
         with pytest.raises(ValueError):
             MarketDataResponse(ticker="TEST.NS", market_cap=-1000000)
 
     def test_schema_negative_pe_ratio_rejected(self):
-        """Test that negative PE ratio values are rejected."""
+        from backend.schemas.market_data_schema import MarketDataResponse
+
         with pytest.raises(ValueError):
             MarketDataResponse(ticker="TEST.NS", pe_ratio=-5.0)
 
@@ -90,7 +90,6 @@ class TestMarketDataServiceExceptions:
     """Tests for MarketDataService exception classes."""
 
     def test_exception_hierarchy(self):
-        """Test exception class hierarchy."""
         from backend.services.market_data_service import (
             MarketDataServiceError,
             InvalidTickerError,
@@ -109,22 +108,26 @@ class TestMarketDataServiceExceptions:
         assert issubclass(RateLimitError, NetworkError)
 
     def test_invalid_ticker_error_instantiation(self):
-        """Test InvalidTickerError can be instantiated."""
+        from backend.services.market_data_service import InvalidTickerError
+
         error = InvalidTickerError("Invalid ticker: TEST")
         assert str(error) == "Invalid ticker: TEST"
 
     def test_network_error_instantiation(self):
-        """Test NetworkError can be instantiated."""
+        from backend.services.market_data_service import NetworkError
+
         error = NetworkError("Network failure")
         assert str(error) == "Network failure"
 
     def test_data_unavailable_error_instantiation(self):
-        """Test DataUnavailableError can be instantiated."""
+        from backend.services.market_data_service import DataUnavailableError
+
         error = DataUnavailableError("No data available")
         assert str(error) == "No data available"
 
     def test_rate_limit_error_instantiation(self):
-        """Test RateLimitError can be instantiated."""
+        from backend.services.market_data_service import RateLimitError
+
         error = RateLimitError("Rate limit exceeded")
         assert str(error) == "Rate limit exceeded"
 
@@ -134,7 +137,8 @@ class TestMarketDataServiceLogic:
 
     @pytest.mark.asyncio
     async def test_empty_ticker_raises_invalid_ticker_error(self):
-        """Test that empty ticker raises InvalidTickerError."""
+        from backend.services.market_data_service import MarketDataService, InvalidTickerError
+
         service = MarketDataService()
 
         with pytest.raises(InvalidTickerError, match="cannot be empty"):
@@ -142,7 +146,8 @@ class TestMarketDataServiceLogic:
 
     @pytest.mark.asyncio
     async def test_whitespace_ticker_raises_invalid_ticker_error(self):
-        """Test that whitespace-only ticker raises InvalidTickerError."""
+        from backend.services.market_data_service import MarketDataService, InvalidTickerError
+
         service = MarketDataService()
 
         with pytest.raises(InvalidTickerError, match="cannot be empty"):
@@ -150,7 +155,9 @@ class TestMarketDataServiceLogic:
 
     @pytest.mark.asyncio
     async def test_ticker_normalization(self):
-        """Test that ticker is normalized to uppercase."""
+        from backend.services.market_data_service import MarketDataService
+        from backend.schemas.market_data_schema import MarketDataResponse
+
         service = MarketDataService()
 
         # Mock the internal fetch to return a valid response
@@ -167,7 +174,9 @@ class TestMarketDataServiceLogic:
 
     @pytest.mark.asyncio
     async def test_cache_hit_returns_cached_data(self):
-        """Test that cached data is returned without fetching."""
+        from backend.services.market_data_service import MarketDataService
+        from backend.schemas.market_data_schema import MarketDataResponse
+
         service = MarketDataService()
 
         # Pre-populate cache
@@ -184,7 +193,9 @@ class TestMarketDataServiceLogic:
 
     @pytest.mark.asyncio
     async def test_cache_expiry_triggers_refetch(self):
-        """Test that expired cache triggers a new fetch."""
+        from backend.services.market_data_service import MarketDataService
+        from backend.schemas.market_data_schema import MarketDataResponse
+
         service = MarketDataService()
         service._cache_ttl_seconds = 1  # Very short TTL
 
@@ -217,9 +228,9 @@ class TestMarketDataServiceYFinanceIntegration:
     """Tests for _fetch_yfinance_data method with mocked yfinance."""
 
     def test_fetch_yfinance_data_success(self):
-        """Test successful yfinance data fetch."""
-        service = MarketDataService()
+        import backend.services.market_data_service as mds_module
 
+        service = mds_module.MarketDataService()
         mock_ticker = MagicMock()
         mock_ticker.info = {
             "symbol": "RELIANCE.NS",
@@ -235,7 +246,7 @@ class TestMarketDataServiceYFinanceIntegration:
             "industry": "Oil & Gas",
         }
 
-        with patch('yfinance.Ticker', return_value=mock_ticker):
+        with patch('backend.services.market_data_service.yf.Ticker', return_value=mock_ticker):
             result = service._fetch_yfinance_data("RELIANCE.NS")
 
             assert result.ticker == "RELIANCE.NS"
@@ -245,74 +256,72 @@ class TestMarketDataServiceYFinanceIntegration:
             assert result.pe_ratio == 25.0
 
     def test_fetch_yfinance_data_invalid_ticker(self):
-        """Test yfinance fetch with invalid ticker (no symbol)."""
-        service = MarketDataService()
+        import backend.services.market_data_service as mds_module
 
+        service = mds_module.MarketDataService()
         mock_ticker = MagicMock()
         mock_ticker.info = {}
 
-        with patch('yfinance.Ticker', return_value=mock_ticker):
-            with pytest.raises(InvalidTickerError, match="Invalid ticker symbol"):
+        with patch('backend.services.market_data_service.yf.Ticker', return_value=mock_ticker):
+            with pytest.raises(mds_module.InvalidTickerError, match="Invalid ticker symbol"):
                 service._fetch_yfinance_data("INVALID.NS")
 
     def test_fetch_yfinance_data_no_price_no_name(self):
-        """Test yfinance fetch with no price and no name raises DataUnavailableError."""
-        service = MarketDataService()
+        import backend.services.market_data_service as mds_module
 
+        service = mds_module.MarketDataService()
         mock_ticker = MagicMock()
         mock_ticker.info = {"symbol": "TEST.NS"}
 
-        with patch('yfinance.Ticker', return_value=mock_ticker):
-            with pytest.raises(DataUnavailableError, match="No market data available"):
+        with patch('backend.services.market_data_service.yf.Ticker', return_value=mock_ticker):
+            with pytest.raises(mds_module.DataUnavailableError, match="No market data available"):
                 service._fetch_yfinance_data("TEST.NS")
 
     def test_fetch_yfinance_data_uses_regularMarketPrice_fallback(self):
-        """Test that regularMarketPrice is used as fallback for currentPrice."""
-        service = MarketDataService()
+        import backend.services.market_data_service as mds_module
 
+        service = mds_module.MarketDataService()
         mock_ticker = MagicMock()
         mock_ticker.info = {
             "symbol": "TEST.NS",
             "regularMarketPrice": 1500.0,
         }
 
-        with patch('yfinance.Ticker', return_value=mock_ticker):
+        with patch('backend.services.market_data_service.yf.Ticker', return_value=mock_ticker):
             result = service._fetch_yfinance_data("TEST.NS")
 
             assert result.current_price == 1500.0
 
     def test_fetch_yfinance_data_json_decode_error_rate_limit(self):
-        """Test JSONDecodeError with empty response is treated as rate limit."""
-        import json
+        import backend.services.market_data_service as mds_module
 
-        service = MarketDataService()
-
+        service = mds_module.MarketDataService()
         mock_ticker = MagicMock()
         type(mock_ticker).info = property(lambda self: (_ for _ in ()).throw(
             json.JSONDecodeError("Expecting value", "", 0)
         ))
 
-        with patch('yfinance.Ticker', return_value=mock_ticker):
-            with pytest.raises(RateLimitError, match="rate limit"):
+        with patch('backend.services.market_data_service.yf.Ticker', return_value=mock_ticker):
+            with pytest.raises(mds_module.RateLimitError, match="rate limit"):
                 service._fetch_yfinance_data("TEST.NS")
 
     def test_fetch_yfinance_data_network_error_on_timeout(self):
-        """Test timeout error is wrapped as NetworkError."""
-        service = MarketDataService()
+        import backend.services.market_data_service as mds_module
 
+        service = mds_module.MarketDataService()
         mock_ticker = MagicMock()
         type(mock_ticker).info = property(lambda self: (_ for _ in ()).throw(
             TimeoutError("Connection timed out")
         ))
 
-        with patch('yfinance.Ticker', return_value=mock_ticker):
-            with pytest.raises(NetworkError, match="Network error fetching"):
+        with patch('backend.services.market_data_service.yf.Ticker', return_value=mock_ticker):
+            with pytest.raises(mds_module.NetworkError, match="Network error fetching"):
                 service._fetch_yfinance_data("TEST.NS")
 
     def test_fetch_yfinance_data_missing_optional_fields(self):
-        """Test that missing optional fields are handled gracefully."""
-        service = MarketDataService()
+        import backend.services.market_data_service as mds_module
 
+        service = mds_module.MarketDataService()
         mock_ticker = MagicMock()
         mock_ticker.info = {
             "symbol": "TEST.NS",
@@ -320,7 +329,7 @@ class TestMarketDataServiceYFinanceIntegration:
             "currentPrice": 100.0,
         }
 
-        with patch('yfinance.Ticker', return_value=mock_ticker):
+        with patch('backend.services.market_data_service.yf.Ticker', return_value=mock_ticker):
             result = service._fetch_yfinance_data("TEST.NS")
 
             assert result.ticker == "TEST.NS"

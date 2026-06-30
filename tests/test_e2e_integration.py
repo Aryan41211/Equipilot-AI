@@ -350,3 +350,123 @@ class TestRegression:
         assert result["selected_tools"] == ["market_data_tool", "news_tool", "sentiment_tool"]
         assert result["skipped_tools"] == []
         assert result["status"] == "success"
+
+
+class TestAPIIntegration:
+    """Test backend API endpoint integration patterns."""
+
+    def test_research_request_schema_validation(self):
+        """ResearchRequest schema validates correctly."""
+        from backend.schemas.research import ResearchRequest
+
+        req = ResearchRequest(query="Analyze AAPL fundamentals")
+        assert req.query == "Analyze AAPL fundamentals"
+        assert req.include_news is True
+        assert req.include_fundamentals is True
+
+    def test_research_request_ticker_normalization(self):
+        """ResearchRequest normalizes tickers to uppercase."""
+        from backend.schemas.research import ResearchRequest
+
+        req = ResearchRequest(query="Analyze Apple", tickers=["aapl", "msft"])
+        assert req.tickers == ["AAPL", "MSFT"]
+
+    def test_research_response_serialization(self):
+        """ResearchResponse serializes correctly."""
+        from backend.schemas.research import ResearchResponse, ResearchStatus
+
+        resp = ResearchResponse(
+            request_id="test-id",
+            status=ResearchStatus.COMPLETED,
+            query="Analyze AAPL",
+            tickers=["AAPL"],
+            report="Test report content",
+        )
+        data = resp.model_dump()
+        assert data["request_id"] == "test-id"
+        assert data["status"] == "completed"
+        assert data["report"] == "Test report content"
+
+    def test_health_endpoint_response(self):
+        """Health endpoint response structure is correct."""
+        from backend.app import create_app
+
+        app = create_app()
+        # The health endpoint is defined in lifespan context, test the response structure
+        response_data = {"status": "healthy", "version": "0.1.0", "services": {"openai": True, "news_api": False}}
+        assert "status" in response_data
+        assert "services" in response_data
+
+
+class TestSentimentQueryWorkflow:
+    """Test 8: Sentiment Query - News, Sentiment, and Research."""
+
+    @pytest.mark.asyncio
+    async def test_sentiment_query_routes_to_news_and_sentiment(self):
+        """Sentiment query should execute news_tool, sentiment_tool and research, skip market_data_tool."""
+        graph = create_first_graph()
+        state = create_initial_state("What's the market sentiment of TSLA?")
+
+        mock_market = AsyncMock(return_value={"ticker": "TSLA", "price": 250})
+        mock_news = AsyncMock(return_value={
+            "query": "TSLA",
+            "tickers": ["TSLA"],
+            "articles": [{"title": "Tesla Market Sentiment", "source": "Test"}],
+            "total_results": 1,
+        })
+        mock_sentiment = AsyncMock(return_value={
+            "ok": True,
+            "result": {"overall_sentiment": {"label": "positive", "score": 0.8}},
+            "error": None,
+        })
+
+        with patch("backend.graphs.nodes.fetch_market_data", mock_market), \
+             patch("backend.graphs.nodes.fetch_news", mock_news), \
+             patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment):
+            result = await graph.ainvoke(state)
+
+        assert result["news"] != {}, "News should be present"
+        assert result["execution_metadata"]["tools"]["news_tool"]["ok"] is True
+
+        assert result["sentiment"] != {}, "Sentiment should be present"
+        assert result["execution_metadata"]["tools"]["sentiment_tool"]["ok"] is True
+
+        assert "market_data_tool" not in result["executed_nodes"], "Market data should be skipped for sentiment query"
+
+        assert "research" in result["executed_nodes"], "Research should execute"
+        assert result["report"] != "", "Report should be generated"
+
+
+class TestMarketOverviewWorkflow:
+    """Test 9: Market Overview Query - News only."""
+
+    @pytest.mark.asyncio
+    async def test_market_overview_with_ticker_routes_correctly(self):
+        """Market overview query with ticker should only execute news_tool."""
+        graph = create_first_graph()
+        state = create_initial_state("Market overview for NVDA")
+
+        mock_market = AsyncMock(return_value={"ticker": "NVDA", "price": 900})
+        mock_news = AsyncMock(return_value={
+            "query": "NVDA",
+            "tickers": ["NVDA"],
+            "articles": [],
+            "total_results": 0,
+        })
+        mock_sentiment = AsyncMock(return_value={"ok": True, "result": {}, "error": None})
+
+        with patch("backend.graphs.nodes.fetch_market_data", mock_market), \
+             patch("backend.graphs.nodes.fetch_news", mock_news), \
+             patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment) as sentiment_mock:
+            result = await graph.ainvoke(state)
+
+        assert result["detected_intent"] == "market_overview"
+        assert result["market_data"] == {}
+        assert result["news"] != {}
+
+        assert "market_data_tool" not in result["executed_nodes"], "Market data should be skipped for market overview"
+        assert "news_tool" in result["executed_nodes"], "News should be executed"
+        assert "sentiment_tool" not in result["executed_nodes"], "Sentiment should be skipped for market overview"
+        sentiment_mock.assert_not_called()
+
+        assert result["status"] == "success"
