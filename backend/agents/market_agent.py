@@ -1,9 +1,10 @@
 # EquiPilot AI - Market Agent
 # Market data retrieval agent
 
-from typing import List, Dict, Any, Optional
-from backend.services.market_service import market_service
+from typing import Any
+
 from backend.schemas.market_data import MarketData
+from backend.services.market_service import market_service
 from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -17,11 +18,11 @@ class MarketAgent:
 
     async def fetch(
         self,
-        tickers: List[str],
+        tickers: list[str],
         period: str = "1y",
         include_fundamentals: bool = True,
         include_technicals: bool = False,
-    ) -> Dict[str, MarketData]:
+    ) -> dict[str, MarketData]:
         """
         Fetch market data for tickers.
 
@@ -41,11 +42,11 @@ class MarketAgent:
 
             # Optionally filter fields based on requirements
             if not include_fundamentals:
-                for ticker, md in data.items():
+                for _ticker, md in data.items():
                     md.fundamentals = None
 
             if not include_technicals:
-                for ticker, md in data.items():
+                for _ticker, md in data.items():
                     md.technicals = None
 
             return data
@@ -58,10 +59,10 @@ class MarketAgent:
                 for ticker in tickers
             }
 
-    async def fetch_fundamentals(self, tickers: List[str]) -> Dict[str, Any]:
+    async def fetch_fundamentals(self, tickers: list[str]) -> dict[str, Any]:
         """Fetch only fundamental data."""
         return await self.service.get_fundamentals(tickers)
 
-    async def search_tickers(self, query: str) -> List[Dict[str, str]]:
+    async def search_tickers(self, query: str) -> list[dict[str, str]]:
         """Search for tickers matching query."""
         return await self.service.search_tickers(query)

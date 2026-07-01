@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-import json
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from backend.exceptions.sentiment_exceptions import (
     SentimentMalformedResponseError,
@@ -11,8 +10,6 @@ from backend.exceptions.sentiment_exceptions import (
     SentimentTimeoutError,
     SentimentValidationError,
 )
-from backend.prompts.sentiment_prompt import SENTIMENT_SYSTEM_PROMPT, SENTIMENT_USER_PROMPT
-from backend.services.llm_service import get_llm_service
 from backend.schemas.news import NewsArticle
 from backend.schemas.sentiment import (
     HeadlineSentiment,
@@ -20,6 +17,7 @@ from backend.schemas.sentiment import (
     SentimentProcessingMetadata,
     SentimentScore,
 )
+from backend.services.llm_service import get_llm_service
 
 # Keep parsing/validation strictly typed to ensure deterministic failures.
 
@@ -66,7 +64,7 @@ class SentimentService:
         tickers_list = [t for t in tickers]
         articles_list = list(articles)
 
-        last_error: Optional[Exception] = None
+        last_error: Exception | None = None
         for attempt in range(self.max_retries + 1):
             try:
                 parsed = await asyncio.wait_for(
@@ -102,8 +100,8 @@ class SentimentService:
     async def _call_llm(
         self,
         *,
-        articles: List[NewsArticle],
-        tickers: List[str],
+        articles: list[NewsArticle],
+        tickers: list[str],
     ) -> SentimentAnalysis:
         """
         Calls LLM using existing llm_service. Do not duplicate provider logic.
@@ -122,9 +120,9 @@ class SentimentService:
                 tickers=tickers,
                 article_count=len(articles),
             )
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             raise SentimentTimeoutError(str(e))
-        except (SentimentTimeoutError, SentimentMalformedResponseError, SentimentValidationError) as e:
+        except (SentimentTimeoutError, SentimentMalformedResponseError, SentimentValidationError):
             # Preserve typed exceptions from parsing/validation.
             raise
         except Exception as e:
@@ -135,8 +133,8 @@ class SentimentService:
 
     def _parse_and_validate(
         self,
-        payload: Dict[str, Any],
-        tickers: List[str],
+        payload: dict[str, Any],
+        tickers: list[str],
         article_count: int,
     ) -> SentimentAnalysis:
         """
@@ -158,7 +156,7 @@ class SentimentService:
             )
 
             ticker_sentiments_raw = payload.get("ticker_sentiments") or {}
-            headline_sentiments: List[HeadlineSentiment] = []
+            headline_sentiments: list[HeadlineSentiment] = []
             # We do not synthesize per-headline sentiment without per-headline data.
             # Instead, we attach ticker-level sentiment entries as "headline" rows
             # using a deterministic placeholder headline.
@@ -169,7 +167,7 @@ class SentimentService:
                         ticker=t,
                         label=str(ts["label"]),
                         confidence=float(ts["confidence"]),
-                        reasoning=f"Derived from ticker-level sentiment.",
+                        reasoning="Derived from ticker-level sentiment.",
                     )
                 )
 
@@ -196,17 +194,17 @@ class SentimentService:
                 processing_metadata=processing_metadata,
             )
         except KeyError as e:
-            raise SentimentMalformedResponseError(f"Missing key in LLM response: {str(e)}")
+            raise SentimentMalformedResponseError(f"Missing key in LLM response: {e!s}")
         except (TypeError, ValueError) as e:
-            raise SentimentMalformedResponseError(f"Malformed LLM response: {str(e)}")
+            raise SentimentMalformedResponseError(f"Malformed LLM response: {e!s}")
         except Exception as e:
             # Distinguish schema validation problems from generic malformed payloads.
             # Pydantic validation errors indicate "validation" (typed).
             if "validation error" in str(e).lower():
                 raise SentimentValidationError(str(e))
-            raise SentimentMalformedResponseError(f"Malformed LLM response: {str(e)}")
+            raise SentimentMalformedResponseError(f"Malformed LLM response: {e!s}")
 
-    def _empty_analysis(self, tickers: List[str]) -> SentimentAnalysis:
+    def _empty_analysis(self, tickers: list[str]) -> SentimentAnalysis:
         # Provide deterministic empty sentiment output.
         neutral = SentimentScore(label="neutral", confidence=0.0, score=0.0)
         return SentimentAnalysis(

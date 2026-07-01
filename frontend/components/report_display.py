@@ -1,12 +1,13 @@
 # EquiPilot AI - Report Display Component
 # Reusable research report rendering
 
+from typing import Any
+
 import streamlit as st
-from typing import Optional, Dict, Any, List
 
 
 def render_report(
-    report: Optional[Dict[str, Any]],
+    report: dict[str, Any] | None,
     show_metadata: bool = True,
     show_citations: bool = True,
     expandable: bool = True,
@@ -61,7 +62,7 @@ def render_report(
                 _render_citation(cite, i)
 
 
-def render_structured_sections(sections: List[Dict[str, Any]], expandable: bool = True):
+def render_structured_sections(sections: list[dict[str, Any]], expandable: bool = True):
     """Render structured report sections."""
     for i, section in enumerate(sections):
         title = section.get("title", f"Section {i+1}")
@@ -92,7 +93,7 @@ def render_structured_sections(sections: List[Dict[str, Any]], expandable: bool 
             st.markdown(content)
 
 
-def render_synthesized_report(report: Dict[str, Any]):
+def render_synthesized_report(report: dict[str, Any]):
     """Render a synthesized report (LLM output format)."""
     if report.get("executive_summary"):
         st.subheader("📋 Executive Summary")
@@ -129,7 +130,7 @@ def render_synthesized_report(report: Dict[str, Any]):
     st.caption(report.get("disclaimer", "This is not investment advice."))
 
 
-def _render_citation(citation: Dict[str, Any], index: int):
+def _render_citation(citation: dict[str, Any], index: int):
     """Render a single citation."""
     cite_type = citation.get("type", "unknown")
     title = citation.get("title", "Untitled")
@@ -158,8 +159,8 @@ def _render_citation(citation: Dict[str, Any], index: int):
 
 
 def render_report_card(
-    report: Dict[str, Any],
-    on_click: Optional[callable] = None,
+    report: dict[str, Any],
+    on_click: callable | None = None,
 ):
     """Render a compact report card for history view."""
     with st.container(border=True):

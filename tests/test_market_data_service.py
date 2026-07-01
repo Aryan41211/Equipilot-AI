@@ -1,12 +1,11 @@
 # EquiPilot AI - Market Data Service Tests
 
-import os
 import asyncio
 import json
+import os
+from unittest.mock import MagicMock, patch
 
 import pytest
-from datetime import datetime, timezone
-from unittest.mock import patch, MagicMock
 
 
 class TestMarketDataService:
@@ -91,10 +90,10 @@ class TestMarketDataServiceExceptions:
 
     def test_exception_hierarchy(self):
         from backend.services.market_data_service import (
-            MarketDataServiceError,
-            InvalidTickerError,
-            NetworkError,
             DataUnavailableError,
+            InvalidTickerError,
+            MarketDataServiceError,
+            NetworkError,
             RateLimitError,
         )
 
@@ -137,7 +136,7 @@ class TestMarketDataServiceLogic:
 
     @pytest.mark.asyncio
     async def test_empty_ticker_raises_invalid_ticker_error(self):
-        from backend.services.market_data_service import MarketDataService, InvalidTickerError
+        from backend.services.market_data_service import InvalidTickerError, MarketDataService
 
         service = MarketDataService()
 
@@ -146,7 +145,7 @@ class TestMarketDataServiceLogic:
 
     @pytest.mark.asyncio
     async def test_whitespace_ticker_raises_invalid_ticker_error(self):
-        from backend.services.market_data_service import MarketDataService, InvalidTickerError
+        from backend.services.market_data_service import InvalidTickerError, MarketDataService
 
         service = MarketDataService()
 
@@ -155,8 +154,8 @@ class TestMarketDataServiceLogic:
 
     @pytest.mark.asyncio
     async def test_ticker_normalization(self):
-        from backend.services.market_data_service import MarketDataService
         from backend.schemas.market_data_schema import MarketDataResponse
+        from backend.services.market_data_service import MarketDataService
 
         service = MarketDataService()
 
@@ -174,8 +173,8 @@ class TestMarketDataServiceLogic:
 
     @pytest.mark.asyncio
     async def test_cache_hit_returns_cached_data(self):
-        from backend.services.market_data_service import MarketDataService
         from backend.schemas.market_data_schema import MarketDataResponse
+        from backend.services.market_data_service import MarketDataService
 
         service = MarketDataService()
 
@@ -193,8 +192,8 @@ class TestMarketDataServiceLogic:
 
     @pytest.mark.asyncio
     async def test_cache_expiry_triggers_refetch(self):
-        from backend.services.market_data_service import MarketDataService
         from backend.schemas.market_data_schema import MarketDataResponse
+        from backend.services.market_data_service import MarketDataService
 
         service = MarketDataService()
         service._cache_ttl_seconds = 1  # Very short TTL

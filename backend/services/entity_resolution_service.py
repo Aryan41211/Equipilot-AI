@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
 from backend.exceptions.entity_resolution_exceptions import (
     AmbiguousEntityError,
     EntityNotFoundError,
     EntityValidationError,
 )
 from backend.schemas.entity_resolution import (
-    EntityResolution,
     EntityResolutionResponse,
     EntityType,
 )
@@ -16,7 +14,7 @@ from backend.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-_ENTITY_REGISTRY: Dict[str, Dict] = {
+_ENTITY_REGISTRY: dict[str, dict] = {
     "RELIANCE.NS": {
         "name": "Reliance Industries",
         "exchange": "NSE",
@@ -73,7 +71,7 @@ _ENTITY_REGISTRY: Dict[str, Dict] = {
     },
 }
 
-_ALIAS_INDEX: Dict[str, str] = {}
+_ALIAS_INDEX: dict[str, str] = {}
 for ticker, data in _ENTITY_REGISTRY.items():
     for alias in data["aliases"]:
         _ALIAS_INDEX[alias.lower()] = ticker
@@ -89,7 +87,7 @@ class EntityResolutionService:
     async def resolve(
         self,
         text: str,
-        ticker: Optional[str] = None,
+        ticker: str | None = None,
     ) -> EntityResolutionResponse:
         """
         Resolve natural-language financial entity to canonical ticker.
@@ -117,11 +115,9 @@ class EntityResolutionService:
             if reg_data["name"].upper() == text_upper:
                 return self._build_response(reg_ticker, reg_data, text)
 
-        matches: List[Tuple[str, Dict]] = []
+        matches: list[tuple[str, dict]] = []
         for reg_ticker, reg_data in self._registry.items():
-            if reg_ticker.upper() in text_upper:
-                matches.append((reg_ticker, reg_data))
-            elif reg_data["name"].upper() in text_upper:
+            if reg_ticker.upper() in text_upper or reg_data["name"].upper() in text_upper:
                 matches.append((reg_ticker, reg_data))
 
         for alias, reg_ticker in self._alias_index.items():
@@ -149,7 +145,7 @@ class EntityResolutionService:
     def _build_response(
         self,
         ticker: str,
-        data: Dict,
+        data: dict,
         original_text: str,
     ) -> EntityResolutionResponse:
         """Build structured resolution response."""
@@ -167,8 +163,8 @@ class EntityResolutionService:
         self,
         ticker: str,
         name: str,
-        exchange: Optional[str] = None,
-        aliases: Optional[List[str]] = None,
+        exchange: str | None = None,
+        aliases: list[str] | None = None,
         entity_type: EntityType = EntityType.PUBLIC_COMPANY,
     ) -> None:
         """
@@ -189,7 +185,7 @@ class EntityResolutionService:
 def entity_error_details(
     *,
     message: str,
-    entity: Optional[str] = None,
+    entity: str | None = None,
 ) -> str:
     """Helper to create consistent error messages."""
     if entity:

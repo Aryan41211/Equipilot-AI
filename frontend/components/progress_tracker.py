@@ -1,10 +1,11 @@
 # EquiPilot AI - Progress Tracker Component
 # Real-time research progress display
 
-import streamlit as st
 import time
-from typing import Optional, Dict, Any, Callable
+from collections.abc import Callable
+from typing import Any
 
+import streamlit as st
 
 RESEARCH_STEPS = [
     ("router", "Entity Resolution", "🎯"),
@@ -64,7 +65,7 @@ def _render_step_progress(current_step: str):
     step_index = _get_step_index(current_step)
 
     cols = st.columns(len(RESEARCH_STEPS))
-    for i, (step_id, step_name, icon) in enumerate(RESEARCH_STEPS):
+    for i, (_step_id, step_name, icon) in enumerate(RESEARCH_STEPS):
         with cols[i]:
             if i < step_index:
                 st.markdown(f"""
@@ -98,12 +99,12 @@ def _get_step_index(step_id: str) -> int:
 
 
 def render_polling_progress(
-    check_status_fn: Callable[[str], Optional[Dict[str, Any]]],
+    check_status_fn: Callable[[str], dict[str, Any] | None],
     request_id: str,
     poll_interval: float = 2.0,
     max_polls: int = 60,
-    on_complete: Optional[Callable[[Dict[str, Any]], None]] = None,
-    on_error: Optional[Callable[[str], None]] = None,
+    on_complete: Callable[[dict[str, Any]], None] | None = None,
+    on_error: Callable[[str], None] | None = None,
 ):
     """
     Render auto-polling progress tracker.

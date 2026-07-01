@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 
 class SentimentError(Exception):
     """Base class for Sentiment analysis related errors."""
@@ -26,7 +24,7 @@ class SentimentValidationError(SentimentError):
 def sentiment_error_details(
     *,
     message: str,
-    provider: Optional[str] = None,
+    provider: str | None = None,
 ) -> str:
     """Helper to create consistent error messages."""
     if provider:

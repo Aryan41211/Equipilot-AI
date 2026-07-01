@@ -1,14 +1,15 @@
 # EquiPilot AI - Entity Resolution Tool
 # Tool for resolving natural-language financial entities to canonical tickers
 
-from typing import Dict, Any
-from backend.services.entity_resolution_service import (
-    entity_resolution_service,
-)
+from typing import Any
+
 from backend.exceptions.entity_resolution_exceptions import (
     AmbiguousEntityError,
     EntityNotFoundError,
     EntityValidationError,
+)
+from backend.services.entity_resolution_service import (
+    entity_resolution_service,
 )
 from backend.utils.logger import get_logger
 
@@ -19,7 +20,7 @@ class EntityResolutionTool:
     """Tool for resolving financial entities in natural language queries."""
 
     @staticmethod
-    async def resolve_entity(text: str) -> Dict[str, Any]:
+    async def resolve_entity(text: str) -> dict[str, Any]:
         """
         Resolve natural-language financial entity to canonical ticker.
 
@@ -59,11 +60,11 @@ class EntityResolutionTool:
             logger.error("Unexpected entity resolution error", text=text, error=str(e))
             return {
                 "ticker": None,
-                "error": f"Unexpected error: {str(e)}",
+                "error": f"Unexpected error: {e!s}",
                 "error_type": "unexpected_error",
             }
 
 
-async def resolve_entity(text: str) -> Dict[str, Any]:
+async def resolve_entity(text: str) -> dict[str, Any]:
     """Resolve natural-language financial entity to canonical ticker."""
     return await EntityResolutionTool.resolve_entity(text)

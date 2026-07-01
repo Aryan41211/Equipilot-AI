@@ -2,7 +2,9 @@
 # Structured logging configuration
 
 import sys
+
 import structlog
+
 from backend.config import settings
 
 

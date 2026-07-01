@@ -3,14 +3,13 @@
 
 import time
 from collections import defaultdict
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import FastAPI, Request, Response
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from backend.config import settings
 from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)

@@ -3,15 +3,15 @@ from __future__ import annotations
 import uuid
 from typing import Literal
 
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import END, StateGraph
 
 from backend.graphs.nodes import (
-    router_node,
     market_data_tool_node,
-    news_tool_node,
-    sentiment_tool_node,
     merge_results_node,
+    news_tool_node,
     research_node,
+    router_node,
+    sentiment_tool_node,
 )
 from backend.graphs.state import GraphState, _get_timestamp
 

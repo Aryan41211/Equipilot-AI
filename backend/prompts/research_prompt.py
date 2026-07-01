@@ -1,5 +1,3 @@
-from datetime import datetime
-from typing import Any, Dict, List, Optional
 
 from backend.schemas.market_data import MarketData
 from backend.schemas.news import NewsArticle
@@ -59,12 +57,12 @@ Focus on answering the research query with actionable insights.
 """
 
 
-def build_market_data_summary(market_data: Dict[str, MarketData]) -> str:
+def build_market_data_summary(market_data: dict[str, MarketData]) -> str:
     """Build market data section for the prompt."""
     if not market_data:
         return "No market data available."
 
-    lines: List[str] = []
+    lines: list[str] = []
     for ticker, data in market_data.items():
         lines.append(f"\n### {ticker} ({data.company_name or 'N/A'})")
         if data.current_price is not None:
@@ -83,12 +81,12 @@ def build_market_data_summary(market_data: Dict[str, MarketData]) -> str:
     return "\n".join(lines)
 
 
-def build_news_summary(news_articles: List[NewsArticle]) -> str:
+def build_news_summary(news_articles: list[NewsArticle]) -> str:
     """Build news section for the prompt."""
     if not news_articles:
         return "No news articles available."
 
-    lines: List[str] = []
+    lines: list[str] = []
     for article in news_articles[:10]:
         lines.append(f"\n- **{article.title}** ({article.source}, {article.published_at.strftime('%Y-%m-%d')})")
         if article.description:
@@ -97,12 +95,12 @@ def build_news_summary(news_articles: List[NewsArticle]) -> str:
     return "\n".join(lines)
 
 
-def build_sentiment_summary(sentiment_analysis: Optional[SentimentAnalysis]) -> str:
+def build_sentiment_summary(sentiment_analysis: SentimentAnalysis | None) -> str:
     """Build sentiment section for the prompt."""
     if not sentiment_analysis:
         return "No sentiment analysis available."
 
-    lines: List[str] = []
+    lines: list[str] = []
     sent = sentiment_analysis.overall_sentiment
     lines.append(f"\nOverall Sentiment: {sent.label} (score: {sent.score:.2f}, confidence: {sent.confidence:.2f})")
     lines.append(f"Reasoning: {sentiment_analysis.reasoning}")
@@ -116,10 +114,10 @@ def build_sentiment_summary(sentiment_analysis: Optional[SentimentAnalysis]) -> 
 
 def build_report_prompt(
     query: str,
-    tickers: List[str],
-    market_data: Dict[str, MarketData],
-    news_articles: List[NewsArticle],
-    sentiment_analysis: Optional[SentimentAnalysis],
+    tickers: list[str],
+    market_data: dict[str, MarketData],
+    news_articles: list[NewsArticle],
+    sentiment_analysis: SentimentAnalysis | None,
     max_length: int = 5000,
 ) -> str:
     """Build the complete research report prompt."""

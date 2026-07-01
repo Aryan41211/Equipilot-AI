@@ -2,16 +2,17 @@
 # Wrapper around yfinance for market data retrieval
 
 import asyncio
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
-import yfinance as yf
+from datetime import datetime
+from typing import Any
+
 import pandas as pd
+import yfinance as yf
 
 from backend.config import settings
 from backend.schemas.market_data import (
+    FundamentalsData,
     MarketData,
     PriceData,
-    FundamentalsData,
     TechnicalIndicators,
 )
 from backend.utils.logger import get_logger
@@ -23,15 +24,15 @@ class MarketService:
     """Service for fetching and processing market data from yfinance."""
 
     def __init__(self):
-        self.cache: Dict[str, Any] = {}
+        self.cache: dict[str, Any] = {}
         self.cache_ttl = settings.yfinance_cache_ttl
 
     async def get_market_data(
         self,
-        tickers: List[str],
+        tickers: list[str],
         period: str = "1y",
         interval: str = "1d",
-    ) -> Dict[str, MarketData]:
+    ) -> dict[str, MarketData]:
         """
         Fetch comprehensive market data for multiple tickers.
 
@@ -120,7 +121,7 @@ class MarketService:
 
         return market_data
 
-    def _parse_price_history(self, history: pd.DataFrame) -> List[PriceData]:
+    def _parse_price_history(self, history: pd.DataFrame) -> list[PriceData]:
         """Convert yfinance history DataFrame to PriceData list."""
         if history.empty:
             return []
@@ -140,7 +141,7 @@ class MarketService:
             )
         return price_data
 
-    def _parse_fundamentals(self, info: Dict[str, Any]) -> Optional[FundamentalsData]:
+    def _parse_fundamentals(self, info: dict[str, Any]) -> FundamentalsData | None:
         """Extract fundamental data from yfinance info."""
         if not info:
             return None
@@ -171,7 +172,7 @@ class MarketService:
             last_updated=datetime.utcnow(),
         )
 
-    def _calculate_technicals(self, history: pd.DataFrame) -> Optional[TechnicalIndicators]:
+    def _calculate_technicals(self, history: pd.DataFrame) -> TechnicalIndicators | None:
         """Calculate technical indicators from price history."""
         if history.empty or len(history) < 20:
             return None
@@ -220,7 +221,7 @@ class MarketService:
             volume_sma_20=float(volume.rolling(20).mean().iloc[-1]) if len(volume) >= 20 else None,
         )
 
-    async def get_fundamentals(self, tickers: List[str]) -> Dict[str, FundamentalsData]:
+    async def get_fundamentals(self, tickers: list[str]) -> dict[str, FundamentalsData]:
         """Fetch only fundamental data for tickers."""
         results = {}
         for ticker in tickers:
@@ -234,7 +235,7 @@ class MarketService:
                 results[ticker] = None
         return results
 
-    async def search_tickers(self, query: str) -> List[Dict[str, str]]:
+    async def search_tickers(self, query: str) -> list[dict[str, str]]:
         """Search for tickers matching a query."""
         # TODO: Implement ticker search (yfinance doesn't have built-in search)
         # Could use Yahoo Finance search API or maintain a local ticker database

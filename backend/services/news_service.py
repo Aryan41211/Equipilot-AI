@@ -1,13 +1,12 @@
 # EquiPilot AI - News Service
 # Wrapper for financial news API integration
 
-import asyncio
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
+
 import httpx
 
 from backend.config import settings
-from backend.schemas.news import NewsArticle, NewsResponse, NewsSearchParams
+from backend.schemas.news import NewsArticle, NewsResponse
 from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -27,9 +26,9 @@ class NewsService:
 
     async def fetch_news(
         self,
-        tickers: List[str],
-        date_from: Optional[datetime] = None,
-        date_to: Optional[datetime] = None,
+        tickers: list[str],
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
         limit: int = 20,
     ) -> NewsResponse:
         """
@@ -104,7 +103,7 @@ class NewsService:
     async def _fetch_newsapi(
         self,
         query: str,
-        tickers: List[str],
+        tickers: list[str],
         date_from: datetime,
         date_to: datetime,
         limit: int,
@@ -158,7 +157,7 @@ class NewsService:
     async def _fetch_alphavantage(
         self,
         query: str,
-        tickers: List[str],
+        tickers: list[str],
         date_from: datetime,
         date_to: datetime,
         limit: int,
@@ -212,7 +211,7 @@ class NewsService:
     async def _fetch_finnhub(
         self,
         query: str,
-        tickers: List[str],
+        tickers: list[str],
         date_from: datetime,
         date_to: datetime,
         limit: int,

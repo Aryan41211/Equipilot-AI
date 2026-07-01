@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -23,7 +23,7 @@ def _news_article(*, title: str, url: str = "https://example.com/1") -> NewsArti
         url=str(url),
         source="example",
         author=None,
-        published_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        published_at=datetime(2024, 1, 1, tzinfo=UTC),
     )
 
 

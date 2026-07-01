@@ -1,17 +1,16 @@
 from __future__ import annotations
 
 import pytest
-from backend.services.entity_resolution_service import (
-    EntityResolutionService,
-    entity_error_details,
-    entity_resolution_service,
-)
+
 from backend.exceptions.entity_resolution_exceptions import (
     AmbiguousEntityError,
     EntityNotFoundError,
     EntityValidationError,
 )
 from backend.schemas.entity_resolution import EntityType
+from backend.services.entity_resolution_service import (
+    EntityResolutionService,
+)
 
 
 class TestEntityResolutionServiceExactMatch:

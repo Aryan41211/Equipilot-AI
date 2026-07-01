@@ -2,22 +2,20 @@
 # Centralized exception hierarchy for the application
 
 from backend.exceptions.entity_resolution_exceptions import (
-    EntityResolutionError,
-    EntityNotFoundError,
     AmbiguousEntityError,
+    EntityNotFoundError,
+    EntityResolutionError,
     EntityValidationError,
     entity_error_details,
 )
-
 from backend.exceptions.sentiment_exceptions import (
     SentimentError,
-    SentimentTimeoutError,
-    SentimentProviderError,
     SentimentMalformedResponseError,
+    SentimentProviderError,
+    SentimentTimeoutError,
     SentimentValidationError,
     sentiment_error_details,
 )
-
 from backend.exceptions.synthesis_exceptions import (
     SynthesisError,
     SynthesisTimeoutError,

@@ -2,9 +2,9 @@
 # News retrieval agent
 
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+
+from backend.schemas.news import NewsResponse
 from backend.services.news_service import news_service
-from backend.schemas.news import NewsArticle, NewsResponse
 from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -18,9 +18,9 @@ class NewsAgent:
 
     async def fetch(
         self,
-        tickers: List[str],
-        date_from: Optional[datetime] = None,
-        date_to: Optional[datetime] = None,
+        tickers: list[str],
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
         limit: int = 20,
     ) -> NewsResponse:
         """

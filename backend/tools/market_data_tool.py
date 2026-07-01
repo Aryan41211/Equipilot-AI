@@ -1,16 +1,16 @@
 # EquiPilot AI - Market Data Tool
 # Standalone tool for fetching stock information
 
-from typing import Dict, Any
+from typing import Any
+
 from backend.services.market_data_service import (
-    market_data_service,
-    InvalidTickerError,
-    NetworkError,
     DataUnavailableError,
-    RateLimitError,
+    InvalidTickerError,
     MarketDataServiceError,
+    NetworkError,
+    RateLimitError,
+    market_data_service,
 )
-from backend.schemas.market_data_schema import MarketDataResponse
 from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -20,7 +20,7 @@ class MarketDataTool:
     """Tool for fetching stock market data."""
 
     @staticmethod
-    async def fetch_market_data(ticker: str) -> Dict[str, Any]:
+    async def fetch_market_data(ticker: str) -> dict[str, Any]:
         """
         Fetch market data for a single ticker symbol.
 
@@ -56,10 +56,10 @@ class MarketDataTool:
             return {"error": str(e), "ticker": ticker, "error_type": "service_error"}
         except Exception as e:
             logger.error("Unexpected market data fetch error", ticker=ticker, error=str(e))
-            return {"error": f"Unexpected error: {str(e)}", "ticker": ticker, "error_type": "unexpected_error"}
+            return {"error": f"Unexpected error: {e!s}", "ticker": ticker, "error_type": "unexpected_error"}
 
 
 # Convenience function for direct import
-async def fetch_market_data(ticker: str) -> Dict[str, Any]:
+async def fetch_market_data(ticker: str) -> dict[str, Any]:
     """Fetch market data for a ticker symbol."""
     return await MarketDataTool.fetch_market_data(ticker)

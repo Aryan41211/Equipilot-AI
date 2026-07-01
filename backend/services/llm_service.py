@@ -1,9 +1,9 @@
 # EquiPilot AI - LLM Service
 # Wrapper for OpenAI API integration
 
-import asyncio
 import json
-from typing import Dict, List, Any, Optional, AsyncGenerator
+from typing import Any
+
 from openai import AsyncOpenAI
 
 from backend.config import settings
@@ -32,11 +32,11 @@ class LLMService:
 
     async def chat_completion(
         self,
-        messages: List[Dict[str, str]],
-        model: Optional[str] = None,
+        messages: list[dict[str, str]],
+        model: str | None = None,
         temperature: float = 0.3,
-        max_tokens: Optional[int] = None,
-        response_format: Optional[Dict[str, str]] = None,
+        max_tokens: int | None = None,
+        response_format: dict[str, str] | None = None,
         stream: bool = False,
     ) -> Any:
         """
@@ -78,10 +78,10 @@ class LLMService:
         self,
         system_prompt: str,
         user_prompt: str,
-        schema: Dict[str, Any],
-        model: Optional[str] = None,
+        schema: dict[str, Any],
+        model: str | None = None,
         temperature: float = 0.1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate structured JSON completion following a schema.
 
@@ -121,8 +121,8 @@ class LLMService:
     async def classify_query(
         self,
         query: str,
-        categories: List[str],
-    ) -> Dict[str, Any]:
+        categories: list[str],
+    ) -> dict[str, Any]:
         """Classify a query into categories."""
         schema = {
             "type": "object",
@@ -150,7 +150,7 @@ class LLMService:
             temperature=0.1,
         )
 
-    async def extract_tickers(self, query: str) -> List[str]:
+    async def extract_tickers(self, query: str) -> list[str]:
         """Extract stock tickers from a query."""
         schema = {
             "type": "object",
@@ -177,8 +177,8 @@ class LLMService:
     async def analyze_sentiment(
         self,
         text: str,
-        tickers: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        tickers: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Analyze sentiment of financial text."""
         schema = {
             "type": "object",
@@ -241,7 +241,7 @@ class LLMService:
     async def generate_report(
         self,
         prompt: str,
-        schema: Optional[Dict[str, Any]] = None,
+        schema: dict[str, Any] | None = None,
     ) -> str:
         """Generate a research report."""
         messages = [

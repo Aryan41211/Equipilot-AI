@@ -1,25 +1,22 @@
 # EquiPilot AI - FastAPI Application Entry Point
 # Main backend application with routing, middleware, and lifecycle management
 
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 import uuid
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import structlog
 
 from backend.config import settings
-from backend.schemas.research import ResearchRequest, ResearchResponse, ResearchStatus
+from backend.exceptions.handlers import register_exception_handlers
 from backend.graphs.graph import create_first_graph
 from backend.middleware.production import (
-    SecurityHeadersMiddleware,
-    MetricsMiddleware,
     add_production_middleware,
     metrics,
 )
-from backend.exceptions.handlers import register_exception_handlers
+from backend.schemas.research import ResearchRequest, ResearchResponse, ResearchStatus
 from backend.utils.logger import get_logger, setup_logging
 
 # Application version
@@ -49,7 +46,7 @@ async def validate_environment() -> list:
         for warning in warnings:
             logger.warning("Configuration warning", detail=warning)
     except Exception as e:
-        errors.append(f"Configuration validation: {str(e)}")
+        errors.append(f"Configuration validation: {e!s}")
         logger.error("Configuration validation failed", error=str(e))
 
     # Validate critical environment variables
@@ -86,7 +83,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     try:
         startup_errors.extend(await validate_environment())
     except Exception as e:
-        startup_errors.append(f"Environment validation: {str(e)}")
+        startup_errors.append(f"Environment validation: {e!s}")
 
     # Initialize LangGraph research workflow
     try:
@@ -94,7 +91,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info("Research graph initialized successfully")
     except Exception as e:
         logger.error("Failed to initialize research graph", error=str(e))
-        startup_errors.append(f"Graph initialization: {str(e)}")
+        startup_errors.append(f"Graph initialization: {e!s}")
 
     if startup_errors:
         logger.error("Startup completed with errors", errors=startup_errors)

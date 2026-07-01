@@ -2,7 +2,7 @@
 # Centralized configuration management using Pydantic Settings
 
 from functools import lru_cache
-from typing import List, Optional
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -132,7 +132,7 @@ class Settings(BaseSettings):
         default="/api/v1",
         description="API route prefix",
     )
-    cors_origins: List[str] = Field(
+    cors_origins: list[str] = Field(
         default=["http://localhost:8501", "http://localhost:3000"],
         description="Allowed CORS origins",
     )
@@ -184,7 +184,7 @@ class Settings(BaseSettings):
         default="",
         description="Secret key for session signing and encryption",
     )
-    allowed_hosts: List[str] = Field(
+    allowed_hosts: list[str] = Field(
         default=["*"],
         description="Allowed hostnames for the application",
     )
@@ -269,7 +269,7 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------------
     # Validation Methods
     # -------------------------------------------------------------------------
-    def validate_required_settings(self) -> List[str]:
+    def validate_required_settings(self) -> list[str]:
         """Validate required settings for production. Returns list of missing config warnings."""
         warnings = []
 
@@ -287,7 +287,7 @@ class Settings(BaseSettings):
 
         return warnings
 
-    def validate_environment_variables(self) -> List[str]:
+    def validate_environment_variables(self) -> list[str]:
         """Validate that all required environment variables are set for the current environment.
 
         Returns:

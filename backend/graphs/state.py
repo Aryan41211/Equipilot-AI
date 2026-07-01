@@ -1,5 +1,5 @@
-from typing import TypedDict, List, Dict, Any, Optional
 from datetime import datetime
+from typing import Any, TypedDict
 
 
 def _get_timestamp() -> str:
@@ -10,10 +10,10 @@ class ExecutionTrace(TypedDict):
     """Structured execution trace for a single node."""
     node_name: str
     start_time: str
-    end_time: Optional[str]
-    duration_ms: Optional[float]
+    end_time: str | None
+    duration_ms: float | None
     success: bool
-    error: Optional[str]
+    error: str | None
 
 
 # NOTE: `langgraph.StateGraph` treats TypedDict keys as *channels/state keys*.
@@ -25,35 +25,35 @@ class GraphState(TypedDict):
 
     # Input
     user_query: str
-    ticker: Optional[str]
+    ticker: str | None
 
     # Request metadata
     request_id: str
     started_at: str
-    completed_at: Optional[str]
-    execution_duration_ms: Optional[float]
+    completed_at: str | None
+    execution_duration_ms: float | None
 
     # Routing
     detected_intent: str  # fundamentals | news | sentiment | full_research | market_overview
-    selected_tools: List[str]
-    skipped_tools: List[str]
-    completed_tools: List[str]
-    failed_tools: List[str]
+    selected_tools: list[str]
+    skipped_tools: list[str]
+    completed_tools: list[str]
+    failed_tools: list[str]
 
     # Tool outputs
-    market_data: Dict[str, Any]
-    news: Dict[str, Any]
-    sentiment: Dict[str, Any]
+    market_data: dict[str, Any]
+    news: dict[str, Any]
+    sentiment: dict[str, Any]
 
     # Placeholder research output
     report: str
 
     # Error tracking
-    errors: List[str]
+    errors: list[str]
 
     # Execution metadata (node/tool tracking, timings, success flags)
-    execution_metadata: Dict[str, Any]
+    execution_metadata: dict[str, Any]
 
     # Execution
     status: str  # pending | success | failed
-    executed_nodes: List[str]
+    executed_nodes: list[str]

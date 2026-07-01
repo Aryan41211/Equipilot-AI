@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from backend.graphs.state import GraphState, _get_timestamp
 from backend.tools.market_data_tool import fetch_market_data
@@ -36,7 +36,7 @@ _MARKET_OVERVIEW_KEYWORDS = {
 }
 
 
-def _ensure_execution_metadata(state: GraphState) -> Dict[str, Any]:
+def _ensure_execution_metadata(state: GraphState) -> dict[str, Any]:
     execution_metadata = dict(state.get("execution_metadata", {}) or {})
     execution_metadata.setdefault("nodes", {})
     execution_metadata.setdefault("tools", {})
@@ -85,7 +85,7 @@ def _record_tool_result(
 
 
 def _record_node_finish(
-    state: GraphState, node_name: str, *, ok: bool, error: Optional[str] = None
+    state: GraphState, node_name: str, *, ok: bool, error: str | None = None
 ) -> GraphState:
     execution_metadata = _ensure_execution_metadata(state)
     nodes = dict(execution_metadata.get("nodes", {}) or {})
@@ -222,7 +222,7 @@ def router_node(state: GraphState) -> GraphState:
         }
 
         filtered = [m for m in matches if m not in common_non_tickers]
-        ticker: Optional[str] = filtered[-1] if filtered else None
+        ticker: str | None = filtered[-1] if filtered else None
 
         executed_nodes = list(state.get("executed_nodes", []))
         if "router" not in executed_nodes:
@@ -261,7 +261,7 @@ def router_node(state: GraphState) -> GraphState:
         executed_nodes = list(state.get("executed_nodes", []))
         if "router" not in executed_nodes:
             executed_nodes.append("router")
-        state = _append_error(state, f"Router error: {str(e)}")
+        state = _append_error(state, f"Router error: {e!s}")
         state = {**state, "status": "failed", "executed_nodes": executed_nodes}
         state = _record_node_finish(state, "router", ok=False, error=str(e))
         return state
@@ -337,7 +337,7 @@ async def market_data_tool_node(state: GraphState) -> GraphState:
             finished_at=finished_at,
             result={"error": str(e)},
         )
-        state = _append_error(state, f"Market Data Tool exception: {str(e)}")
+        state = _append_error(state, f"Market Data Tool exception: {e!s}")
         completed_tools = list(state.get("completed_tools", []))
         failed_tools = list(state.get("failed_tools", []))
         if "market_data_tool" not in failed_tools:
@@ -417,7 +417,7 @@ async def news_tool_node(state: GraphState) -> GraphState:
             finished_at=finished_at,
             result={"error": str(e)},
         )
-        state = _append_error(state, f"News Tool exception: {str(e)}")
+        state = _append_error(state, f"News Tool exception: {e!s}")
         completed_tools = list(state.get("completed_tools", []))
         failed_tools = list(state.get("failed_tools", []))
         if "news_tool" not in failed_tools:
@@ -485,7 +485,7 @@ async def sentiment_tool_node(state: GraphState) -> GraphState:
             finished_at=finished_at,
             result={"error": str(e)},
         )
-        state = _append_error(state, f"Sentiment Tool exception: {str(e)}")
+        state = _append_error(state, f"Sentiment Tool exception: {e!s}")
         completed_tools = list(state.get("completed_tools", []))
         failed_tools = list(state.get("failed_tools", []))
         if "sentiment_tool" not in failed_tools:

@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import AsyncMock, patch
 
-from backend.tools.entity_resolution_tool import resolve_entity, EntityResolutionTool
-from backend.schemas.entity_resolution import EntityType
+from backend.tools.entity_resolution_tool import EntityResolutionTool, resolve_entity
 
 
 @pytest.mark.asyncio

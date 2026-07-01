@@ -2,8 +2,10 @@
 # LangGraph tool wrapper for news API
 
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 from langchain_core.tools import tool
+
 from backend.services.news_service import news_service
 from backend.utils.logger import get_logger
 
@@ -15,11 +17,11 @@ class NewsTool:
 
     @tool
     async def fetch_news(
-        tickers: List[str],
-        date_from: Optional[str] = None,
-        date_to: Optional[str] = None,
+        self: list[str],
+        date_from: str | None = None,
+        date_to: str | None = None,
         limit: int = 20,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Fetch news articles for given tickers.
 
@@ -32,14 +34,14 @@ class NewsTool:
         Returns:
             Dictionary with articles and metadata
         """
-        logger.info("Tool: fetch_news", tickers=tickers, limit=limit)
+        logger.info("Tool: fetch_news", tickers=self, limit=limit)
 
         try:
             # Parse dates
             dt_from = datetime.fromisoformat(date_from) if date_from else None
             dt_to = datetime.fromisoformat(date_to) if date_to else None
 
-            response = await news_service.fetch_news(tickers, dt_from, dt_to, limit)
+            response = await news_service.fetch_news(self, dt_from, dt_to, limit)
 
             return {
                 "query": response.query,
@@ -70,9 +72,9 @@ class NewsTool:
 
     @tool
     async def fetch_market_news(
-        category: str = "general",
+        self: str = "general",
         limit: int = 20,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Fetch general market news.
 
@@ -83,10 +85,10 @@ class NewsTool:
         Returns:
             Dictionary with market news articles
         """
-        logger.info("Tool: fetch_market_news", category=category)
+        logger.info("Tool: fetch_market_news", category=self)
 
         try:
-            response = await news_service.get_market_news(category, limit)
+            response = await news_service.get_market_news(self, limit)
 
             return {
                 "query": response.query,

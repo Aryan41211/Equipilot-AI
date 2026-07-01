@@ -1,16 +1,17 @@
 # EquiPilot AI - Query Form Component
 # Reusable research query input form
 
+from typing import Any
+
 import streamlit as st
-from typing import Optional, List, Dict, Any
 
 
 def render_query_form(
     key: str = "query_form",
     default_query: str = "",
-    default_tickers: Optional[List[str]] = None,
-    on_submit: Optional[callable] = None,
-) -> Optional[Dict[str, Any]]:
+    default_tickers: list[str] | None = None,
+    on_submit: callable | None = None,
+) -> dict[str, Any] | None:
     """
     Render a research query form.
 
@@ -86,7 +87,7 @@ def render_query_form(
     return None
 
 
-def render_quick_stats(tickers: List[str], status: str, execution_time: Optional[float] = None):
+def render_quick_stats(tickers: list[str], status: str, execution_time: float | None = None):
     """Render quick statistics for a research request."""
     col1, col2, col3 = st.columns(3)
     with col1:

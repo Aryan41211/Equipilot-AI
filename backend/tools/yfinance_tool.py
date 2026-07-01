@@ -1,8 +1,10 @@
 # EquiPilot AI - yfinance Tool
 # LangGraph tool wrapper for yfinance market data
 
-from typing import Dict, List, Any, Optional
+from typing import Any
+
 from langchain_core.tools import tool
+
 from backend.services.market_service import market_service
 from backend.utils.logger import get_logger
 
@@ -14,11 +16,11 @@ class YFinanceTool:
 
     @tool
     async def get_market_data(
-        tickers: List[str],
+        self: list[str],
         period: str = "1y",
         include_fundamentals: bool = True,
         include_technicals: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Fetch market data for given tickers.
 
@@ -31,10 +33,10 @@ class YFinanceTool:
         Returns:
             Dictionary with market data for each ticker
         """
-        logger.info("Tool: get_market_data", tickers=tickers)
+        logger.info("Tool: get_market_data", tickers=self)
 
         try:
-            data = await market_service.get_market_data(tickers, period)
+            data = await market_service.get_market_data(self, period)
 
             # Convert to serializable format
             result = {}
@@ -62,7 +64,7 @@ class YFinanceTool:
             return {"error": str(e)}
 
     @tool
-    async def get_fundamentals(tickers: List[str]) -> Dict[str, Any]:
+    async def get_fundamentals(self: list[str]) -> dict[str, Any]:
         """
         Fetch fundamental data for tickers.
 
@@ -72,10 +74,10 @@ class YFinanceTool:
         Returns:
             Dictionary with fundamental data for each ticker
         """
-        logger.info("Tool: get_fundamentals", tickers=tickers)
+        logger.info("Tool: get_fundamentals", tickers=self)
 
         try:
-            data = await market_service.get_fundamentals(tickers)
+            data = await market_service.get_fundamentals(self)
             result = {}
             for ticker, fund in data.items():
                 result[ticker] = fund.model_dump() if fund else None

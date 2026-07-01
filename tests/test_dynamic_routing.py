@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import sys
 import os
-from unittest.mock import patch, AsyncMock
+import sys
+from unittest.mock import AsyncMock, patch
 
 import pytest
 

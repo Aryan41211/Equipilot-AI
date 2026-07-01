@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import sys
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from backend.agents.synthesis_agent import SynthesisAgent
 from backend.exceptions.synthesis_exceptions import (
-    SynthesisMalformedResponseError,
     SynthesisProviderError,
     SynthesisTimeoutError,
     SynthesisValidationError,
@@ -21,7 +19,7 @@ from backend.schemas.research_report import SynthesizedReport
 from backend.schemas.sentiment import SentimentAnalysis, SentimentScore
 
 
-def _base_market_data() -> Dict[str, MarketData]:
+def _base_market_data() -> dict[str, MarketData]:
     from backend.schemas.market_data import FundamentalsData
     return {
         "AAPL": MarketData(
@@ -38,7 +36,7 @@ def _base_market_data() -> Dict[str, MarketData]:
     }
 
 
-def _base_news() -> List[NewsArticle]:
+def _base_news() -> list[NewsArticle]:
     return [
         NewsArticle(
             title="Apple beats Q4 earnings",
@@ -60,7 +58,7 @@ def _base_sentiment() -> SentimentAnalysis:
     )
 
 
-def _mock_llm_response() -> Dict[str, Any]:
+def _mock_llm_response() -> dict[str, Any]:
     return {
         "company": "Apple Inc.",
         "ticker": "AAPL",
@@ -80,7 +78,7 @@ def _mock_llm_response() -> Dict[str, Any]:
     }
 
 
-def _mock_llm_response_limited() -> Dict[str, Any]:
+def _mock_llm_response_limited() -> dict[str, Any]:
     return {
         "company": "Apple Inc.",
         "ticker": "AAPL",

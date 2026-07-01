@@ -3,7 +3,6 @@
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 
 def generate_request_id() -> str:
@@ -11,7 +10,7 @@ def generate_request_id() -> str:
     return f"req_{uuid.uuid4().hex[:12]}"
 
 
-def format_currency(value: Optional[float], currency: str = "USD") -> str:
+def format_currency(value: float | None, currency: str = "USD") -> str:
     """Format a number as currency."""
     if value is None:
         return "N/A"
@@ -31,14 +30,14 @@ def format_currency(value: Optional[float], currency: str = "USD") -> str:
     return f"{value:,.2f} {currency}"
 
 
-def format_percentage(value: Optional[float], decimals: int = 2) -> str:
+def format_percentage(value: float | None, decimals: int = 2) -> str:
     """Format a number as percentage."""
     if value is None:
         return "N/A"
     return f"{value:.{decimals}f}%"
 
 
-def format_large_number(value: Optional[float]) -> str:
+def format_large_number(value: float | None) -> str:
     """Format large numbers with K/M/B/T suffixes."""
     if value is None:
         return "N/A"
@@ -68,7 +67,7 @@ def parse_ticker_input(text: str) -> list:
     return [t.strip().upper() for t in text.split(",") if t.strip()]
 
 
-def calculate_processing_time(start: datetime, end: Optional[datetime] = None) -> float:
+def calculate_processing_time(start: datetime, end: datetime | None = None) -> float:
     """Calculate processing time in seconds."""
     if end is None:
         end = datetime.utcnow()

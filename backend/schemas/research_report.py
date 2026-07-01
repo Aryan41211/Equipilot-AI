@@ -1,21 +1,20 @@
 from datetime import datetime
-from typing import List, Optional
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SynthesizedReport(BaseModel):
     """Structured output from the synthesis agent."""
 
-    company: Optional[str] = Field(default=None, description="Primary company name")
+    company: str | None = Field(default=None, description="Primary company name")
     ticker: str = Field(..., description="Primary ticker symbol")
     generated_at: datetime = Field(default_factory=datetime.utcnow)
     executive_summary: str = Field(..., description="High-level summary of findings")
-    market_snapshot: Optional[str] = Field(default=None, description="Current market position summary")
-    news_summary: Optional[str] = Field(default=None, description="Key news highlights")
-    sentiment_summary: Optional[str] = Field(default=None, description="Overall sentiment assessment")
-    key_observations: List[str] = Field(default_factory=list, description="Key findings and observations")
-    risks: List[str] = Field(default_factory=list, description="Identified risk factors")
+    market_snapshot: str | None = Field(default=None, description="Current market position summary")
+    news_summary: str | None = Field(default=None, description="Key news highlights")
+    sentiment_summary: str | None = Field(default=None, description="Overall sentiment assessment")
+    key_observations: list[str] = Field(default_factory=list, description="Key findings and observations")
+    risks: list[str] = Field(default_factory=list, description="Identified risk factors")
     confidence: float = Field(default=0.0, ge=0.0, le=1.0, description="Confidence in analysis")
     disclaimer: str = Field(
         default=(

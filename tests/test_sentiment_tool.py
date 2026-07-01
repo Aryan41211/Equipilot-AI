@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -10,7 +9,12 @@ from backend.exceptions.sentiment_exceptions import (
     SentimentProviderError,
     SentimentTimeoutError,
 )
-from backend.schemas.sentiment import SentimentAnalysis, SentimentScore, HeadlineSentiment, SentimentProcessingMetadata
+from backend.schemas.sentiment import (
+    HeadlineSentiment,
+    SentimentAnalysis,
+    SentimentProcessingMetadata,
+    SentimentScore,
+)
 from backend.tools.sentiment_tool import SentimentTool
 
 

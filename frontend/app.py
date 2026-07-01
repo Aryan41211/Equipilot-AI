@@ -4,14 +4,14 @@
 import os
 import time
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Any
 
 import requests
 import streamlit as st
 
-from frontend.components.sidebar import render_sidebar
 from frontend.components.progress_tracker import render_progress
 from frontend.components.report_display import render_report
+from frontend.components.sidebar import render_sidebar
 
 # API configuration — configurable via environment variable for production deployment
 API_BASE_URL = os.environ.get(
@@ -106,7 +106,7 @@ def render_disclaimer():
     )
 
 
-def handle_sidebar_submit(form_data: Dict[str, Any]) -> None:
+def handle_sidebar_submit(form_data: dict[str, Any]) -> None:
     """
     Thin-client callback invoked by sidebar. Starts research on backend and
     triggers polling rendering in the main page.
@@ -239,7 +239,7 @@ def map_trace_step_to_stage(step_id: str) -> str:
     return mapping.get(step_id, "Processing")
 
 
-def render_dashboard_sections(report: Dict[str, Any]) -> None:
+def render_dashboard_sections(report: dict[str, Any]) -> None:
     """
     Main page sections (required layout):
       - Market Data
@@ -279,7 +279,7 @@ def render_dashboard_sections(report: Dict[str, Any]) -> None:
         st.caption("No sentiment analysis available.")
 
 
-def _extract_execution_metadata_fields(report: Dict[str, Any]) -> Dict[str, Any]:
+def _extract_execution_metadata_fields(report: dict[str, Any]) -> dict[str, Any]:
     execution_metadata = report.get("execution_metadata", {}) or {}
     traces = execution_metadata.get("traces", []) or []
 
@@ -322,7 +322,7 @@ def _extract_execution_metadata_fields(report: Dict[str, Any]) -> Dict[str, Any]
     }
 
 
-def render_execution_trace_explicit(report: Dict[str, Any]) -> None:
+def render_execution_trace_explicit(report: dict[str, Any]) -> None:
     fields = _extract_execution_metadata_fields(report)
 
     with st.expander("🔍 Execution Trace", expanded=True):
@@ -361,7 +361,7 @@ def render_execution_trace_explicit(report: Dict[str, Any]) -> None:
             st.write("No errors")
 
 
-def render_execution_trace_explicit_partial(status_data: Dict[str, Any]) -> None:
+def render_execution_trace_explicit_partial(status_data: dict[str, Any]) -> None:
     fields = _extract_execution_metadata_fields(status_data)
 
     with st.expander("🔍 Execution Trace (Live)", expanded=False):
@@ -398,13 +398,13 @@ def render_execution_trace_explicit_partial(status_data: Dict[str, Any]) -> None
 
 def submit_research(
     query: str,
-    tickers: Optional[List[str]] = None,
+    tickers: list[str] | None = None,
     include_news: bool = True,
     include_sentiment: bool = True,
     include_fundamentals: bool = True,
     include_technicals: bool = False,
     max_length: int = 5000,
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """
     Submit research request to backend API.
     Thin client: no business logic here.
@@ -430,11 +430,11 @@ def submit_research(
         st.error(f"Cannot connect to backend at {API_BASE_URL}. Is it running?")
         return None
     except Exception as e:
-        st.error(f"Error submitting request: {str(e)}")
+        st.error(f"Error submitting request: {e!s}")
         return None
 
 
-def check_status(request_id: str) -> Optional[Dict[str, Any]]:
+def check_status(request_id: str) -> dict[str, Any] | None:
     """Check research status (thin client)."""
     try:
         response = requests.get(f"{API_BASE_URL}/research/{request_id}", timeout=5)

@@ -2,7 +2,8 @@
 # Pydantic models for research report structures
 
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -12,10 +13,10 @@ class Citation(BaseModel):
     id: str
     type: str = Field(..., description="market_data, news, sentiment, llm")
     title: str
-    url: Optional[str] = None
+    url: str | None = None
     source: str
-    date: Optional[datetime] = None
-    snippet: Optional[str] = None
+    date: datetime | None = None
+    snippet: str | None = None
     relevance: float = Field(default=1.0, ge=0.0, le=1.0)
 
     class Config:
@@ -29,8 +30,8 @@ class ReportSection(BaseModel):
     title: str
     level: int = Field(default=1, ge=1, le=3, description="Heading level (1-3)")
     content: str = Field(..., description="Section content in markdown")
-    citations: List[Citation] = Field(default_factory=list)
-    subsections: List["ReportSection"] = Field(default_factory=list)
+    citations: list[Citation] = Field(default_factory=list)
+    subsections: list["ReportSection"] = Field(default_factory=list)
     order: int = 0
 
     class Config:
@@ -43,18 +44,18 @@ class ResearchReport(BaseModel):
     # Metadata
     request_id: str
     query: str
-    tickers: List[str]
+    tickers: list[str]
     generated_at: datetime = Field(default_factory=datetime.utcnow)
     model_used: str = "gpt-4o"
 
     # Report structure
     executive_summary: str = Field(..., description="High-level summary")
-    sections: List[ReportSection] = Field(default_factory=list)
+    sections: list[ReportSection] = Field(default_factory=list)
 
     # Data references
-    market_data_sources: List[Citation] = Field(default_factory=list)
-    news_sources: List[Citation] = Field(default_factory=list)
-    sentiment_sources: List[Citation] = Field(default_factory=list)
+    market_data_sources: list[Citation] = Field(default_factory=list)
+    news_sources: list[Citation] = Field(default_factory=list)
+    sentiment_sources: list[Citation] = Field(default_factory=list)
 
     # Quality metrics
     total_citations: int = 0
@@ -76,10 +77,10 @@ class ReportGenerationRequest(BaseModel):
     """Request for report generation."""
 
     query: str
-    tickers: List[str]
-    market_data: Dict[str, Any]
-    news_articles: List[Dict[str, Any]]
-    sentiment_analysis: Optional[Dict[str, Any]] = None
+    tickers: list[str]
+    market_data: dict[str, Any]
+    news_articles: list[dict[str, Any]]
+    sentiment_analysis: dict[str, Any] | None = None
     max_length: int = 5000
     include_disclaimer: bool = True
     model: str = "gpt-4o"

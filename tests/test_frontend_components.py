@@ -1,7 +1,8 @@
 # EquiPilot AI - Frontend Component Tests
 # Tests for Streamlit UI components
 
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
+
 import streamlit as st
 
 
@@ -103,10 +104,9 @@ class TestReportDisplay:
             "created_at": "2024-01-01T12:00:00",
         }
 
-        with patch.object(st, 'success'):
-            with patch.object(st, 'metric') as mock_metric:
-                render_report(report, show_metadata=True)
-                assert mock_metric.call_count >= 3
+        with patch.object(st, 'success'), patch.object(st, 'metric') as mock_metric:
+            render_report(report, show_metadata=True)
+            assert mock_metric.call_count >= 3
 
     def test_render_report_shows_markdown_content(self):
         """Report display shows markdown report content."""
@@ -117,11 +117,10 @@ class TestReportDisplay:
             "report": "# Test Report\n\nThis is test content.",
         }
 
-        with patch.object(st, 'success'):
-            with patch.object(st, 'markdown') as mock_markdown:
-                with patch.object(st, 'expander'):
-                    render_report(report)
-                    mock_markdown.assert_called()
+        with patch.object(st, 'success'), patch.object(st, 'markdown') as mock_markdown:
+            with patch.object(st, 'expander'):
+                render_report(report)
+                mock_markdown.assert_called()
 
     def test_render_report_shows_structured_sections(self):
         """Report display shows structured sections."""
@@ -135,11 +134,10 @@ class TestReportDisplay:
             ],
         }
 
-        with patch.object(st, 'success'):
-            with patch.object(st, 'expander'):
-                with patch.object(st, 'subheader'):
-                    with patch.object(st, 'markdown'):
-                        render_report(report, show_metadata=False)
+        with patch.object(st, 'success'), patch.object(st, 'expander'):
+            with patch.object(st, 'subheader'):
+                with patch.object(st, 'markdown'):
+                    render_report(report, show_metadata=False)
 
     def test_render_synthesized_report_with_all_sections(self):
         """Render synthesized report with all LLM sections."""
@@ -155,10 +153,9 @@ class TestReportDisplay:
             "disclaimer": "Disclaimer",
         }
 
-        with patch.object(st, 'subheader'):
-            with patch.object(st, 'markdown'):
-                with patch.object(st, 'caption'):
-                    render_synthesized_report(report)
+        with patch.object(st, 'subheader'), patch.object(st, 'markdown'):
+            with patch.object(st, 'caption'):
+                render_synthesized_report(report)
 
     def test_render_report_card_uses_container(self):
         """Report card uses container with border."""
@@ -187,7 +184,7 @@ class TestProgressTracker:
 
     def test_get_step_index_returns_correct_index(self):
         """Get step index returns correct position."""
-        from frontend.components.progress_tracker import _get_step_index, RESEARCH_STEPS
+        from frontend.components.progress_tracker import RESEARCH_STEPS, _get_step_index
 
         for i, (step_id, _, _) in enumerate(RESEARCH_STEPS):
             assert _get_step_index(step_id) == i
@@ -200,7 +197,7 @@ class TestProgressTracker:
 
     def test_completed_step_index(self):
         """Completed step is the last index."""
-        from frontend.components.progress_tracker import _get_step_index, RESEARCH_STEPS
+        from frontend.components.progress_tracker import RESEARCH_STEPS, _get_step_index
 
         assert _get_step_index("completed") == len(RESEARCH_STEPS) - 1
 
@@ -223,12 +220,11 @@ class TestSidebar:
         """Sidebar renders navigation header."""
         from frontend.components.sidebar import render_sidebar
 
-        with patch.object(st, 'header'):
-            with patch.object(st, 'subheader'):
-                with patch.object(st, 'caption'):
-                    with patch.object(st, 'divider'):
-                        with patch.object(st, 'error'):
-                            render_sidebar()
+        with patch.object(st, 'header'), patch.object(st, 'subheader'):
+            with patch.object(st, 'caption'):
+                with patch.object(st, 'divider'):
+                    with patch.object(st, 'error'):
+                        render_sidebar()
 
     def test_render_recent_reports_empty_state(self):
         """Recent reports shows empty state correctly."""
@@ -243,14 +239,13 @@ class TestSidebar:
         """System status shows connected when health check passes."""
         from frontend.components.sidebar import render_system_status
 
-        with patch.object(st, 'success'):
-            with patch.object(st, 'caption'):
-                with patch('requests.get') as mock_get:
-                    mock_response = Mock()
-                    mock_response.status_code = 200
-                    mock_response.json.return_value = {"services": {"openai": True, "news_api": True}}
-                    mock_get.return_value = mock_response
-                    render_system_status()
+        with patch.object(st, 'success'), patch.object(st, 'caption'):
+            with patch('requests.get') as mock_get:
+                mock_response = Mock()
+                mock_response.status_code = 200
+                mock_response.json.return_value = {"services": {"openai": True, "news_api": True}}
+                mock_get.return_value = mock_response
+                render_system_status()
 
 
 class TestMainApp:
@@ -309,7 +304,6 @@ class TestMainApp:
             {"title": "Disclaimer", "content": "Disclaimer", "level": 2},
         ]
 
-        with patch.object(st, 'subheader'):
-            with patch.object(st, 'markdown'):
-                with patch.object(st, 'caption'):
-                    render_structured_sections(sections)
+        with patch.object(st, 'subheader'), patch.object(st, 'markdown'):
+            with patch.object(st, 'caption'):
+                render_structured_sections(sections)

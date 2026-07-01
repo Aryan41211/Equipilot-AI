@@ -3,8 +3,6 @@
 
 import re
 from datetime import datetime
-from typing import Optional, List
-
 
 # Common ticker pattern (1-5 uppercase letters, optionally with . or - for special classes)
 TICKER_PATTERN = re.compile(r'^[A-Z]{1,5}(?:\.[A-Z]{1,2})?$')
@@ -18,7 +16,7 @@ def validate_ticker(ticker: str) -> bool:
     return bool(TICKER_PATTERN.match(ticker))
 
 
-def validate_tickers(tickers: List[str]) -> List[str]:
+def validate_tickers(tickers: list[str]) -> list[str]:
     """Validate and normalize a list of tickers."""
     valid = []
     for t in tickers:
@@ -29,10 +27,10 @@ def validate_tickers(tickers: List[str]) -> List[str]:
 
 
 def validate_date_range(
-    date_from: Optional[datetime],
-    date_to: Optional[datetime],
+    date_from: datetime | None,
+    date_to: datetime | None,
     max_days: int = 365 * 5,  # 5 years
-) -> tuple[bool, Optional[str]]:
+) -> tuple[bool, str | None]:
     """Validate date range."""
     if date_from and date_to:
         if date_from > date_to:
@@ -48,7 +46,7 @@ def validate_date_range(
     return True, None
 
 
-def validate_query(query: str, min_length: int = 10, max_length: int = 2000) -> tuple[bool, Optional[str]]:
+def validate_query(query: str, min_length: int = 10, max_length: int = 2000) -> tuple[bool, str | None]:
     """Validate research query."""
     if not query or not query.strip():
         return False, "Query cannot be empty"

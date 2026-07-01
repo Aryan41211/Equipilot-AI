@@ -1,9 +1,8 @@
 # EquiPilot AI - Centralized Exception Handlers
 # Production-grade error handling with structured logging
 
-from typing import Union
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -175,16 +174,17 @@ def register_exception_handlers(app: FastAPI) -> None:
     Args:
         app: The FastAPI application instance
     """
+    from fastapi.exceptions import RequestValidationError
+
     from backend.exceptions import (
-        EntityNotFoundError,
         AmbiguousEntityError,
+        EntityNotFoundError,
         EntityValidationError,
         SentimentTimeoutError,
         SentimentValidationError,
         SynthesisTimeoutError,
         SynthesisValidationError,
     )
-    from fastapi.exceptions import RequestValidationError
 
     # Standard exception handlers
     app.add_exception_handler(Exception, global_exception_handler)

@@ -2,17 +2,16 @@
 # Research report generation agent
 
 import asyncio
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
 )
 
 from backend.exceptions.synthesis_exceptions import (
-    SynthesisMalformedResponseError,
     SynthesisProviderError,
     SynthesisTimeoutError,
     SynthesisValidationError,
@@ -42,10 +41,10 @@ class SynthesisAgent:
     async def generate_report(
         self,
         query: str,
-        tickers: List[str],
-        market_data: Dict[str, MarketData],
-        news_articles: List[NewsArticle],
-        sentiment_analysis: Optional[SentimentAnalysis] = None,
+        tickers: list[str],
+        market_data: dict[str, MarketData],
+        news_articles: list[NewsArticle],
+        sentiment_analysis: SentimentAnalysis | None = None,
         max_length: int = 5000,
     ) -> ResearchReport:
         """
@@ -99,7 +98,7 @@ class SynthesisAgent:
         wait=wait_exponential(multiplier=1, min=2, max=10),
         retry=retry_if_exception_type((SynthesisProviderError, SynthesisTimeoutError)),
     )
-    async def _call_llm_with_retry(self, prompt: str, schema: Dict[str, Any]) -> Dict[str, Any]:
+    async def _call_llm_with_retry(self, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
         """Call the LLM with retry logic for transient failures."""
         try:
             return await self.llm.structured_completion(
@@ -119,10 +118,10 @@ class SynthesisAgent:
         self,
         synthesized: SynthesizedReport,
         query: str,
-        tickers: List[str],
-        market_data: Dict[str, MarketData],
-        news_articles: List[NewsArticle],
-        sentiment_analysis: Optional[SentimentAnalysis],
+        tickers: list[str],
+        market_data: dict[str, MarketData],
+        news_articles: list[NewsArticle],
+        sentiment_analysis: SentimentAnalysis | None,
     ) -> ResearchReport:
         """Map SynthesizedReport into the existing ResearchReport structure."""
         sections = [

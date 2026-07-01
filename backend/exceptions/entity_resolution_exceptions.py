@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 
 class EntityResolutionError(Exception):
     """Base class for Entity Resolution related errors."""
@@ -22,7 +20,7 @@ class EntityValidationError(EntityResolutionError):
 def entity_error_details(
     *,
     message: str,
-    entity: Optional[str] = None,
+    entity: str | None = None,
 ) -> str:
     """Helper to create consistent error messages."""
     if entity:

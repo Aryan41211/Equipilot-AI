@@ -1,25 +1,23 @@
 # EquiPilot AI - Production Tests
 # Tests for health endpoints, middleware, exception handlers, and production features
 
-import sys
 import os
+import sys
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from backend.app import create_app, APP_VERSION
-from backend.middleware.production import SecurityHeadersMiddleware, MetricsMiddleware, metrics
+from backend.app import APP_VERSION, create_app
 from backend.exceptions.handlers import (
-    register_exception_handlers,
-    error_response,
-    get_request_id,
-    HTTP_ENTITY_NOT_FOUND,
     HTTP_AMBIGUOUS_ENTITY,
+    HTTP_ENTITY_NOT_FOUND,
     HTTP_SENTIMENT_TIMEOUT,
     HTTP_SYNTHESIS_TIMEOUT,
     HTTP_VALIDATION_ERROR,
+    error_response,
 )
+from backend.middleware.production import metrics
 
 
 @pytest.fixture
@@ -178,7 +176,6 @@ class TestExceptionHandlers:
 
     def test_error_response_format(self):
         """error_response should produce consistent format."""
-        from fastapi import Request
 
         response = error_response(
             status_code=400,
@@ -196,8 +193,8 @@ class TestExceptionHandlers:
     def test_domain_exception_handlers_registered(self, app):
         """Domain exception handlers should be registered."""
         from backend.exceptions import (
-            EntityNotFoundError,
             AmbiguousEntityError,
+            EntityNotFoundError,
             EntityValidationError,
             SentimentTimeoutError,
             SentimentValidationError,
@@ -224,8 +221,9 @@ class TestConfigurationValidation:
 
     def test_config_validates_log_level(self):
         """Configuration should validate log level values."""
-        from backend.config import Settings
         from pydantic import ValidationError
+
+        from backend.config import Settings
 
         # Valid log level
         settings = Settings(log_level="INFO")
@@ -237,8 +235,9 @@ class TestConfigurationValidation:
 
     def test_config_validates_log_format(self):
         """Configuration should validate log format values."""
-        from backend.config import Settings
         from pydantic import ValidationError
+
+        from backend.config import Settings
 
         settings = Settings(log_format="json")
         assert settings.log_format == "json"
@@ -248,8 +247,9 @@ class TestConfigurationValidation:
 
     def test_config_validates_news_provider(self):
         """Configuration should validate news API provider values."""
-        from backend.config import Settings
         from pydantic import ValidationError
+
+        from backend.config import Settings
 
         settings = Settings(news_api_provider="newsapi")
         assert settings.news_api_provider == "newsapi"
@@ -259,8 +259,9 @@ class TestConfigurationValidation:
 
     def test_config_validates_environment(self):
         """Configuration should validate environment values."""
-        from backend.config import Settings
         from pydantic import ValidationError
+
+        from backend.config import Settings
 
         settings = Settings(environment="production")
         assert settings.environment == "production"
@@ -270,8 +271,9 @@ class TestConfigurationValidation:
 
     def test_config_validates_workers(self):
         """Configuration should validate worker count."""
-        from backend.config import Settings
         from pydantic import ValidationError
+
+        from backend.config import Settings
 
         settings = Settings(backend_workers=4)
         assert settings.backend_workers == 4
@@ -455,20 +457,20 @@ class TestDockerConfiguration:
 
     def test_dockerfile_has_healthcheck(self):
         """Dockerfile should have HEALTHCHECK instruction."""
-        with open("Dockerfile", "r") as f:
+        with open("Dockerfile") as f:
             content = f.read()
         assert "HEALTHCHECK" in content
 
     def test_dockerfile_has_non_root_user(self):
         """Dockerfile should create and use non-root user."""
-        with open("Dockerfile", "r") as f:
+        with open("Dockerfile") as f:
             content = f.read()
         assert "appuser" in content
         assert "USER appuser" in content
 
     def test_dockerfile_multi_stage(self):
         """Dockerfile should have multi-stage builds."""
-        with open("Dockerfile", "r") as f:
+        with open("Dockerfile") as f:
             content = f.read()
         assert "AS base" in content
         assert "AS production" in content
@@ -476,7 +478,7 @@ class TestDockerConfiguration:
 
     def test_docker_compose_has_resource_limits(self):
         """docker-compose should have resource limits."""
-        with open("docker-compose.yml", "r") as f:
+        with open("docker-compose.yml") as f:
             content = f.read()
         assert "deploy" in content
         assert "resources" in content
@@ -484,20 +486,20 @@ class TestDockerConfiguration:
 
     def test_docker_compose_has_healthchecks(self):
         """docker-compose should have healthchecks for all services."""
-        with open("docker-compose.yml", "r") as f:
+        with open("docker-compose.yml") as f:
             content = f.read()
         assert "healthcheck" in content
 
     def test_nginx_has_rate_limiting(self):
         """nginx.conf should have rate limiting zones."""
-        with open("nginx.conf", "r") as f:
+        with open("nginx.conf") as f:
             content = f.read()
         assert "limit_req_zone" in content
         assert "limit_req" in content
 
     def test_nginx_has_security_headers(self):
         """nginx.conf should have security headers."""
-        with open("nginx.conf", "r") as f:
+        with open("nginx.conf") as f:
             content = f.read()
         assert "X-Frame-Options" in content
         assert "X-Content-Type-Options" in content
@@ -528,18 +530,12 @@ class TestExceptionPackage:
     def test_exception_package_imports(self):
         """Exception package should export all exception classes."""
         from backend.exceptions import (
-            EntityResolutionError,
             EntityNotFoundError,
-            AmbiguousEntityError,
-            EntityValidationError,
+            EntityResolutionError,
             SentimentError,
             SentimentTimeoutError,
-            SentimentProviderError,
-            SentimentMalformedResponseError,
-            SentimentValidationError,
             SynthesisError,
             SynthesisTimeoutError,
-            SynthesisValidationError,
         )
 
         # Verify they are actual exception classes

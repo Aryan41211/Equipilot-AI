@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SentimentScore(BaseModel):
@@ -18,7 +17,7 @@ class HeadlineSentiment(BaseModel):
     """Sentiment for a single headline/article."""
 
     headline: str
-    ticker: Optional[str] = None
+    ticker: str | None = None
     label: str = Field(..., description="positive|negative|neutral")
     confidence: float = Field(..., ge=0.0, le=1.0)
     reasoning: str
@@ -28,7 +27,7 @@ class SentimentProcessingMetadata(BaseModel):
     """Operational metadata for a sentiment run."""
 
     article_count: int = 0
-    tickers_provided: List[str] = Field(default_factory=list)
+    tickers_provided: list[str] = Field(default_factory=list)
 
 
 class SentimentAnalysis(BaseModel):
@@ -38,7 +37,7 @@ class SentimentAnalysis(BaseModel):
     confidence: float = Field(..., ge=0.0, le=1.0, description="Overall confidence across headlines")
     reasoning: str
 
-    headline_sentiments: List[HeadlineSentiment] = Field(default_factory=list)
+    headline_sentiments: list[HeadlineSentiment] = Field(default_factory=list)
     processing_metadata: SentimentProcessingMetadata = Field(default_factory=SentimentProcessingMetadata)
 
     analyzed_at: datetime = Field(default_factory=datetime.utcnow)

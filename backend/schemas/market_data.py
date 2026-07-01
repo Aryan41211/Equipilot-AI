@@ -2,7 +2,7 @@
 # Pydantic models for market data structures
 
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+
 from pydantic import BaseModel, Field
 
 
@@ -14,7 +14,7 @@ class PriceData(BaseModel):
     high: float
     low: float
     close: float
-    adjusted_close: Optional[float] = None
+    adjusted_close: float | None = None
     volume: int
 
     class Config:
@@ -25,40 +25,40 @@ class FundamentalsData(BaseModel):
     """Company fundamental data."""
 
     # Valuation
-    market_cap: Optional[float] = None
-    enterprise_value: Optional[float] = None
-    pe_ratio: Optional[float] = None
-    forward_pe: Optional[float] = None
-    peg_ratio: Optional[float] = None
-    price_to_book: Optional[float] = None
-    price_to_sales: Optional[float] = None
-    ev_to_revenue: Optional[float] = None
-    ev_to_ebitda: Optional[float] = None
+    market_cap: float | None = None
+    enterprise_value: float | None = None
+    pe_ratio: float | None = None
+    forward_pe: float | None = None
+    peg_ratio: float | None = None
+    price_to_book: float | None = None
+    price_to_sales: float | None = None
+    ev_to_revenue: float | None = None
+    ev_to_ebitda: float | None = None
 
     # Profitability
-    profit_margin: Optional[float] = None
-    operating_margin: Optional[float] = None
-    return_on_assets: Optional[float] = None
-    return_on_equity: Optional[float] = None
+    profit_margin: float | None = None
+    operating_margin: float | None = None
+    return_on_assets: float | None = None
+    return_on_equity: float | None = None
 
     # Financial Health
-    total_cash: Optional[float] = None
-    total_debt: Optional[float] = None
-    current_ratio: Optional[float] = None
-    debt_to_equity: Optional[float] = None
+    total_cash: float | None = None
+    total_debt: float | None = None
+    current_ratio: float | None = None
+    debt_to_equity: float | None = None
 
     # Growth
-    revenue_growth: Optional[float] = None
-    earnings_growth: Optional[float] = None
+    revenue_growth: float | None = None
+    earnings_growth: float | None = None
 
     # Dividends
-    dividend_yield: Optional[float] = None
-    payout_ratio: Optional[float] = None
-    dividend_date: Optional[datetime] = None
+    dividend_yield: float | None = None
+    payout_ratio: float | None = None
+    dividend_date: datetime | None = None
 
     # Metadata
     currency: str = "USD"
-    last_updated: Optional[datetime] = None
+    last_updated: datetime | None = None
 
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat() if v else None}
@@ -67,46 +67,46 @@ class FundamentalsData(BaseModel):
 class TechnicalIndicators(BaseModel):
     """Technical indicator values."""
 
-    sma_20: Optional[float] = None
-    sma_50: Optional[float] = None
-    sma_200: Optional[float] = None
-    ema_12: Optional[float] = None
-    ema_26: Optional[float] = None
-    rsi_14: Optional[float] = None
-    macd: Optional[float] = None
-    macd_signal: Optional[float] = None
-    macd_histogram: Optional[float] = None
-    bollinger_upper: Optional[float] = None
-    bollinger_middle: Optional[float] = None
-    bollinger_lower: Optional[float] = None
-    atr_14: Optional[float] = None
-    volume_sma_20: Optional[float] = None
+    sma_20: float | None = None
+    sma_50: float | None = None
+    sma_200: float | None = None
+    ema_12: float | None = None
+    ema_26: float | None = None
+    rsi_14: float | None = None
+    macd: float | None = None
+    macd_signal: float | None = None
+    macd_histogram: float | None = None
+    bollinger_upper: float | None = None
+    bollinger_middle: float | None = None
+    bollinger_lower: float | None = None
+    atr_14: float | None = None
+    volume_sma_20: float | None = None
 
 
 class MarketData(BaseModel):
     """Complete market data for a ticker."""
 
     ticker: str
-    company_name: Optional[str] = None
+    company_name: str | None = None
     currency: str = "USD"
-    exchange: Optional[str] = None
-    sector: Optional[str] = None
-    industry: Optional[str] = None
+    exchange: str | None = None
+    sector: str | None = None
+    industry: str | None = None
 
     # Current price info
-    current_price: Optional[float] = None
-    previous_close: Optional[float] = None
-    change: Optional[float] = None
-    change_percent: Optional[float] = None
+    current_price: float | None = None
+    previous_close: float | None = None
+    change: float | None = None
+    change_percent: float | None = None
 
     # Price history
-    price_history: List[PriceData] = Field(default_factory=list)
+    price_history: list[PriceData] = Field(default_factory=list)
 
     # Fundamentals
-    fundamentals: Optional[FundamentalsData] = None
+    fundamentals: FundamentalsData | None = None
 
     # Technicals
-    technicals: Optional[TechnicalIndicators] = None
+    technicals: TechnicalIndicators | None = None
 
     # Metadata
     data_as_of: datetime = Field(default_factory=datetime.utcnow)
@@ -119,9 +119,9 @@ class MarketData(BaseModel):
 class MarketDataResponse(BaseModel):
     """Response model for market data requests."""
 
-    tickers: List[str]
-    data: Dict[str, MarketData]
-    errors: Dict[str, str] = Field(default_factory=dict)
+    tickers: list[str]
+    data: dict[str, MarketData]
+    errors: dict[str, str] = Field(default_factory=dict)
     retrieved_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:

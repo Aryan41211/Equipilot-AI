@@ -1,21 +1,22 @@
 # EquiPilot AI - Research Graph
 # LangGraph workflow for equity research
 
-from typing import TypedDict, List, Dict, Any, Optional, Literal
 from datetime import datetime
-from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.memory import MemorySaver
+from typing import Literal, TypedDict
 
-from backend.agents.router_agent import RouterAgent
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, StateGraph
+
 from backend.agents.market_agent import MarketAgent
 from backend.agents.news_agent import NewsAgent
+from backend.agents.router_agent import RouterAgent
 from backend.agents.sentiment_agent import SentimentAgent
 from backend.agents.synthesis_agent import SynthesisAgent
-from backend.schemas.research import ResearchStatus
 from backend.schemas.market_data import MarketData
 from backend.schemas.news import NewsArticle, NewsResponse
-from backend.schemas.sentiment import SentimentAnalysis
 from backend.schemas.report import ResearchReport
+from backend.schemas.research import ResearchStatus
+from backend.schemas.sentiment import SentimentAnalysis
 from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -26,9 +27,9 @@ class ResearchState(TypedDict):
 
     # Input
     query: str
-    explicit_tickers: Optional[List[str]]
-    date_from: Optional[datetime]
-    date_to: Optional[datetime]
+    explicit_tickers: list[str] | None
+    date_from: datetime | None
+    date_to: datetime | None
     include_news: bool
     include_sentiment: bool
     include_fundamentals: bool
@@ -36,36 +37,44 @@ class ResearchState(TypedDict):
     max_report_length: int
 
     # Routing
-    category: Optional[str]
-    [str]
-    confidence: Optional[float]
-    reasoning: Optional[str]
-    tickers: List[str]
-    required_sources: Dict[str, bool]
+    category: str | None
+    confidence: float | None
+    reasoning: str | None
+    tickers: list[str]
+    required_sources: dict[str, bool]
 
     # Data
-    market_data: Dict[str, MarketData]
-    news_response: Optional[NewsResponse]
-    news_articles: List[NewsArticle]
-    sentiment_analysis: Optional[SentimentAnalysis]
+    market_data: dict[str, MarketData]
+    news_response: NewsResponse | None
+    news_articles: list[NewsArticle]
+    sentiment_analysis: SentimentAnalysis | None
 
     # Output
-    report: Optional[ResearchReport]
+    report: ResearchReport | None
 
     # Metadata
     request_id: str
     status: ResearchStatus
     current_step: str
-    errors: List[str]
+    errors: list[str]
     started_at: datetime
-    completed_at: Optional[datetime]
+    completed_at: datetime | None
+
+
+router_agent: RouterAgent | None = None
+market_agent: MarketAgent | None = None
+news_agent: NewsAgent | None = None
+sentiment_agent: SentimentAgent | None = None
+synthesis_agent: SynthesisAgent | None = None
 
 
 def create_research_graph() -> StateGraph:
     """Create the LangGraph research workflow."""
 
-    # Initialize agents
-    router = RouterAgent()
+    global router_agent, market_agent, news_agent, sentiment_agent, synthesis_agent
+
+    # Initialize agents (assign to module-scoped variables used by node functions)
+    router_agent = RouterAgent()
     market_agent = MarketAgent()
     news_agent = NewsAgent()
     sentiment_agent = SentimentAgent()
@@ -136,7 +145,9 @@ async def router_node(state: ResearchState) -> ResearchState:
     logger.info("Node: router", request_id=state["request_id"])
 
     try:
-        routing = await router.route(state["query"], state.get("explicit_tickers"))
+        if router_agent is None:
+            raise RuntimeError("RouterAgent not initialized")
+        routing = await router_agent.route(state["query"], state.get("explicit_tickers"))
 
         return {
             **state,
@@ -152,7 +163,7 @@ async def router_node(state: ResearchState) -> ResearchState:
         logger.error("Router failed", error=str(e))
         return {
             **state,
-            "errors": state["errors"] + [f"Router error: {str(e)}"],
+            "errors": state["errors"] + [f"Router error: {e!s}"],
             "status": ResearchStatus.FAILED,
         }
 
@@ -162,6 +173,8 @@ async def market_data_node(state: ResearchState) -> ResearchState:
     logger.info("Node: market_data", request_id=state["request_id"], tickers=state["tickers"])
 
     try:
+        if market_agent is None:
+            raise RuntimeError("MarketAgent not initialized")
         market_data = await market_agent.fetch(
             tickers=state["tickers"],
             period="1y",
@@ -178,7 +191,7 @@ async def market_data_node(state: ResearchState) -> ResearchState:
         logger.error("Market data failed", error=str(e))
         return {
             **state,
-            "errors": state["errors"] + [f"Market data error: {str(e)}"],
+            "errors": state["errors"] + [f"Market data error: {e!s}"],
             "market_data": {},
         }
 
@@ -188,6 +201,8 @@ async def news_node(state: ResearchState) -> ResearchState:
     logger.info("Node: news", request_id=state["request_id"], tickers=state["tickers"])
 
     try:
+        if news_agent is None:
+            raise RuntimeError("NewsAgent not initialized")
         news_response = await news_agent.fetch(
             tickers=state["tickers"],
             date_from=state.get("date_from"),
@@ -205,7 +220,7 @@ async def news_node(state: ResearchState) -> ResearchState:
         logger.error("News fetch failed", error=str(e))
         return {
             **state,
-            "errors": state["errors"] + [f"News error: {str(e)}"],
+            "errors": state["errors"] + [f"News error: {e!s}"],
             "news_articles": [],
         }
 
@@ -222,6 +237,8 @@ async def sentiment_node(state: ResearchState) -> ResearchState:
                 "current_step": "sentiment_complete",
             }
 
+        if sentiment_agent is None:
+            raise RuntimeError("SentimentAgent not initialized")
         sentiment = await sentiment_agent.analyze(
             articles=state["news_articles"],
             tickers=state["tickers"],
@@ -236,7 +253,7 @@ async def sentiment_node(state: ResearchState) -> ResearchState:
         logger.error("Sentiment analysis failed", error=str(e))
         return {
             **state,
-            "errors": state["errors"] + [f"Sentiment error: {str(e)}"],
+            "errors": state["errors"] + [f"Sentiment error: {e!s}"],
             "sentiment_analysis": None,
         }
 
@@ -246,6 +263,8 @@ async def synthesis_node(state: ResearchState) -> ResearchState:
     logger.info("Node: synthesis", request_id=state["request_id"])
 
     try:
+        if synthesis_agent is None:
+            raise RuntimeError("SynthesisAgent not initialized")
         report = await synthesis_agent.generate_report(
             query=state["query"],
             tickers=state["tickers"],
@@ -266,7 +285,7 @@ async def synthesis_node(state: ResearchState) -> ResearchState:
         logger.error("Synthesis failed", error=str(e))
         return {
             **state,
-            "errors": state["errors"] + [f"Synthesis error: {str(e)}"],
+            "errors": state["errors"] + [f"Synthesis error: {e!s}"],
             "report": None,
         }
 
@@ -326,9 +345,9 @@ def route_after_news(state: ResearchState) -> Literal["sentiment", "synthesis"]:
 def create_initial_state(
     request_id: str,
     query: str,
-    explicit_tickers: Optional[List[str]] = None,
-    date_from: Optional[datetime] = None,
-    date_to: Optional[datetime] = None,
+    explicit_tickers: list[str] | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
     include_news: bool = True,
     include_sentiment: bool = True,
     include_fundamentals: bool = True,

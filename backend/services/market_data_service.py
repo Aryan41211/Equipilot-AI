@@ -3,8 +3,8 @@
 
 import asyncio
 import json
-from datetime import datetime, timezone
-from typing import Dict, Optional
+from datetime import UTC, datetime
+
 import yfinance as yf
 
 from backend.schemas.market_data_schema import MarketDataResponse
@@ -42,7 +42,7 @@ class MarketDataService:
     """Service for fetching stock market data from yfinance."""
 
     def __init__(self):
-        self._cache: Dict[str, MarketDataResponse] = {}
+        self._cache: dict[str, MarketDataResponse] = {}
         self._cache_ttl_seconds = 300
         self._max_retries = 3
         self._retry_delay_seconds = 1.0
@@ -70,7 +70,7 @@ class MarketDataService:
         # Check cache
         if ticker in self._cache:
             cached = self._cache[ticker]
-            if (datetime.now(timezone.utc) - cached.data_as_of).total_seconds() < self._cache_ttl_seconds:
+            if (datetime.now(UTC) - cached.data_as_of).total_seconds() < self._cache_ttl_seconds:
                 logger.debug("Cache hit", ticker=ticker)
                 return cached
 
@@ -132,7 +132,7 @@ class MarketDataService:
             if "char 0" in str(e) or "column 1" in str(e):
                 raise RateLimitError(f"Yahoo Finance rate limit exceeded for {ticker} (empty response)") from e
             raise DataUnavailableError(
-                f"Yahoo Finance returned invalid response for {ticker}: {str(e)}"
+                f"Yahoo Finance returned invalid response for {ticker}: {e!s}"
             ) from e
         except Exception as e:
             # Check if it's a rate limit or network error
@@ -140,8 +140,8 @@ class MarketDataService:
             if "too many requests" in error_msg or "429" in error_msg or "rate limit" in error_msg:
                 raise RateLimitError(f"Yahoo Finance rate limit exceeded for {ticker}") from e
             if "timeout" in error_msg or "connection" in error_msg:
-                raise NetworkError(f"Network error fetching {ticker}: {str(e)}") from e
-            raise NetworkError(f"Failed to connect to Yahoo Finance for {ticker}: {str(e)}") from e
+                raise NetworkError(f"Network error fetching {ticker}: {e!s}") from e
+            raise NetworkError(f"Failed to connect to Yahoo Finance for {ticker}: {e!s}") from e
 
         if not info or not info.get("symbol"):
             raise InvalidTickerError(f"Invalid ticker symbol or no data found: {ticker}")
@@ -170,7 +170,7 @@ class MarketDataService:
             fifty_two_week_low=info.get("fiftyTwoWeekLow"),
             sector=info.get("sector"),
             industry=info.get("industry"),
-            data_as_of=datetime.now(timezone.utc),
+            data_as_of=datetime.now(UTC),
         )
 
 

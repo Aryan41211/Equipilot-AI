@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 
 class SynthesisError(Exception):
     """Base class for synthesis related errors."""
@@ -26,7 +24,7 @@ class SynthesisValidationError(SynthesisError):
 def synthesis_error_details(
     *,
     message: str,
-    provider: Optional[str] = None,
+    provider: str | None = None,
 ) -> str:
     """Helper to create consistent error messages."""
     if provider:

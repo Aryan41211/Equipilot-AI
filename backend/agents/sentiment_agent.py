@@ -1,10 +1,10 @@
 # EquiPilot AI - Sentiment Agent
 # Sentiment analysis agent
 
-from typing import List
-from backend.services.sentiment_service import sentiment_service
-from backend.schemas.sentiment import SentimentAnalysis
+
 from backend.schemas.news import NewsArticle
+from backend.schemas.sentiment import SentimentAnalysis
+from backend.services.sentiment_service import sentiment_service
 from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -18,8 +18,8 @@ class SentimentAgent:
 
     async def analyze(
         self,
-        articles: List[NewsArticle],
-        tickers: List[str],
+        articles: list[NewsArticle],
+        tickers: list[str],
     ) -> SentimentAnalysis:
         """
         Analyze sentiment of news articles.

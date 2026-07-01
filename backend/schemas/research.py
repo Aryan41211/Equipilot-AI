@@ -3,7 +3,8 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional, Dict, Any
+from typing import Any
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -27,16 +28,16 @@ class ResearchRequest(BaseModel):
         description="Natural language research query",
         examples=["Analyze AAPL's competitive position in the smartphone market"],
     )
-    tickers: Optional[List[str]] = Field(
+    tickers: list[str] | None = Field(
         default=None,
         description="Explicit ticker symbols to analyze (optional, extracted from query if not provided)",
         examples=[["AAPL", "MSFT"]],
     )
-    date_from: Optional[datetime] = Field(
+    date_from: datetime | None = Field(
         default=None,
         description="Start date for historical data and news",
     )
-    date_to: Optional[datetime] = Field(
+    date_to: datetime | None = Field(
         default=None,
         description="End date for historical data and news",
     )
@@ -62,14 +63,14 @@ class ResearchRequest(BaseModel):
         le=20000,
         description="Maximum report length in characters",
     )
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Additional metadata for the request",
     )
 
     @field_validator("tickers", mode="before")
     @classmethod
-    def normalize_tickers(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+    def normalize_tickers(cls, v: list[str] | None) -> list[str] | None:
         """Normalize ticker symbols to uppercase."""
         if v is None:
             return None
@@ -91,39 +92,39 @@ class ResearchResponse(BaseModel):
         ...,
         description="Original research query",
     )
-    tickers: List[str] = Field(
+    tickers: list[str] = Field(
         default_factory=list,
         description="Tickers analyzed in the research",
     )
-    report: Optional[str] = Field(
+    report: str | None = Field(
         default=None,
         description="Generated research report (markdown format)",
     )
-    sections: Optional[List[Dict[str, Any]]] = Field(
+    sections: list[dict[str, Any]] | None = Field(
         default=None,
         description="Structured report sections",
     )
-    citations: Optional[List[Dict[str, Any]]] = Field(
+    citations: list[dict[str, Any]] | None = Field(
         default=None,
         description="Source citations for the report",
     )
-    market_data_summary: Optional[Dict[str, Any]] = Field(
+    market_data_summary: dict[str, Any] | None = Field(
         default=None,
         description="Summary of market data retrieved",
     )
-    news_summary: Optional[Dict[str, Any]] = Field(
+    news_summary: dict[str, Any] | None = Field(
         default=None,
         description="Summary of news articles analyzed",
     )
-    sentiment_summary: Optional[Dict[str, Any]] = Field(
+    sentiment_summary: dict[str, Any] | None = Field(
         default=None,
         description="Summary of sentiment analysis",
     )
-    message: Optional[str] = Field(
+    message: str | None = Field(
         default=None,
         description="Human-readable status message",
     )
-    error: Optional[str] = Field(
+    error: str | None = Field(
         default=None,
         description="Error message if status is FAILED",
     )
@@ -131,11 +132,11 @@ class ResearchResponse(BaseModel):
         default_factory=datetime.utcnow,
         description="Request creation timestamp",
     )
-    completed_at: Optional[datetime] = Field(
+    completed_at: datetime | None = Field(
         default=None,
         description="Request completion timestamp",
     )
-    processing_time_seconds: Optional[float] = Field(
+    processing_time_seconds: float | None = Field(
         default=None,
         description="Total processing time in seconds",
     )

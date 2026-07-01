@@ -1,12 +1,14 @@
 # EquiPilot AI - Market Data Tool Tests
 
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from datetime import datetime
-from unittest.mock import patch, AsyncMock, MagicMock
+
 from backend.schemas.market_data_schema import MarketDataResponse
 
 
@@ -117,8 +119,8 @@ class TestMarketDataTool:
     @pytest.mark.asyncio
     async def test_fetch_market_data_invalid_ticker(self):
         """Test tool handles invalid ticker error."""
-        from backend.tools.market_data_tool import MarketDataTool
         from backend.services.market_data_service import InvalidTickerError
+        from backend.tools.market_data_tool import MarketDataTool
 
         with patch('backend.tools.market_data_tool.market_data_service.get_stock_info',
                    new_callable=AsyncMock) as mock_get:
@@ -133,8 +135,8 @@ class TestMarketDataTool:
     @pytest.mark.asyncio
     async def test_fetch_market_data_data_unavailable(self):
         """Test tool handles data unavailable error."""
-        from backend.tools.market_data_tool import MarketDataTool
         from backend.services.market_data_service import DataUnavailableError
+        from backend.tools.market_data_tool import MarketDataTool
 
         with patch('backend.tools.market_data_tool.market_data_service.get_stock_info',
                    new_callable=AsyncMock) as mock_get:
@@ -149,8 +151,8 @@ class TestMarketDataTool:
     @pytest.mark.asyncio
     async def test_fetch_market_data_rate_limit(self):
         """Test tool handles rate limit error."""
-        from backend.tools.market_data_tool import MarketDataTool
         from backend.services.market_data_service import RateLimitError
+        from backend.tools.market_data_tool import MarketDataTool
 
         with patch('backend.tools.market_data_tool.market_data_service.get_stock_info',
                    new_callable=AsyncMock) as mock_get:
@@ -165,8 +167,8 @@ class TestMarketDataTool:
     @pytest.mark.asyncio
     async def test_fetch_market_data_network_error(self):
         """Test tool handles network error."""
-        from backend.tools.market_data_tool import MarketDataTool
         from backend.services.market_data_service import NetworkError
+        from backend.tools.market_data_tool import MarketDataTool
 
         with patch('backend.tools.market_data_tool.market_data_service.get_stock_info',
                    new_callable=AsyncMock) as mock_get:
@@ -181,8 +183,8 @@ class TestMarketDataTool:
     @pytest.mark.asyncio
     async def test_fetch_market_data_service_error(self):
         """Test tool handles generic service error."""
-        from backend.tools.market_data_tool import MarketDataTool
         from backend.services.market_data_service import MarketDataServiceError
+        from backend.tools.market_data_tool import MarketDataTool
 
         with patch('backend.tools.market_data_tool.market_data_service.get_stock_info',
                    new_callable=AsyncMock) as mock_get:
@@ -212,8 +214,8 @@ class TestMarketDataTool:
     @pytest.mark.asyncio
     async def test_fetch_market_data_empty_ticker(self):
         """Test tool handles empty ticker."""
-        from backend.tools.market_data_tool import MarketDataTool
         from backend.services.market_data_service import InvalidTickerError
+        from backend.tools.market_data_tool import MarketDataTool
 
         with patch('backend.tools.market_data_tool.market_data_service.get_stock_info',
                    new_callable=AsyncMock) as mock_get:
@@ -273,8 +275,8 @@ class TestMarketDataToolIntegration:
     @pytest.mark.asyncio
     async def test_tool_uses_service_singleton(self):
         """Test that tool uses the singleton service instance."""
-        from backend.tools.market_data_tool import MarketDataTool, market_data_service
         from backend.services.market_data_service import MarketDataService
+        from backend.tools.market_data_tool import market_data_service
 
         # The tool should use the imported singleton
         assert market_data_service is not None

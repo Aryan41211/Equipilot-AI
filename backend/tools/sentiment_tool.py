@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from langchain_core.tools import tool
 
+from backend.exceptions.sentiment_exceptions import SentimentError
 from backend.schemas.news import NewsArticle
 from backend.services.sentiment_service import SentimentService
 from backend.utils.logger import get_logger
-from backend.exceptions.sentiment_exceptions import SentimentError
 
 logger = get_logger(__name__)
 
@@ -21,9 +21,9 @@ class SentimentTool:
 
     @tool
     async def analyze_sentiment(
-        articles: List[Dict[str, Any]],
-        tickers: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        self: list[dict[str, Any]],
+        tickers: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Analyze sentiment for provided normalized news articles.
 
@@ -42,8 +42,8 @@ class SentimentTool:
         tickers = tickers or []
 
         try:
-            normalized_articles: List[NewsArticle] = []
-            for a in articles:
+            normalized_articles: list[NewsArticle] = []
+            for a in self:
                 normalized_articles.append(
                     NewsArticle(
                         title=a.get("title", ""),

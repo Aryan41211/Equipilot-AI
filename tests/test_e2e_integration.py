@@ -1,11 +1,12 @@
 # EquiPilot AI - End-to-End Integration Tests
 # Comprehensive workflow testing from user query to final research report
 
-import sys
 import os
+import sys
 import time
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -128,7 +129,7 @@ class TestNewsQueryWorkflow:
             "error": None,
         })
 
-        with patch("backend.graphs.nodes.fetch_market_data", mock_market) as market_mock, \
+        with patch("backend.graphs.nodes.fetch_market_data", mock_market), \
              patch("backend.graphs.nodes.fetch_news", mock_news), \
              patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment):
             result = await graph.ainvoke(state)
@@ -229,6 +230,7 @@ class TestBackendFailure:
     def test_frontend_connection_error_handling(self):
         """Frontend handles connection errors gracefully."""
         import requests
+
         from frontend.app import check_status
 
         def mock_get_error(*args, **kwargs):
@@ -391,7 +393,7 @@ class TestAPIIntegration:
         """Health endpoint response structure is correct."""
         from backend.app import create_app
 
-        app = create_app()
+        create_app()
         # The health endpoint is defined in lifespan context, test the response structure
         response_data = {"status": "healthy", "version": "0.1.0", "services": {"openai": True, "news_api": False}}
         assert "status" in response_data

@@ -1,13 +1,15 @@
 # EquiPilot AI - Sidebar Component
 # Navigation, recent reports, and system status
 
+from collections.abc import Callable
+from typing import Any
+
 import streamlit as st
-from typing import Callable, Optional, Dict, Any
 
 API_BASE_URL = "http://localhost:8000/api/v1"
 
 
-def render_sidebar(on_analyze: Optional[Callable[[Dict[str, Any]], None]] = None):
+def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
     """Render sidebar with analysis inputs, system status, and recent reports."""
     st.header("EquiPilot AI")
 

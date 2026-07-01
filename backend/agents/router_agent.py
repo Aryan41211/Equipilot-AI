@@ -1,7 +1,8 @@
 # EquiPilot AI - Router Agent
 # Query classification and routing logic
 
-from typing import Dict, List, Any, Optional
+from typing import Any
+
 from backend.services.llm_service import get_llm_service
 from backend.utils.logger import get_logger
 
@@ -17,8 +18,8 @@ class RouterAgent:
     async def route(
         self,
         query: str,
-        explicit_tickers: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        explicit_tickers: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Route a research query to appropriate workflow.
 
@@ -64,7 +65,7 @@ class RouterAgent:
             "explicit_tickers": explicit_tickers or [],
         }
 
-    def _determine_sources(self, category: str) -> Dict[str, bool]:
+    def _determine_sources(self, category: str) -> dict[str, bool]:
         """Determine which data sources are needed for a category."""
         source_map = {
             "company_analysis": {
