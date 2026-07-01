@@ -1,4 +1,3 @@
-# EquiPilot AI - Research Graph
 # LangGraph workflow for equity research
 
 from datetime import datetime
