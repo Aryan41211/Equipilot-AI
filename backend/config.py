@@ -3,7 +3,7 @@
 
 from functools import lru_cache
 from typing import List, Optional
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,6 +15,22 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
+    )
+
+    # -------------------------------------------------------------------------
+    # Application Metadata
+    # -------------------------------------------------------------------------
+    app_name: str = Field(
+        default="EquiPilot AI",
+        description="Application name",
+    )
+    app_version: str = Field(
+        default="0.1.0",
+        description="Application version",
+    )
+    environment: str = Field(
+        default="development",
+        description="Deployment environment: development, staging, production",
     )
 
     # -------------------------------------------------------------------------
@@ -96,6 +112,10 @@ class Settings(BaseSettings):
         default=True,
         description="Enable auto-reload in development",
     )
+    backend_workers: int = Field(
+        default=2,
+        description="Number of uvicorn worker processes",
+    )
 
     # -------------------------------------------------------------------------
     # Frontend Configuration
@@ -158,12 +178,34 @@ class Settings(BaseSettings):
     )
 
     # -------------------------------------------------------------------------
+    # Security Configuration
+    # -------------------------------------------------------------------------
+    secret_key: str = Field(
+        default="",
+        description="Secret key for session signing and encryption",
+    )
+    allowed_hosts: List[str] = Field(
+        default=["*"],
+        description="Allowed hostnames for the application",
+    )
+
+    # -------------------------------------------------------------------------
     # Computed Properties
     # -------------------------------------------------------------------------
     @property
     def is_development(self) -> bool:
         """Check if running in development mode."""
-        return self.backend_reload
+        return self.environment == "development" or self.backend_reload
+
+    @property
+    def is_production(self) -> bool:
+        """Check if running in production mode."""
+        return self.environment == "production"
+
+    @property
+    def is_staging(self) -> bool:
+        """Check if running in staging mode."""
+        return self.environment == "staging"
 
     @property
     def has_news_api(self) -> bool:
@@ -174,6 +216,95 @@ class Settings(BaseSettings):
     def has_openai(self) -> bool:
         """Check if OpenAI is configured."""
         return bool(self.openai_api_key)
+
+    # -------------------------------------------------------------------------
+    # Field Validators
+    # -------------------------------------------------------------------------
+    @field_validator("log_level")
+    @classmethod
+    def validate_log_level(cls, v: str) -> str:
+        """Validate log level."""
+        valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+        if v.upper() not in valid_levels:
+            raise ValueError(f"log_level must be one of {valid_levels}")
+        return v.upper()
+
+    @field_validator("log_format")
+    @classmethod
+    def validate_log_format(cls, v: str) -> str:
+        """Validate log format."""
+        valid_formats = {"json", "text"}
+        if v.lower() not in valid_formats:
+            raise ValueError(f"log_format must be one of {valid_formats}")
+        return v.lower()
+
+    @field_validator("news_api_provider")
+    @classmethod
+    def validate_news_provider(cls, v: str) -> str:
+        """Validate news API provider."""
+        valid_providers = {"newsapi", "alphavantage", "finnhub"}
+        if v.lower() not in valid_providers:
+            raise ValueError(f"news_api_provider must be one of {valid_providers}")
+        return v.lower()
+
+    @field_validator("environment")
+    @classmethod
+    def validate_environment(cls, v: str) -> str:
+        """Validate deployment environment."""
+        valid_environments = {"development", "staging", "production"}
+        if v.lower() not in valid_environments:
+            raise ValueError(f"environment must be one of {valid_environments}")
+        return v.lower()
+
+    @field_validator("backend_workers")
+    @classmethod
+    def validate_workers(cls, v: int) -> int:
+        """Validate worker count."""
+        if v < 1:
+            raise ValueError("backend_workers must be at least 1")
+        if v > 8:
+            raise ValueError("backend_workers must not exceed 8")
+        return v
+
+    # -------------------------------------------------------------------------
+    # Validation Methods
+    # -------------------------------------------------------------------------
+    def validate_required_settings(self) -> List[str]:
+        """Validate required settings for production. Returns list of missing config warnings."""
+        warnings = []
+
+        if not self.has_openai:
+            warnings.append("OPENAI_API_KEY not set - LLM features will not work")
+
+        if not self.has_news_api:
+            warnings.append("NEWS_API_KEY not set - news features will use fallback sources")
+
+        if self.is_production and not self.secret_key:
+            warnings.append("SECRET_KEY not set - session security may be compromised")
+
+        if self.is_production and self.backend_reload:
+            warnings.append("BACKEND_RELOAD is enabled in production - disable for performance")
+
+        return warnings
+
+    def validate_environment_variables(self) -> List[str]:
+        """Validate that all required environment variables are set for the current environment.
+
+        Returns:
+            List of missing or invalid environment variable descriptions
+        """
+        errors = []
+
+        # Production requires all critical keys
+        if self.is_production:
+            if not self.openai_api_key:
+                errors.append("OPENAI_API_KEY is required in production")
+            if not self.secret_key:
+                errors.append("SECRET_KEY is required in production")
+            if self.backend_reload:
+                errors.append("BACKEND_RELOAD must be false in production")
+
+        return errors
 
 
 @lru_cache(maxsize=1)

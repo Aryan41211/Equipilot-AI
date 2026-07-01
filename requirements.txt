@@ -25,6 +25,9 @@ numpy==1.26.4
 httpx==0.27.2
 aiohttp==3.9.5
 
+# Rate Limiting
+slowapi==0.1.9
+
 # Validation & Serialization
 email-validator==2.2.0
 python-multipart==0.0.12

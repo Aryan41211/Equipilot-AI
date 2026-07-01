@@ -3,78 +3,130 @@
 
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
+import uuid
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import structlog
 
-from backend.config import settings, get_settings
+from backend.config import settings
 from backend.schemas.research import ResearchRequest, ResearchResponse, ResearchStatus
-from backend.graphs.research_graph import create_research_graph
+from backend.graphs.graph import create_first_graph
+from backend.middleware.production import (
+    SecurityHeadersMiddleware,
+    MetricsMiddleware,
+    add_production_middleware,
+    metrics,
+)
+from backend.exceptions.handlers import register_exception_handlers
+from backend.utils.logger import get_logger, setup_logging
+
+# Application version
+APP_VERSION = "0.1.0"
+APP_NAME = "EquiPilot AI"
 
 # Configure structured logging
-structlog.configure(
-    processors=[
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer() if settings.log_format == "json" else structlog.dev.ConsoleRenderer(),
-    ],
-    context_class=dict,
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    wrapper_class=structlog.stdlib.BoundLogger,
-    cache_logger_on_first_use=True,
-)
+setup_logging()
 
-logger = structlog.get_logger(__name__)
+logger = get_logger(__name__)
 
 # Global graph instance (initialized on startup)
 research_graph = None
 
 
+async def validate_environment() -> list:
+    """Validate environment configuration on startup.
+
+    Returns:
+        List of error messages. Empty list means all validations passed.
+    """
+    errors = []
+
+    # Validate settings configuration
+    try:
+        warnings = settings.validate_required_settings()
+        for warning in warnings:
+            logger.warning("Configuration warning", detail=warning)
+    except Exception as e:
+        errors.append(f"Configuration validation: {str(e)}")
+        logger.error("Configuration validation failed", error=str(e))
+
+    # Validate critical environment variables
+    if not settings.openai_api_key:
+        errors.append("OPENAI_API_KEY is not set - LLM features unavailable")
+
+    if not settings.news_api_key:
+        logger.info("NEWS_API_KEY not set - news features will use fallback sources")
+
+    # Validate port availability (basic check)
+    if settings.backend_port < 1024 and not settings.is_development:
+        errors.append(
+            f"Backend port {settings.backend_port} requires root privileges in production"
+        )
+
+    return errors
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager for startup/shutdown."""
-    global research_graph
+    global research_graph  # Declare once at the top for all assignments
 
-    logger.info("Starting EquiPilot AI backend", version="0.1.0")
+    logger.info(
+        "Starting EquiPilot AI backend",
+        version=APP_VERSION,
+        log_level=settings.log_level,
+        log_format=settings.log_format,
+    )
+
+    startup_errors = []
+
+    # Validate environment
+    try:
+        startup_errors.extend(await validate_environment())
+    except Exception as e:
+        startup_errors.append(f"Environment validation: {str(e)}")
 
     # Initialize LangGraph research workflow
     try:
-        research_graph = create_research_graph()
+        research_graph = create_first_graph()
         logger.info("Research graph initialized successfully")
     except Exception as e:
         logger.error("Failed to initialize research graph", error=str(e))
-        raise
+        startup_errors.append(f"Graph initialization: {str(e)}")
 
-    # Validate critical configuration
-    if not settings.has_openai:
-        logger.warning("OpenAI API key not configured - LLM features will not work")
+    if startup_errors:
+        logger.error("Startup completed with errors", errors=startup_errors)
+        app.state.startup_errors = startup_errors
+    else:
+        app.state.startup_errors = []
 
-    if not settings.has_news_api:
-        logger.warning("News API key not configured - news features will not work")
-
-    logger.info("Backend startup complete")
+    logger.info(
+        "Backend startup complete",
+        healthy=not bool(startup_errors),
+        error_count=len(startup_errors),
+    )
 
     yield
 
-    # Shutdown
-    logger.info("Shutting down EquiPilot AI backend")
+    # Graceful shutdown
+    logger.info("Initiating graceful shutdown")
+    research_graph = None
+    logger.info("Shutdown complete")
 
 
 def create_app() -> FastAPI:
-    """Create and configure FastAPI application."""
+    """Create and configure FastAPI application.
+
+    Returns:
+        Configured FastAPI application instance
+    """
 
     app = FastAPI(
-        title="EquiPilot AI",
+        title=APP_NAME,
         description="Agentic Equity Research Assistant API",
-        version="0.1.0",
+        version=APP_VERSION,
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
@@ -90,49 +142,123 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Register all production middleware (rate limiting, security headers, metrics)
+    add_production_middleware(app)
+
+    # Register all exception handlers (global, HTTP, domain-specific)
+    register_exception_handlers(app)
+
+    # Request ID middleware
+    @app.middleware("http")
+    async def add_request_id(request: Request, call_next):
+        request_id = str(uuid.uuid4())
+        request.state.request_id = request_id
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
+
     # Request logging middleware
     @app.middleware("http")
     async def log_requests(request: Request, call_next):
+        request_id = getattr(request.state, "request_id", "unknown")
         logger.info(
             "Incoming request",
+            request_id=request_id,
             method=request.method,
             url=str(request.url),
             client=request.client.host if request.client else None,
         )
-        response = await call_next(request)
-        logger.info(
-            "Request completed",
-            method=request.method,
-            url=str(request.url),
-            status_code=response.status_code,
-        )
-        return response
-
-    # Global exception handler
-    @app.exception_handler(Exception)
-    async def global_exception_handler(request: Request, exc: Exception):
-        logger.error(
-            "Unhandled exception",
-            path=request.url.path,
-            error=str(exc),
-            exc_info=True,
-        )
-        return JSONResponse(
-            status_code=500,
-            content={"detail": "Internal server error", "error": str(exc)},
-        )
+        try:
+            response = await call_next(request)
+            logger.info(
+                "Request completed",
+                request_id=request_id,
+                method=request.method,
+                url=str(request.url),
+                status_code=response.status_code,
+            )
+            return response
+        except Exception as e:
+            logger.error(
+                "Request failed",
+                request_id=request_id,
+                method=request.method,
+                url=str(request.url),
+                error=str(e),
+            )
+            raise
 
     # Health check endpoint
     @app.get("/health", tags=["Health"])
     async def health_check():
-        """Health check endpoint for load balancers and monitoring."""
+        """Health check endpoint for load balancers and monitoring.
+
+        Returns application health status including service availability
+        and any startup errors.
+        """
+        startup_errors = getattr(app.state, "startup_errors", [])
         return {
-            "status": "healthy",
-            "version": "0.1.0",
+            "status": "healthy" if not startup_errors else "degraded",
+            "version": APP_VERSION,
             "services": {
                 "openai": settings.has_openai,
                 "news_api": settings.has_news_api,
             },
+            "errors": startup_errors,
+        }
+
+    # Readiness endpoint
+    @app.get("/ready", tags=["Health"])
+    async def readiness_check():
+        """Readiness endpoint for orchestration systems (Kubernetes, Docker).
+
+        Returns 200 when the application is ready to serve traffic,
+        503 when startup errors exist.
+        """
+        startup_errors = getattr(app.state, "startup_errors", [])
+        if startup_errors:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "status": "not_ready",
+                    "errors": startup_errors,
+                },
+            )
+        return {
+            "status": "ready",
+            "version": APP_VERSION,
+        }
+
+    # Version endpoint
+    @app.get("/version", tags=["Health"])
+    async def version():
+        """Version endpoint for deployment verification."""
+        return {
+            "name": APP_NAME,
+            "version": APP_VERSION,
+            "api_version": settings.api_prefix,
+        }
+
+    # Metrics endpoint
+    @app.get("/metrics", tags=["Health"])
+    async def get_metrics():
+        """Metrics endpoint for monitoring systems.
+
+        Returns request counts, response times, and active request count.
+        """
+        avg_duration = 0
+        if metrics["request_duration"]:
+            avg_duration = (
+                sum(metrics["request_duration"])
+                / len(metrics["request_duration"])
+                * 1000
+            )
+
+        return {
+            "requests_total": dict(metrics["requests_total"]),
+            "requests_by_status": dict(metrics["requests_by_status"]),
+            "average_response_time_ms": round(avg_duration, 2),
+            "active_requests": metrics["active_requests"],
         }
 
     # API Routes
@@ -150,8 +276,10 @@ def create_app() -> FastAPI:
         # TODO: Implement actual research workflow execution
         # For now, return a placeholder response
         return ResearchResponse(
-            request_id="placeholder-id",
+            request_id=str(uuid.uuid4()),
             status=ResearchStatus.PENDING,
+            query=request.query,
+            tickers=request.tickers or [],
             message="Research request accepted. Implementation pending.",
         )
 
@@ -170,6 +298,8 @@ def create_app() -> FastAPI:
         return ResearchResponse(
             request_id=request_id,
             status=ResearchStatus.NOT_FOUND,
+            query="",
+            tickers=[],
             message="Research request not found. Implementation pending.",
         )
 
