@@ -1,6 +1,7 @@
 # EquiPilot AI - Streamlit Frontend
 # Production dashboard (thin API client, no business logic in Streamlit)
 
+import os
 import time
 from datetime import datetime
 from typing import Optional, Dict, Any, List
@@ -12,8 +13,15 @@ from frontend.components.sidebar import render_sidebar
 from frontend.components.progress_tracker import render_progress
 from frontend.components.report_display import render_report
 
-# API configuration
-API_BASE_URL = "http://localhost:8000/api/v1"
+# API configuration — configurable via environment variable for production deployment
+API_BASE_URL = os.environ.get(
+    "EQUIPILOT_API_URL",
+    "http://localhost:8000/api/v1",
+)
+API_HEALTH_URL = os.environ.get(
+    "EQUIPILOT_HEALTH_URL",
+    "http://localhost:8000/health",
+)
 
 
 def main():
@@ -56,6 +64,9 @@ def initialize_session_state():
     if "max_report_length" not in st.session_state:
         st.session_state.max_report_length = 5000
 
+    if "backend_connected" not in st.session_state:
+        st.session_state.backend_connected = None
+
 
 def render_header():
     col1, col2 = st.columns([3, 1])
@@ -64,6 +75,26 @@ def render_header():
         st.caption("Agentic Equity Research Assistant")
     with col2:
         st.caption(f"Last updated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}")
+        check_backend_connection()
+
+
+def check_backend_connection() -> None:
+    """Verify backend connectivity and display status indicator."""
+    if st.session_state.backend_connected is None:
+        try:
+            resp = requests.get(API_HEALTH_URL, timeout=3)
+            if resp.status_code == 200:
+                st.session_state.backend_connected = True
+            else:
+                st.session_state.backend_connected = False
+        except requests.exceptions.RequestException:
+            st.session_state.backend_connected = False
+
+    if st.session_state.backend_connected is True:
+        st.markdown("🟢 **API Connected**")
+    elif st.session_state.backend_connected is False:
+        st.markdown("🔴 **API Disconnected**")
+        st.caption(f"URL: {API_BASE_URL}")
 
 
 def render_disclaimer():
@@ -169,7 +200,7 @@ def render_loading_workflow(request_id: str) -> None:
 
     render_progress(
         current_step=current_step,
-        status="in_progress" if status in ("pending", "in_progress", "in_progress") else status,
+        status="in_progress" if status in ("pending", "in_progress") else status,
         message=f"Stage: {stage_label}",
         show_steps=True,
         show_spinner=True,
@@ -396,7 +427,7 @@ def submit_research(
         st.error(f"API Error: {response.status_code} - {response.text}")
         return None
     except requests.exceptions.ConnectionError:
-        st.error("Cannot connect to backend. Is it running on port 8000?")
+        st.error(f"Cannot connect to backend at {API_BASE_URL}. Is it running?")
         return None
     except Exception as e:
         st.error(f"Error submitting request: {str(e)}")

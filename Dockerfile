@@ -70,13 +70,14 @@ FROM production AS frontend
 # Copy frontend code
 COPY --chown=appuser:appgroup frontend/ ./frontend/
 
-EXPOSE 8501
+EXPOSE 8501 9090
 
-# Health check for frontend
+# Health check for frontend via dedicated health server
 HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=3 \
-    CMD python -c "import urllib.request; resp = urllib.request.urlopen('http://localhost:8501/healthz'); assert resp.status == 200, f'Frontend health check failed: {resp.status}'" || exit 1
+    CMD python -c "import urllib.request; resp = urllib.request.urlopen('http://localhost:9090/healthz'); data = resp.read(); assert resp.status == 200, f'Frontend health check failed: {resp.status}'" || exit 1
 
-CMD ["streamlit", "run", "frontend/app.py", "--server.port", "8501", "--server.address", "0.0.0.0", "--server.headless", "true"]
+# Start both Streamlit and health check server
+CMD ["sh", "-c", "python frontend/healthz.py & streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true"]
 
 # =============================================================================
 # Stage 4: Development - Hot-reload for both backend and frontend
