@@ -93,7 +93,6 @@ pytest -v -W all
 | `TestConfigFields` | 3 | Default values, CORS, allowed hosts |
 | `TestAppConfiguration` | 5 | App title, version, docs endpoints |
 | `TestExceptionHandlerConstants` | 1 | HTTP status code constants |
-| `TestDockerConfiguration` | 10 | Dockerfile, compose, nginx structure |
 | `TestLoggingConfiguration` | 2 | Logger creation, setup |
 | `TestExceptionPackage` | 2 | Exception hierarchy and imports |
 
@@ -202,16 +201,6 @@ def test_error_response_format(self):
     assert data["error_type"] == "validation_error"
 ```
 
-### Testing Docker Configuration
-
-```python
-def test_dockerfile_has_healthcheck(self):
-    """Dockerfile should have HEALTHCHECK instruction."""
-    with open("Dockerfile", "r") as f:
-        content = f.read()
-    assert "HEALTHCHECK" in content
-```
-
 ---
 
 ## Test Configuration
@@ -309,7 +298,6 @@ jobs:
 | **Services** | Data transformation, error handling, caching |
 | **Agents** | State transitions, tool calls, error recovery |
 | **Schemas** | Validation, serialization, field constraints |
-| **Docker** | Dockerfile structure, health checks, security |
 
 ---
 

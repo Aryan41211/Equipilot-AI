@@ -190,9 +190,6 @@ BACKEND_PORT=8001 uvicorn backend.app:app --host 0.0.0.0 --port 8001
 ```bash
 # Increase rate limit in .env
 REQUEST_RATE_LIMIT=200
-
-# Or check nginx rate limits in nginx.conf
-# Increase burst or rate values
 ```
 
 ### Request Timeout
@@ -215,88 +212,6 @@ REQUEST_RATE_LIMIT=200
 LLM_API_TIMEOUT=120
 NEWS_API_TIMEOUT=60
 MARKET_DATA_TIMEOUT=60
-```
-
----
-
-## Docker Issues
-
-### Docker Build Fails
-
-**Error**:
-```
-ERROR: failed to solve: process "/bin/sh -c pip install ..." did not complete successfully
-```
-
-**Cause**: Network issues during dependency installation or incompatible package versions.
-
-**Solution**:
-```bash
-# Retry with no cache
-docker build --no-cache --target production -t equipilot-ai:latest .
-
-# Check Docker network connectivity
-docker run --rm python:3.12-slim pip install --timeout=60 requests
-```
-
-### Container Exits Immediately
-
-**Error**:
-```
-docker compose ps
-NAME                STATUS
-equipilot-backend   Exited (1) 2 seconds ago
-```
-
-**Cause**: Application error on startup (missing env vars, import errors).
-
-**Solution**:
-```bash
-# Check container logs
-docker compose logs backend
-
-# Common causes:
-# - Missing OPENAI_API_KEY
-# - Invalid Python import
-# - Port already in use on host
-```
-
-### Health Check Failing
-
-**Error**:
-```
-docker compose ps
-NAME                STATUS
-equipilot-backend   unhealthy
-```
-
-**Cause**: Health check endpoint is not responding correctly.
-
-**Solution**:
-```bash
-# Check if the app is running inside the container
-docker exec equipilot-backend curl http://localhost:8000/health
-
-# Check health check configuration in docker-compose.yml
-# Ensure start_period is long enough for initialization
-```
-
-### Read-Only Filesystem Errors
-
-**Error**:
-```
-OSError: [Errno 30] Read-only file system: '/app/tmp'
-```
-
-**Cause**: The container has a read-only filesystem but the application needs to write to a specific location.
-
-**Solution**:
-```bash
-# Add tmpfs mount in docker-compose.yml
-services:
-  backend:
-    tmpfs:
-      - /tmp
 ```
 
 ---
@@ -462,14 +377,8 @@ uvicorn backend.app:app --log-level debug
 ### View Structured Logs
 
 ```bash
-# Pretty-print JSON logs
-docker compose logs backend | python -m json.tool
-
-# Filter by request ID
-docker compose logs backend | grep "550e8400"
-
-# Filter by log level
-docker compose logs backend | grep '"level": "error"'
+# Run with JSON logging
+LOG_FORMAT=json uvicorn backend.app:app --host 0.0.0.0 --port 8000
 ```
 
 ### Test Endpoints with curl
@@ -493,7 +402,7 @@ curl -X POST "http://localhost:8000/api/v1/research" \
 
 If you encounter an issue not covered here:
 
-1. **Check logs**: `docker compose logs -f`
+1. **Check logs**: View Railway dashboard logs or run locally with `LOG_LEVEL=DEBUG`
 2. **Enable debug mode**: Set `LOG_LEVEL=DEBUG`
 3. **Search GitHub issues**: [github.com/Aryan41211/equipilot-ai/issues](https://github.com/Aryan41211/equipilot-ai/issues)
 4. **Open a new issue**: Include logs, environment details, and steps to reproduce

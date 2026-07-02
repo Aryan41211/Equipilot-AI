@@ -54,7 +54,7 @@ Every error response includes:
 
 Liveness check endpoint. Returns the current health status of the application.
 
-**Purpose**: Used by Docker, Kubernetes, and load balancers to determine if the application is running.
+**Purpose**: Used by Railway, load balancers, and monitoring systems to determine if the application is running.
 
 **Rate Limiting**: Exempt from general rate limits (separate health check limit).
 
@@ -111,7 +111,7 @@ curl http://localhost:8000/health
 
 Readiness check endpoint. Indicates whether the application is ready to serve traffic.
 
-**Purpose**: Used by Docker and Kubernetes for readiness probes. Returns 503 when startup errors exist (e.g., missing API keys, graph initialization failure).
+**Purpose**: Used for readiness probes by monitoring and CI/CD systems. Returns 503 when startup errors exist (e.g., missing API keys, graph initialization failure).
 
 **Rate Limiting**: Exempt from general rate limits.
 
@@ -442,15 +442,7 @@ String enum: `"pending" | "processing" | "completed" | "failed" | "not_found"`
 
 ## Rate Limiting
 
-Rate limiting is applied at two levels:
-
-### Nginx Level (Edge)
-
-| Zone | Rate | Burst | Applied To |
-|------|------|-------|------------|
-| `health_limit` | 60 req/s | 10 | `/health`, `/ready`, `/version`, `/metrics` |
-| `api_limit` | 20 req/s | 30 | `/api/*` |
-| `general_limit` | 50 req/s | 50 | All other paths |
+Rate limiting is applied at the application level:
 
 ### Application Level (SlowAPI)
 

@@ -245,37 +245,24 @@ Agent Error Occurred
 ### Deployment Architecture
 
 ```
-Internet
-    │
-    ▼
-┌──────────┐
-│  nginx   │  Port 80/443 — Reverse proxy, SSL termination, rate limiting
-└──────────┘
-    │
-    ├──────────────────┐
-    ▼                  ▼
-┌──────────┐    ┌──────────┐
-│ Backend  │    │ Frontend │
-│ :8000    │    │ :8501    │
-│ FastAPI  │    │Streamlit │
-└──────────┘    └──────────┘
+                    ┌──────────────────────┐
+                    │   Streamlit Community │
+                    │   Cloud (Frontend)    │
+                    └──────────┬───────────┘
+                               │  HTTPS
+                               ▼
+                    ┌──────────────────────┐
+                    │   Railway (Backend)   │
+                    │   FastAPI             │
+                    └──────────────────────┘
 ```
 
-### Container Architecture
-
-Each service runs in a Docker container with:
-- **Read-only filesystem** — prevents unauthorized writes
-- **Non-root user** — limits blast radius of security breaches
-- **Resource limits** — CPU and memory constraints
-- **Health checks** — liveness and readiness probes
-- **Structured logging** — JSON output to stdout
-
-### Monitoring
+### Health Monitoring
 
 | Endpoint | Purpose | Used By |
 |----------|---------|---------|
-| `/health` | Liveness check — is the app running? | Docker, K8s, load balancers |
-| `/ready` | Readiness check — is the app ready for traffic? | Docker, K8s |
+| `/health` | Liveness check — is the app running? | Railway, load balancers, monitoring |
+| `/ready` | Readiness check — is the app ready for traffic? | Monitoring, CI/CD |
 | `/version` | Version info for deployment verification | CI/CD, operators |
 | `/metrics` | Request counts, durations, active requests | Monitoring systems |
 
@@ -287,11 +274,9 @@ Each service runs in a Docker container with:
 
 | Layer | Protection |
 |-------|-----------|
-| **Network** | nginx reverse proxy, rate limiting |
-| **Transport** | HTTPS (via nginx SSL termination) |
+| **Transport** | HTTPS (managed by Railway/Streamlit Cloud) |
 | **Application** | CORS, CSP, HSTS, XSS headers |
 | **Input** | Pydantic request validation |
-| **Runtime** | Non-root user, read-only filesystem |
 | **Secrets** | Environment variables only, never in code |
 
 ### Exception Handling
@@ -342,7 +327,7 @@ Settings class (backend/config.py)
 - **Async I/O** — All external API calls use async/await for non-blocking I/O
 - **LangGraph Checkpointing** — Enables workflow persistence and recovery
 - **Caching** — Market data caching via TTL (configurable)
-- **Load Balancing** — nginx distributes traffic across backend workers
+- **Load Balancing** — Railway manages traffic routing to backend workers
 
 ---
 

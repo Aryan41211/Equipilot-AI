@@ -2,210 +2,198 @@
 
 ## Overview
 
-This guide covers production deployment of EquiPilot AI using Docker and Docker Compose. The application is designed to run as a set of containerized microservices behind an nginx reverse proxy.
+This guide covers production deployment of EquiPilot AI using two managed platforms:
+
+- **Railway** — Hosts the FastAPI backend as a web service
+- **Streamlit Community Cloud** — Hosts the Streamlit frontend
+
+This architecture removes Docker and nginx from the deployment stack, leveraging each platform's native capabilities.
+
+---
+
+## Architecture
+
+```
+                    ┌──────────────────────┐
+                    │   Streamlit Community │
+                    │   Cloud (Frontend)    │
+                    │   streamlit.app       │
+                    └──────────┬───────────┘
+                               │  HTTPS
+                               ▼
+                    ┌──────────────────────┐
+                    │   Railway (Backend)   │
+                    │   FastAPI             │
+                    │   railway.app         │
+                    └──────────────────────┘
+```
+
+- **Frontend** (Streamlit) runs on Streamlit Community Cloud and connects to the backend API via `EQUIPILOT_API_URL`
+- **Backend** (FastAPI) runs on Railway as a web service, serving the API and health endpoints
 
 ---
 
 ## Prerequisites
 
-### System Requirements
-
-| Resource | Minimum | Recommended |
-|----------|---------|-------------|
-| CPU | 2 cores | 4 cores |
-| RAM | 2 GB | 4 GB |
-| Disk | 10 GB | 20 GB |
-| Docker Engine | 24+ | 24+ |
-| Docker Compose | v2+ | v2+ |
-
 ### Required Accounts
 
-- **OpenAI API key** — [Get one here](https://platform.openai.com/api-keys)
-- **News API key** (optional) — For news features
+| Platform | Purpose | Sign Up |
+|----------|---------|---------|
+| [Railway](https://railway.app) | Backend (FastAPI) hosting | Free tier available |
+| [Streamlit Community Cloud](https://streamlit.io/cloud) | Frontend hosting | Free (linked to GitHub) |
+| [OpenAI](https://platform.openai.com) | LLM API key | Pay-as-you-go |
+
+### System Requirements (Local)
+
+| Resource | Minimum |
+|----------|---------|
+| Python | 3.12+ |
+| Git | Latest |
 
 ---
 
-## Deployment Options
+## Deployment Steps
 
-### Option 1: Docker Compose (Recommended)
-
-#### 1. Clone and Configure
+### Step 1: Prepare the Repository
 
 ```bash
+# Clone the repository
 git clone https://github.com/Aryan41211/equipilot-ai.git
 cd equipilot-ai
 
-# Create environment file
-cp .env.example .env
+# Create a production branch (optional but recommended)
+git checkout -b production
 ```
 
-#### 2. Set Environment Variables
+### Step 2: Deploy Backend to Railway
 
-Edit `.env` with your production values:
+#### 2.1 Create a Railway Project
 
-```env
-# Required
-OPENAI_API_KEY=sk-your-openai-api-key
+1. Log in to [Railway](https://railway.app)
+2. Click **New Project** → **Deploy from GitHub repo**
+3. Select your `equipilot-ai` repository
+4. Railway will auto-detect the Python project
 
-# Production settings
-ENVIRONMENT=production
-BACKEND_RELOAD=false
-BACKEND_WORKERS=4
-LOG_LEVEL=INFO
-LOG_FORMAT=json
-SECRET_KEY=your-random-secret-key-here
+#### 2.2 Configure Railway
 
-# Optional
-NEWS_API_KEY=your-news-api-key
+Railway needs these settings:
+
+| Setting | Value |
+|---------|-------|
+| **Root Directory** | `(leave empty — project root)` |
+| **Start Command** | `uvicorn backend.app:app --host 0.0.0.0 --port $PORT --workers 2` |
+| **Health Check Path** | `/health` |
+
+Railway sets the `PORT` environment variable automatically. The backend binds to `$PORT`.
+
+#### 2.3 Set Environment Variables
+
+In the Railway dashboard, add these environment variables:
+
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `OPENAI_API_KEY` | `sk-...` | **Required** — Your OpenAI API key |
+| `ENVIRONMENT` | `production` | Enables production middleware |
+| `BACKEND_RELOAD` | `false` | Disable auto-reload |
+| `BACKEND_WORKERS` | `2` | Adjust based on plan |
+| `LOG_LEVEL` | `INFO` | Production logging level |
+| `LOG_FORMAT` | `json` | Structured JSON logs |
+| `SECRET_KEY` | `random-string` | Generate a random secret key |
+| `CORS_ORIGINS` | `["https://your-app.streamlit.app"]` | Allow Streamlit Cloud origin |
+
+**Optional variables:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NEWS_API_KEY` | — | News API key for news features |
+| `NEWS_API_PROVIDER` | `newsapi` | News provider selection |
+| `OPENAI_MODEL` | `gpt-4o` | Primary LLM model |
+| `OPENAI_MODEL_MINI` | `gpt-4o-mini` | Cost-effective model |
+| `REQUEST_RATE_LIMIT` | `100` | Requests per minute |
+
+#### 2.4 Get the Backend URL
+
+Once deployed, Railway provides a URL like:
+```
+https://equipilot-ai-production.up.railway.app
 ```
 
-#### 3. Deploy
+Copy this URL — you'll need it for the frontend configuration.
+
+#### 2.5 Verify Backend
 
 ```bash
-# Build and start all services
-docker compose up --build -d
+# Health check
+curl https://your-railway-url.up.railway.app/health
 
-# Verify deployment
-docker compose ps
-docker compose logs --tail=50
+# Ready check
+curl https://your-railway-url.up.railway.app/ready
+
+# Version info
+curl https://your-railway-url.up.railway.app/version
 ```
 
-#### 4. Verify Health
-
-```bash
-# Check all health endpoints
-curl http://localhost:80/health
-curl http://localhost:80/ready
-curl http://localhost:80/version
-```
-
-### Option 2: Manual Deployment
-
-#### 1. Install Dependencies
-
-```bash
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-#### 2. Configure Environment
-
-```bash
-cp .env.example .env
-# Edit .env with production values
-```
-
-#### 3. Start Services
-
-```bash
-# Start backend
-uvicorn backend.app:app --host 0.0.0.0 --port 8000 --workers 4
-
-# In a separate terminal, start frontend
-streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0
+Expected health response:
+```json
+{
+  "status": "healthy",
+  "version": "0.1.0",
+  "services": {
+    "openai": true,
+    "news_api": false
+  },
+  "errors": []
+}
 ```
 
 ---
 
-## Docker Images
+### Step 3: Deploy Frontend to Streamlit Community Cloud
 
-### Build Stages
+#### 3.1 Prepare the Frontend Configuration
 
-The Dockerfile defines four build stages:
+The frontend needs to know the backend API URL. Configure this via Streamlit secrets.
 
-| Stage | Base | Purpose | Size |
-|-------|------|---------|------|
-| `base` | python:3.12-slim | Dependency installation | ~1.2 GB |
-| `production` | python:3.12-slim | Backend runtime | ~400 MB |
-| `frontend` | production | Frontend runtime | ~420 MB |
-| `development` | base | Hot-reload development | ~1.3 GB |
+#### 3.2 Create Streamlit Secrets
 
-### Build Commands
+Create a `.streamlit/secrets.toml` file in the project root (do NOT commit to git — add to `.gitignore`):
 
-```bash
-# Production backend
-docker build --target production -t equipilot-ai:latest .
-
-# Frontend
-docker build --target frontend -t equipilot-ai:frontend .
-
-# Development
-docker build --target development -t equipilot-ai:dev .
+```toml
+# .streamlit/secrets.toml
+EQUIPILOT_API_URL = "https://your-railway-url.up.railway.app"
+EQUIPILOT_HEALTH_URL = "https://your-railway-url.up.railway.app/health"
 ```
 
-### Image Optimization
+Alternatively, configure secrets directly in the Streamlit Cloud dashboard.
 
-The Dockerfile includes several optimizations:
+#### 3.3 Deploy to Streamlit Cloud
 
-- **Multi-stage builds** — Only runtime dependencies in final image
-- **Non-root user** — `appuser` with UID 1000
-- **Read-only filesystem** — Prevents unauthorized writes
-- **Python optimizations** — `PYTHONDONTWRITEBYTECODE`, `PYTHONUNBUFFERED`
-- **uvloop/httptools** — Faster async event loop and HTTP parsing
+1. Go to [Streamlit Community Cloud](https://streamlit.io/cloud)
+2. Click **New app**
+3. Select your GitHub repository
+4. Set these configuration values:
 
----
+| Setting | Value |
+|---------|-------|
+| **Repository** | `Aryan41211/equipilot-ai` |
+| **Branch** | `main` (or `production`) |
+| **Main file path** | `frontend/app.py` |
+| **Python version** | `3.12` |
 
-## Docker Compose Services
+5. Under **Advanced settings**, add these secrets:
 
-### Service Overview
-
-| Service | Image | Port | Dependencies |
-|---------|-------|------|--------------|
-| `backend` | equipilot-ai:latest | 8000 | — |
-| `frontend` | equipilot-ai:latest | 8501 | backend (healthy) |
-| `nginx` | nginx:alpine | 80, 443 | backend, frontend |
-
-### Resource Limits
-
-```yaml
-backend:
-  deploy:
-    resources:
-      limits:
-        cpus: "1.0"
-        memory: "1G"
-      reservations:
-        cpus: "0.5"
-        memory: "512M"
-
-frontend:
-  deploy:
-    resources:
-      limits:
-        cpus: "0.5"
-        memory: "512M"
-
-nginx:
-  deploy:
-    resources:
-      limits:
-        cpus: "0.5"
-        memory: "256M"
+```toml
+EQUIPILOT_API_URL = "https://your-railway-url.up.railway.app"
+EQUIPILOT_HEALTH_URL = "https://your-railway-url.up.railway.app/health"
 ```
 
-### Health Checks
+6. Click **Deploy**
 
-Each service includes a health check:
+#### 3.4 Get the Frontend URL
 
-```yaml
-backend:
-  healthcheck:
-    test: ["CMD", "python", "-c", "import urllib.request; import json; resp = urllib.request.urlopen('http://localhost:8000/health'); data = json.loads(resp.read()); assert data.get('status') in ('healthy', 'degraded')"]
-    interval: 15s
-    timeout: 5s
-    retries: 3
-    start_period: 10s
+Streamlit Cloud provides a URL like:
 ```
-
-### Logging Configuration
-
-```yaml
-logging:
-  driver: "json-file"
-  options:
-    max-size: "10m"
-    max-file: "3"
+https://your-app-name.streamlit.app
 ```
 
 ---
@@ -214,19 +202,23 @@ logging:
 
 ### Required
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `OPENAI_API_KEY` | OpenAI API key for LLM access | `sk-proj-...` |
+| Variable | Platform | Description |
+|----------|----------|-------------|
+| `OPENAI_API_KEY` | Railway | OpenAI API key for LLM access |
+| `EQUIPILOT_API_URL` | Streamlit | Backend API URL for frontend connection |
+| `EQUIPILOT_HEALTH_URL` | Streamlit | Backend health endpoint URL |
 
-### Production-Required
+### Production Settings (Railway)
 
-| Variable | Description | Reason |
-|----------|-------------|--------|
-| `SECRET_KEY` | Secret key for session signing | Required in production mode |
-| `ENVIRONMENT=production` | Deployment environment | Enables production validation |
-| `BACKEND_RELOAD=false` | Disable auto-reload | Performance and stability |
+| Variable | Value | Reason |
+|----------|-------|--------|
+| `ENVIRONMENT` | `production` | Enables production middleware and validation |
+| `BACKEND_RELOAD` | `false` | Performance and stability |
+| `SECRET_KEY` | `<random>` | Session signing security |
+| `LOG_FORMAT` | `json` | Structured logging for observability |
+| `CORS_ORIGINS` | `["https://your-app.streamlit.app"]` | Allow frontend origin |
 
-### Optional
+### Optional (Railway)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -234,17 +226,15 @@ logging:
 | `OPENAI_MODEL_MINI` | `gpt-4o-mini` | Cost-effective model |
 | `NEWS_API_KEY` | — | News API key |
 | `NEWS_API_PROVIDER` | `newsapi` | News provider |
-| `BACKEND_HOST` | `0.0.0.0` | Bind address |
-| `BACKEND_PORT` | `8000` | Server port |
-| `BACKEND_WORKERS` | `2` | Worker processes |
+| `BACKEND_WORKERS` | `2` | Worker processes (1-8) |
 | `LOG_LEVEL` | `INFO` | Logging level |
-| `LOG_FORMAT` | `json` | Log format |
-| `CORS_ORIGINS` | `["http://localhost:8501"]` | Allowed origins |
 | `REQUEST_RATE_LIMIT` | `100` | Requests per minute |
 
 ---
 
 ## Health Endpoints
+
+The backend exposes these endpoints for monitoring:
 
 | Endpoint | Method | Purpose | Expected Status |
 |----------|--------|---------|-----------------|
@@ -253,65 +243,7 @@ logging:
 | `/version` | GET | Version info | 200 |
 | `/metrics` | GET | Performance metrics | 200 |
 
-### Monitoring Configuration
-
-**Docker Compose health check**:
-```yaml
-healthcheck:
-  test: ["CMD", "python", "-c", "import urllib.request; import json; resp = urllib.request.urlopen('http://localhost:8000/health'); data = json.loads(resp.read()); assert data.get('status') in ('healthy', 'degraded')"]
-  interval: 15s
-  timeout: 5s
-  retries: 3
-  start_period: 10s
-```
-
-**Kubernetes probe**:
-```yaml
-livenessProbe:
-  httpGet:
-    path: /health
-    port: 8000
-  initialDelaySeconds: 10
-  periodSeconds: 15
-
-readinessProbe:
-  httpGet:
-    path: /ready
-    port: 8000
-  initialDelaySeconds: 10
-  periodSeconds: 15
-```
-
----
-
-## Nginx Configuration
-
-The nginx reverse proxy provides:
-
-- **SSL termination** — HTTPS support (requires SSL certificates in `./ssl/`)
-- **Rate limiting** — Separate zones for health, API, and general traffic
-- **Security headers** — CSP, HSTS, XSS protection, CORS
-- **Request routing** — Proxies to backend and frontend services
-- **Logging** — Structured access logs with request IDs
-
-### SSL Setup
-
-1. Place SSL certificates in `./ssl/` directory:
-   ```
-   ssl/
-   ├── equipilot.crt
-   └── equipilot.key
-   ```
-
-2. Update nginx.conf to enable HTTPS:
-   ```nginx
-   server {
-       listen 443 ssl;
-       ssl_certificate /etc/nginx/ssl/equipilot.crt;
-       ssl_certificate_key /etc/nginx/ssl/equipilot.key;
-       # ... rest of configuration
-   }
-   ```
+Railway uses the `/health` endpoint for its health check monitoring.
 
 ---
 
@@ -319,26 +251,22 @@ The nginx reverse proxy provides:
 
 ### Production Checklist
 
-- [ ] `ENVIRONMENT=production` is set
+- [ ] `ENVIRONMENT=production` is set on Railway
 - [ ] `BACKEND_RELOAD=false` is set
 - [ ] `SECRET_KEY` is set to a random value
 - [ ] `OPENAI_API_KEY` is configured
-- [ ] SSL certificates are installed
-- [ ] Firewall allows only ports 80/443
-- [ ] Docker containers run as non-root user
-- [ ] Read-only filesystem is enabled
-- [ ] Resource limits are configured
-- [ ] Logging is configured with rotation
+- [ ] `CORS_ORIGINS` is set to the Streamlit app URL only
+- [ ] `.streamlit/secrets.toml` is NOT committed to git
+- [ ] Railway health checks are configured
+- [ ] Logging is configured with JSON format
 
 ### Security Features
 
 | Feature | Implementation |
 |---------|---------------|
-| **Non-root user** | Docker USER directive |
-| **Read-only filesystem** | `read_only: true` in compose |
-| **No new privileges** | `no-new-privileges:true` security_opt |
-| **Rate limiting** | nginx + slowapi |
-| **Security headers** | CSP, HSTS, XSS, CORS |
+| **CORS** | Restricted to Streamlit app origin |
+| **Rate limiting** | Slowapi (application-level) |
+| **Security headers** | CSP, HSTS, XSS (FastAPI middleware) |
 | **Input validation** | Pydantic schemas |
 | **Structured logging** | JSON format with request IDs |
 
@@ -348,27 +276,9 @@ The nginx reverse proxy provides:
 
 ### Logs
 
-All services log to stdout in JSON format:
+**Railway**: View logs in the Railway dashboard under the **Deployments** tab.
 
-```json
-{
-  "event": "Request completed",
-  "request_id": "550e8400-e29b-41d4-a716-446655440000",
-  "method": "GET",
-  "url": "/health",
-  "status_code": 200,
-  "timestamp": "2026-07-01T10:00:00Z"
-}
-```
-
-### Metrics
-
-The `/metrics` endpoint provides:
-
-- Request counts per endpoint
-- Request counts per status code
-- Average response time
-- Active request count
+**Streamlit Cloud**: View logs in the Streamlit Cloud dashboard under **Manage app** → **Logs**.
 
 ### Health Monitoring
 
@@ -376,28 +286,36 @@ The `/metrics` endpoint provides:
 - **Readiness** (`/ready`): Is the application ready for traffic?
 - **Version** (`/version`): What version is deployed?
 
+### Metrics
+
+The `/metrics` endpoint provides:
+- Request counts per endpoint
+- Request counts per status code
+- Average response time
+- Active request count
+
 ---
 
 ## Troubleshooting
 
 ### Common Issues
 
-**Application returns 503 on /ready**
+**Backend returns 503 on /ready**
 ```
 Cause: Startup errors (missing API keys, graph initialization failure)
-Solution: Check logs for specific error messages
+Solution: Check Railway logs for specific error messages
 ```
 
-**Docker container exits immediately**
+**Frontend cannot connect to backend**
 ```
-Cause: Missing environment variables or configuration errors
-Solution: Verify .env file and environment variable names
+Cause: CORS misconfiguration or incorrect EQUIPILOT_API_URL
+Solution: Verify CORS_ORIGINS on Railway includes the exact Streamlit app URL
 ```
 
 **Rate limiting errors (429)**
 ```
 Cause: Too many requests
-Solution: Increase rate limits or implement client-side throttling
+Solution: Increase REQUEST_RATE_LIMIT or implement client-side throttling
 ```
 
 **OpenAI API errors**
@@ -414,29 +332,19 @@ For more issues, see [troubleshooting.md](troubleshooting.md).
 
 ### Steps
 
-1. Pull latest changes:
+1. Push changes to your GitHub repository
+2. **Railway**: Automatic redeploy from the connected branch
+3. **Streamlit Cloud**: Automatic redeploy from the connected branch
+4. Verify health:
    ```bash
-   git pull origin main
-   ```
-
-2. Rebuild and restart:
-   ```bash
-   docker compose up --build -d
-   ```
-
-3. Verify health:
-   ```bash
-   curl http://localhost:80/health
-   curl http://localhost:80/ready
+   curl https://your-railway-url.up.railway.app/health
+   curl https://your-railway-url.up.railway.app/ready
    ```
 
 ### Rollback
 
-```bash
-# Revert to previous version
-git checkout <previous-tag-or-commit>
-docker compose up --build -d
-```
+- **Railway**: Go to **Deployments** → select a previous deployment → **Redeploy**
+- **Streamlit Cloud**: Go to **Manage app** → **Reboot** or redeploy a previous commit
 
 ---
 

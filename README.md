@@ -32,7 +32,6 @@ This system is designed for **educational and informational purposes only**. It 
 - [Technology Stack](#technology-stack)
 - [Project Structure](#project-structure)
 - [Quick Start](#quick-start)
-- [Docker Setup](#docker-setup)
 - [Running Locally](#running-locally)
 - [Environment Variables](#environment-variables)
 - [API Overview](#api-overview)
@@ -58,14 +57,13 @@ This system is designed for **educational and informational purposes only**. It 
 | **LLM-Powered Synthesis** | Uses OpenAI GPT-4o to generate coherent, well-structured research reports with source citations |
 | **Interactive Web UI** | Streamlit-based frontend for natural language query input and report visualization |
 | **RESTful API** | FastAPI backend with comprehensive endpoints for programmatic access and integration |
-| **Production Ready** | Docker multi-stage builds, health checks, rate limiting, security headers, structured logging |
+| **Production Ready** | Health checks, rate limiting, security headers, structured logging |
 
 ### Production Features
 
 - **Health Monitoring**: `/health` (liveness), `/ready` (readiness), `/version`, `/metrics` endpoints
-- **Security**: CORS, CSP, HSTS, XSS protection headers; rate limiting at nginx and application layers
+- **Security**: CORS, CSP, HSTS, XSS protection headers; rate limiting via slowapi
 - **Observability**: Structured JSON logging with request IDs, metrics collection, exception tracking
-- **Containerization**: Multi-stage Docker builds, non-root user, read-only filesystem, resource limits
 - **Configuration**: Pydantic-settings with environment validation, production mode enforcement
 
 ---
@@ -138,8 +136,6 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **Validation** | [pydantic](https://docs.pydantic.dev) | Request/response schema validation |
 | **Rate Limiting** | [slowapi](https://github.com/laurentS/slowapi) | API rate limiting |
 | **Logging** | [structlog](https://www.structlog.org) | Structured JSON logging |
-| **Containerization** | [Docker](https://www.docker.com) | Multi-stage builds, docker-compose |
-| **Reverse Proxy** | [nginx](https://nginx.org) | Rate limiting, security headers, routing |
 
 ---
 
@@ -152,11 +148,6 @@ equipilot-ai/
 ├── CLAUDE.md                    # AI assistant context
 ├── .env.example                 # Environment variable template
 ├── requirements.txt             # Python dependencies
-├── Dockerfile                   # Multi-stage Docker build
-├── docker-compose.yml           # Production orchestration
-├── nginx.conf                   # Reverse proxy configuration
-├── .dockerignore                # Docker build exclusions
-│
 ├── backend/                     # FastAPI + LangGraph backend
 │   ├── app.py                   # Application factory, routes, middleware
 │   ├── config.py                # Pydantic settings management
@@ -264,68 +255,6 @@ cp .env.example .env
 # Edit .env with your API keys (see Environment Variables section)
 ```
 
----
-
-## Docker Setup
-
-### Prerequisites
-
-- Docker Engine 24+
-- Docker Compose v2+
-
-### Build and Run
-
-```bash
-# Build and start all services
-docker compose up --build -d
-
-# Check service status
-docker compose ps
-
-# View logs
-docker compose logs -f
-
-# Stop all services
-docker compose down
-```
-
-### Service Endpoints
-
-| Service | URL | Description |
-|---------|-----|-------------|
-| **Backend API** | `http://localhost:8000` | FastAPI application |
-| **API Docs** | `http://localhost:8000/docs` | Swagger UI |
-| **Frontend** | `http://localhost:8501` | Streamlit dashboard |
-| **Reverse Proxy** | `http://localhost:80` | nginx entry point |
-
-### Docker Images
-
-```bash
-# Build specific stages
-docker build --target base -t equipilot-ai:base .
-docker build --target production -t equipilot-ai:latest .
-docker build --target frontend -t equipilot-ai:frontend .
-docker build --target development -t equipilot-ai:dev .
-```
-
-### Health Checks
-
-```bash
-# Liveness probe
-curl http://localhost:8000/health
-
-# Readiness probe
-curl http://localhost:8000/ready
-
-# Version info
-curl http://localhost:8000/version
-
-# Metrics
-curl http://localhost:8000/metrics
-```
-
----
-
 ## Running Locally
 
 ### Start the Backend
@@ -347,13 +276,6 @@ streamlit run frontend/app.py --server.port 8501 --server.headless true
 ```
 
 The dashboard will be available at `http://localhost:8501`.
-
-### Development Mode (Single Command)
-
-```bash
-# Requires both terminals, or use the Docker development stage
-docker compose -f docker-compose.yml run --service-ports backend
-```
 
 ---
 
