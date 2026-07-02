@@ -1,9 +1,11 @@
 # EquiPilot AI - Report Display Component
 # Reusable research report rendering
 
-from typing import Any
+from typing import Any, Callable
 
 import streamlit as st
+
+from frontend.components.design_system_ui import section_header, status_badge, safe_html_escape
 
 
 def render_report(
@@ -22,6 +24,7 @@ def render_report(
         expandable: Make sections expandable
     """
     if not report:
+        st.markdown(section_header("AI Research Report", "No report data available."), unsafe_allow_html=True)
         st.warning("No report data available")
         return
 
@@ -30,7 +33,7 @@ def render_report(
         with col1:
             st.metric("Request ID", report.get("request_id", "N/A")[:12] + "...")
         with col2:
-            st.metric("Status", report.get("status", "unknown").title())
+            st.metric("Status", str(report.get("status", "unknown")).title())
         with col3:
             st.metric("Tickers", len(report.get("tickers", [])))
         with col4:
@@ -42,7 +45,7 @@ def render_report(
 
     if report.get("report"):
         if expandable:
-            with st.expander("📄 Full Report", expanded=True):
+            with st.expander("Full Report", expanded=True):
                 st.markdown(report["report"])
         else:
             st.markdown(report["report"])
@@ -57,7 +60,7 @@ def render_report(
         st.info("Report content not available in expected format")
 
     if show_citations and report.get("citations"):
-        with st.expander("📚 Sources & Citations"):
+        with st.expander("Sources & Citations"):
             for i, cite in enumerate(report["citations"]):
                 _render_citation(cite, i)
 
@@ -69,50 +72,50 @@ def render_structured_sections(sections: list[dict[str, Any]], expandable: bool 
         content = section.get("content", "")
 
         if title == "Executive Summary":
-            st.subheader("📋 Executive Summary")
+            st.markdown(section_header("Executive Summary", None), unsafe_allow_html=True)
             st.markdown(content)
         elif title == "Market Snapshot":
-            st.subheader("📈 Market Snapshot")
+            st.markdown(section_header("Market Snapshot", None), unsafe_allow_html=True)
             st.markdown(content)
         elif title == "News Summary":
-            st.subheader("📰 News Summary")
+            st.markdown(section_header("News Summary", None), unsafe_allow_html=True)
             st.markdown(content)
         elif title == "Sentiment Analysis" or title == "Sentiment Summary":
-            st.subheader("😊 Sentiment Summary")
+            st.markdown(section_header("Sentiment Summary", None), unsafe_allow_html=True)
             st.markdown(content)
         elif title == "Risk Factors" or title == "Risks":
-            st.subheader("⚠️ Risks")
+            st.markdown(section_header("Risks", None), unsafe_allow_html=True)
             st.markdown(content)
         elif title == "Opportunities":
-            st.subheader("📈 Opportunities")
+            st.markdown(section_header("Opportunities", None), unsafe_allow_html=True)
             st.markdown(content)
         elif title == "Disclaimer":
             st.caption(f"*{content}*")
         else:
-            st.markdown(f"**{title}**")
+            st.markdown(section_header(str(title), None), unsafe_allow_html=True)
             st.markdown(content)
 
 
 def render_synthesized_report(report: dict[str, Any]):
     """Render a synthesized report (LLM output format)."""
     if report.get("executive_summary"):
-        st.subheader("📋 Executive Summary")
+        st.markdown(section_header("Executive Summary", None), unsafe_allow_html=True)
         st.markdown(report["executive_summary"])
 
     if report.get("market_snapshot"):
-        st.subheader("📈 Market Snapshot")
+        st.markdown(section_header("Market Snapshot", None), unsafe_allow_html=True)
         st.markdown(report["market_snapshot"])
 
     if report.get("news_summary"):
-        st.subheader("📰 News Summary")
+        st.markdown(section_header("News Summary", None), unsafe_allow_html=True)
         st.markdown(report["news_summary"])
 
     if report.get("sentiment_summary"):
-        st.subheader("😊 Sentiment Summary")
+        st.markdown(section_header("Sentiment Summary", None), unsafe_allow_html=True)
         st.markdown(report["sentiment_summary"])
 
     if report.get("risks"):
-        st.subheader("⚠️ Risks")
+        st.markdown(section_header("Risks", None), unsafe_allow_html=True)
         if isinstance(report["risks"], list):
             for risk in report["risks"]:
                 st.markdown(f"- {risk}")
@@ -120,7 +123,7 @@ def render_synthesized_report(report: dict[str, Any]):
             st.markdown(report["risks"])
 
     if report.get("opportunities"):
-        st.subheader("📈 Opportunities")
+        st.markdown(section_header("Opportunities", None), unsafe_allow_html=True)
         if isinstance(report["opportunities"], list):
             for opp in report["opportunities"]:
                 st.markdown(f"- {opp}")
@@ -133,21 +136,15 @@ def render_synthesized_report(report: dict[str, Any]):
 def _render_citation(citation: dict[str, Any], index: int):
     """Render a single citation."""
     cite_type = citation.get("type", "unknown")
-    title = citation.get("title", "Untitled")
+    title = str(citation.get("title", "Untitled"))
     source = citation.get("source", "Unknown")
     url = citation.get("url")
     date = citation.get("date")
 
-    type_icons = {
-        "market_data": "📊",
-        "news": "📰",
-        "sentiment": "😊",
-        "llm": "🤖",
-    }
-    icon = type_icons.get(cite_type, "📄")
-
-    st.markdown(f"**{index + 1}. {icon} {title}**")
-    st.caption(f"Source: {source} | Type: {cite_type}" + (f" | Date: {date}" if date else ""))
+    st.markdown(f"**{index + 1}. {safe_html_escape(title)}**", unsafe_allow_html=False)
+    st.caption(
+        f"Source: {source} | Type: {cite_type}" + (f" | Date: {date}" if date else "")
+    )
 
     if url:
         st.markdown(f"[🔗 View Source]({url})")
@@ -160,7 +157,7 @@ def _render_citation(citation: dict[str, Any], index: int):
 
 def render_report_card(
     report: dict[str, Any],
-    on_click: callable | None = None,
+    on_click: Callable[[str], None] | None = None,
 ):
     """Render a compact report card for history view."""
     with st.container(border=True):
@@ -174,4 +171,6 @@ def render_report_card(
         with col2:
             if st.button("View", key=f"view_{report.get('request_id')}", use_container_width=True):
                 if on_click:
-                    on_click(report.get("request_id"))
+                    request_id_val = report.get("request_id")
+                    if isinstance(request_id_val, str) and request_id_val:
+                        on_click(request_id_val)

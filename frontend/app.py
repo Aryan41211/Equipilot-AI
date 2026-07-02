@@ -12,6 +12,7 @@ import streamlit as st
 from frontend.components.progress_tracker import render_progress
 from frontend.components.report_display import render_report
 from frontend.components.sidebar import render_sidebar
+from frontend.components.design_system_ui import inject_global_styles, title_brand
 
 # API configuration — configurable via environment variable for production deployment
 API_BASE_URL = os.environ.get(
@@ -33,8 +34,10 @@ def main():
         initial_sidebar_state="expanded",
     )
 
+    inject_global_styles()
+
     render_header()
-    render_disclaimer()
+    render_disclaimer_bar()
 
     with st.sidebar:
         render_sidebar(on_analyze=handle_sidebar_submit)
@@ -97,13 +100,106 @@ def check_backend_connection() -> None:
         st.caption(f"URL: {API_BASE_URL}")
 
 
-def render_disclaimer():
-    st.warning(
-        "⚠️ **Disclaimer**: EquiPilot AI is an informational equity research assistant "
-        "and does not provide investment advice. All outputs are for informational "
-        "and educational purposes only.",
-        icon="⚠️",
+def render_disclaimer_bar():
+    """Compact disclaimer bar at top of main content."""
+    st.markdown(
+        """<div style="padding: 8px 12px; border-radius: 8px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); margin-bottom: 16px; font-size: 12px; color: #6b7280;">
+        <span style="color: #ef4444; font-weight: 600;">⚠️ Disclaimer:</span> EquiPilot AI is an informational equity research assistant. Not investment advice.
+        </div>""",
+        unsafe_allow_html=True,
     )
+
+
+def render_empty_dashboard():
+    """Render empty dashboard with guidance and quick actions."""
+    from frontend.components.design_system_ui import (
+        alert_markdown,
+        section_header,
+        quick_action_card,
+    )
+
+    st.markdown(section_header("AI Research Dashboard", "Enterprise-grade equity research platform."), unsafe_allow_html=True)
+
+    # Primary CTA Card
+    st.markdown("""
+    <div style="
+        background: linear-gradient(135deg, rgba(11, 61, 145, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%);
+        border: 1px solid rgba(11, 61, 145, 0.2);
+        border-radius: 16px;
+        padding: 24px;
+        margin: 16px 0 24px 0;
+    ">
+        <div style="font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 8px;">
+            🚀 Start Your First Analysis
+        </div>
+        <div style="font-size: 14px; color: var(--muted); margin-bottom: 16px;">
+            Enter a company name or ticker and your research question in the sidebar to generate a comprehensive AI-powered equity report.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown(alert_markdown(
+        "💡 Tip: Try queries like \"What are AAPL's key growth drivers?\" or \"Analyze TSLA's competitive risks\"",
+        kind="info",
+    ), unsafe_allow_html=True)
+
+    st.divider()
+
+    # Example queries with direct sidebar pre-fill buttons
+    st.markdown(section_header("Quick Start Examples", "Click any example to pre-fill the sidebar form"), unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("📈 AAPL Market Snapshot", key="ex_aapl", use_container_width=True):
+            st.session_state["company_ticker_input"] = "AAPL"
+            st.session_state["query_input"] = "Provide a comprehensive market overview with key metrics and valuation"
+            st.session_state["analysis_type"] = "Full Research"
+            st.rerun()
+        st.caption("Full fundamentals + market data + news")
+
+    with col2:
+        if st.button("📰 TSLA News Catalysts", key="ex_tsla", use_container_width=True):
+            st.session_state["company_ticker_input"] = "TSLA"
+            st.session_state["query_input"] = "What are the latest news catalysts and sentiment drivers?"
+            st.session_state["analysis_type"] = "News"
+            st.rerun()
+        st.caption("News-focused analysis with sentiment")
+
+    with col3:
+        if st.button("📊 MSFT Investment Risks", key="ex_msft", use_container_width=True):
+            st.session_state["company_ticker_input"] = "MSFT"
+            st.session_state["query_input"] = "Identify key investment risks and competitive threats"
+            st.session_state["analysis_type"] = "Full Research"
+            st.rerun()
+        st.caption("Risk-focused comprehensive analysis")
+
+    st.divider()
+
+    # Feature cards below examples
+    st.markdown(section_header("What You Get", "Each analysis delivers"), unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(quick_action_card(
+            icon="📈",
+            title="Market Data",
+            description="Real-time price, volume, fundamentals, and valuation metrics",
+            cta="Live data from yfinance",
+        ), unsafe_allow_html=True)
+    with col2:
+        st.markdown(quick_action_card(
+            icon="📰",
+            title="News & Sentiment",
+            description="Latest headlines, sentiment scoring, and catalyst identification",
+            cta="News API integration",
+        ), unsafe_allow_html=True)
+    with col3:
+        st.markdown(quick_action_card(
+            icon="🤖",
+            title="AI Synthesis",
+            description="Structured report: executive summary, risks, opportunities, citations",
+            cta="LangGraph orchestration",
+        ), unsafe_allow_html=True)
 
 
 def handle_sidebar_submit(form_data: dict[str, Any]) -> None:
@@ -151,8 +247,6 @@ def handle_sidebar_submit(form_data: dict[str, Any]) -> None:
 
 
 def render_main_page():
-    st.subheader("EquiPilot AI Dashboard")
-
     request_id = st.session_state.get("current_request_id")
     report = st.session_state.get("current_report")
 
@@ -162,32 +256,20 @@ def render_main_page():
 
     if report:
         render_dashboard_sections(report)
-        render_execution_trace_explicit(report)
         return
 
-    # Empty state placeholders
-    st.info("Submit a query from the sidebar to generate an AI research report.")
-
-    st.write("### Market Data")
-    st.caption("No data yet.")
-
-    st.write("### News Headlines")
-    st.caption("No headlines yet.")
-
-    st.write("### Sentiment Analysis")
-    st.caption("No sentiment analysis yet.")
-
-    st.write("### AI Research Report")
-    st.caption("No report generated yet.")
+    render_empty_dashboard()
 
 
 def render_loading_workflow(request_id: str) -> None:
     """
     Poll backend and render stage-based loading UI + execution trace live.
     """
+    from frontend.components.design_system_ui import alert_markdown
+
     status_data = check_status(request_id)
     if not status_data:
-        st.warning("Waiting for backend response...")
+        st.markdown(alert_markdown("Waiting for backend response...", kind="warning"), unsafe_allow_html=True)
         time.sleep(1)
         st.rerun()
         return
@@ -218,7 +300,8 @@ def render_loading_workflow(request_id: str) -> None:
 
     if status == "failed":
         st.session_state.is_processing = False
-        st.error(status_data.get("error", status_data.get("message", "Unknown error")))
+        err = status_data.get("error", status_data.get("message", "Unknown error"))
+        st.markdown(alert_markdown(str(err), kind="danger"), unsafe_allow_html=True)
         st.rerun()
         return
 

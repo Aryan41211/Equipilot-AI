@@ -7,13 +7,15 @@ from typing import Any
 
 import streamlit as st
 
+from frontend.components.design_system_ui import alert_markdown
+
 RESEARCH_STEPS = [
-    ("router", "Entity Resolution", "🎯"),
-    ("market_data_tool", "Market Data", "📊"),
-    ("news_tool", "News", "📰"),
-    ("sentiment_tool", "Sentiment", "😊"),
-    ("research", "Research", "📝"),
-    ("completed", "Completed", "✅"),
+    ("router", "Entity Resolution"),
+    ("market_data_tool", "Market Data"),
+    ("news_tool", "News"),
+    ("sentiment_tool", "Sentiment"),
+    ("research", "Research"),
+    ("completed", "Completed"),
 ]
 
 
@@ -34,23 +36,15 @@ def render_progress(
         show_steps: Show step progress bar
         show_spinner: Show spinner for in-progress
     """
-    status_colors = {
-        "pending": "🟡",
-        "in_progress": "🔄",
-        "completed": "✅",
-        "failed": "❌",
-    }
-    status_icon = status_colors.get(status, "❓")
-
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.subheader(f"{status_icon} Research {status.title()}")
+        st.markdown(f"## Research {status.replace('_', ' ').title()}")
     with col2:
         if status == "in_progress" and show_spinner:
-            st.spinner("Processing...")
+            st.spinner("Processing…")
 
     if message:
-        st.info(message)
+        st.markdown(alert_markdown(message, kind="info"), unsafe_allow_html=True)
 
     if show_steps:
         _render_step_progress(current_step)
@@ -65,34 +59,43 @@ def _render_step_progress(current_step: str):
     step_index = _get_step_index(current_step)
 
     cols = st.columns(len(RESEARCH_STEPS))
-    for i, (_step_id, step_name, icon) in enumerate(RESEARCH_STEPS):
+    for i, (step_id, step_name) in enumerate(RESEARCH_STEPS):
         with cols[i]:
             if i < step_index:
-                st.markdown(f"""
-                <div style="text-align: center; padding: 10px;">
-                    <div style="color: green; font-size: 24px;">{icon}</div>
-                    <div style="font-size: 12px; color: gray;">{step_name}</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(
+                    f"""
+                    <div style="text-align: center; padding: 10px;">
+                        <div style="font-weight: 800;">✓</div>
+                        <div style="font-size: 12px; color: gray;">{step_name}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
             elif i == step_index:
-                st.markdown(f"""
-                <div style="text-align: center; padding: 10px;">
-                    <div style="color: blue; font-size: 24px;">{icon}</div>
-                    <div style="font-size: 12px; font-weight: bold;">{step_name}</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(
+                    f"""
+                    <div style="text-align: center; padding: 10px;">
+                        <div style="font-weight: 800; color: var(--accent-2);">•</div>
+                        <div style="font-size: 12px; font-weight: 800;">{step_name}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
             else:
-                st.markdown(f"""
-                <div style="text-align: center; padding: 10px; opacity: 0.3;">
-                    <div style="font-size: 24px;">{icon}</div>
-                    <div style="font-size: 12px; color: lightgray;">{step_name}</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(
+                    f"""
+                    <div style="text-align: center; padding: 10px; opacity: 0.3;">
+                        <div style="font-weight: 800;">•</div>
+                        <div style="font-size: 12px; color: lightgray;">{step_name}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
 
 def _get_step_index(step_id: str) -> int:
     """Get index of step in RESEARCH_STEPS."""
-    for i, (sid, _, _) in enumerate(RESEARCH_STEPS):
+    for i, (sid, _step_name) in enumerate(RESEARCH_STEPS):
         if sid == step_id:
             return i
     return -1

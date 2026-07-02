@@ -6,15 +6,23 @@ from typing import Any
 
 import streamlit as st
 
+from frontend.components.design_system_ui import (
+    section_header,
+    title_brand,
+    status_badge,
+)
+
 API_BASE_URL = "http://localhost:8000/api/v1"
 
 
 def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
     """Render sidebar with analysis inputs, system status, and recent reports."""
-    st.header("EquiPilot AI")
+    st.markdown(title_brand(), unsafe_allow_html=True)
+    st.caption("Agentic Equity Research Assistant")
+    st.divider()
 
     # --- Analysis Inputs (required by spec) ---
-    st.subheader("Research Setup")
+    st.markdown(section_header("Research Setup", "Configure the research you want."), unsafe_allow_html=True)
 
     with st.form("analysis_form"):
         company_or_ticker = st.text_input(
@@ -82,26 +90,26 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
     st.divider()
 
     # --- Current Model ---
-    st.subheader("Current Model")
+    st.markdown(section_header("Current Model"), unsafe_allow_html=True)
     model_name = st.session_state.get("model_name", "gpt-4o")
     st.caption(model_name)
 
     st.divider()
 
     # --- System Status ---
-    st.subheader("System Status")
+    st.markdown(section_header("System Status", "Backend health & integration."), unsafe_allow_html=True)
     render_system_status()
 
     st.divider()
 
     # --- Recent Reports ---
-    st.subheader("Recent Reports")
+    st.markdown(section_header("Recent Reports", "Session history for quick re-runs."), unsafe_allow_html=True)
     render_recent_reports()
 
     st.divider()
 
     # --- About ---
-    st.subheader("About EquiPilot AI")
+    st.markdown(section_header("About EquiPilot AI", "Informational equity research assistant."), unsafe_allow_html=True)
     st.caption(
         "Agentic equity research system using LangGraph orchestration "
         "to combine market data, news, and LLM synthesis."
