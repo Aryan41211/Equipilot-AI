@@ -7,13 +7,10 @@ from langchain_core.tools import tool
 
 from backend.exceptions.sentiment_exceptions import SentimentError
 from backend.schemas.news import NewsArticle
-from backend.services.sentiment_service import SentimentService
+from backend.services.sentiment_service import get_sentiment_service
 from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)
-
-# Singleton for existing patterns.
-sentiment_service = SentimentService()
 
 
 class SentimentTool:
@@ -59,7 +56,7 @@ class SentimentTool:
                     )
                 )
 
-            result = await sentiment_service.analyze_articles(
+            result = await get_sentiment_service().analyze_articles(
                 normalized_articles,
                 tickers=tickers,
             )

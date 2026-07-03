@@ -16,15 +16,26 @@ class LLMService:
     """Service for interacting with OpenAI LLM API."""
 
     def __init__(self):
-        if not settings.openai_api_key:
-            raise ValueError("OpenAI API key not configured")
-
-        self.client = AsyncOpenAI(
-            api_key=settings.openai_api_key,
-            timeout=settings.llm_api_timeout,
-        )
+        # Defer API key validation to first use
+        self._api_key = settings.openai_api_key
+        self._client = None
         self.default_model = settings.openai_model
         self.mini_model = settings.openai_model_mini
+
+    def _get_client(self) -> AsyncOpenAI:
+        """Lazy initialization of OpenAI client."""
+        if self._client is None:
+            if not self._api_key:
+                raise ValueError("OpenAI API key not configured")
+            self._client = AsyncOpenAI(
+                api_key=self._api_key,
+                timeout=settings.llm_api_timeout,
+            )
+        return self._client
+
+    @property
+    def client(self) -> AsyncOpenAI:
+        return self._get_client()
 
     async def close(self):
         """Close the client."""

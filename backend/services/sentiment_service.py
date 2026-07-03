@@ -218,5 +218,13 @@ class SentimentService:
         )
 
 
-# Singleton instance for existing import patterns
-sentiment_service = SentimentService()
+# Lazy singleton - created on first use
+_sentiment_service: SentimentService | None = None
+
+
+def get_sentiment_service() -> SentimentService:
+    """Get or create sentiment service singleton lazily."""
+    global _sentiment_service
+    if _sentiment_service is None:
+        _sentiment_service = SentimentService()
+    return _sentiment_service
