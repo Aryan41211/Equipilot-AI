@@ -262,6 +262,33 @@ class Settings(BaseSettings):
             raise ValueError(f"environment must be one of {valid_environments}")
         return v.lower()
 
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Parse CORS origins from various formats into list[str]."""
+        import json
+
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            v = v.strip()
+            if not v:
+                return ["*"]
+            # Try JSON array first
+            if v.startswith("["):
+                try:
+                    parsed = json.loads(v)
+                    if isinstance(parsed, list):
+                        return parsed
+                except json.JSONDecodeError:
+                    pass
+            # Try comma-separated
+            if "," in v:
+                return [origin.strip() for origin in v.split(",") if origin.strip()]
+            # Single value
+            return [v]
+        return ["*"]
+
     @field_validator("backend_workers")
     @classmethod
     def validate_workers(cls, v: int) -> int:
