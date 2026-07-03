@@ -15,14 +15,8 @@ from frontend.components.sidebar import render_sidebar
 from frontend.components.design_system_ui import inject_global_styles, title_brand
 
 # API configuration — configurable via environment variable for production deployment
-API_BASE_URL = os.environ.get(
-    "EQUIPILOT_API_URL",
-    "http://localhost:8000/api/v1",
-)
-API_HEALTH_URL = os.environ.get(
-    "EQUIPILOT_HEALTH_URL",
-    "http://localhost:8000/health",
-)
+API_BASE_URL = os.environ.get("EQUIPILOT_API_URL", "").rstrip("/")
+API_HEALTH_URL = os.environ.get("EQUIPILOT_HEALTH_URL", "").rstrip("/")
 
 
 def main():
@@ -84,20 +78,25 @@ def render_header():
 def check_backend_connection() -> None:
     """Verify backend connectivity and display status indicator."""
     if st.session_state.backend_connected is None:
-        try:
-            resp = requests.get(API_HEALTH_URL, timeout=3)
-            if resp.status_code == 200:
-                st.session_state.backend_connected = True
-            else:
-                st.session_state.backend_connected = False
-        except requests.exceptions.RequestException:
+        # Streamlit Cloud cannot reach Railway via localhost; don't block rendering
+        # unless the API URL is explicitly configured.
+        if not API_HEALTH_URL:
             st.session_state.backend_connected = False
+        else:
+            try:
+                resp = requests.get(API_HEALTH_URL, timeout=3)
+                st.session_state.backend_connected = (resp.status_code == 200)
+            except requests.exceptions.RequestException:
+                st.session_state.backend_connected = False
 
     if st.session_state.backend_connected is True:
         st.markdown("🟢 **API Connected**")
-    elif st.session_state.backend_connected is False:
+    else:
         st.markdown("🔴 **API Disconnected**")
-        st.caption(f"URL: {API_BASE_URL}")
+        if API_BASE_URL:
+            st.caption(f"URL: {API_BASE_URL}")
+        else:
+            st.caption("EQUIPILOT_API_URL not configured for this deployment.")
 
 
 def render_disclaimer_bar():

@@ -13,10 +13,7 @@ from frontend.components.design_system_ui import (
     status_badge,
 )
 
-API_BASE_URL = os.environ.get(
-    "EQUIPILOT_API_URL",
-    "http://localhost:8000/api/v1",
-)
+API_BASE_URL = os.environ.get("EQUIPILOT_API_URL", "").rstrip("/")
 
 
 def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
@@ -123,9 +120,14 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
 def render_system_status():
     """Render backend health status."""
     try:
+        if not API_BASE_URL:
+            st.info("API not configured (set EQUIPILOT_API_URL).")
+            return
+
         import requests
 
-        response = requests.get(f"{API_BASE_URL.replace('/api/v1', '')}/health", timeout=5)
+        health_url = f"{API_BASE_URL.replace('/api/v1', '')}/health"
+        response = requests.get(health_url, timeout=5)
         if response.status_code == 200:
             health = response.json()
             st.success("🟢 Connected")
@@ -142,7 +144,8 @@ def render_system_status():
             st.error("🔴 Error")
     except Exception:
         st.error("🔴 Unreachable")
-        st.caption("Start backend: `uvicorn backend.app:app --reload`")
+        if API_BASE_URL:
+            st.caption(f"Checked: {API_BASE_URL.replace('/api/v1', '')}/health")
 
 
 def render_recent_reports():
