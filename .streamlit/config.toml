@@ -1,10 +1,8 @@
-.
 # EquiPilot AI - Streamlit Configuration
 # For Streamlit Community Cloud deployment
 
 [server]
 headless = true
-port = $PORT
 enableCORS = false
 
 [theme]
