@@ -2,12 +2,20 @@
 # Production dashboard (thin API client, no business logic in Streamlit)
 
 import os
+import sys
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import requests
 import streamlit as st
+
+# Streamlit Community Cloud may not add the repo root to sys.path.
+# Ensure `import frontend...` and other absolute imports work reliably.
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 from frontend.components.progress_tracker import render_progress
 from frontend.components.report_display import render_report
