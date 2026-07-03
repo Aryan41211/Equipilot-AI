@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from backend.core.exceptions import format_error_detail
 from backend.exceptions.entity_resolution_exceptions import (
     AmbiguousEntityError,
     EntityNotFoundError,
@@ -103,7 +104,7 @@ class EntityResolutionService:
             EntityValidationError: If input text is empty or invalid.
         """
         if not text or not text.strip():
-            raise EntityValidationError(entity_error_details(message="Input text is empty"))
+            raise EntityValidationError(format_error_detail(message="Input text is empty"))
 
         text_upper = text.upper().strip()
         text_lower = text.lower().strip()
@@ -128,12 +129,12 @@ class EntityResolutionService:
 
         if len(unique_matches) == 0:
             raise EntityNotFoundError(
-                entity_error_details(message="Entity not found", entity=text)
+                format_error_detail(message="Entity not found", entity=text)
             )
 
         if len(unique_matches) > 1:
             raise AmbiguousEntityError(
-                entity_error_details(
+                format_error_detail(
                     message=f"Multiple entities match: {', '.join(m[0] for m in unique_matches)}",
                     entity=text,
                 )
@@ -180,17 +181,6 @@ class EntityResolutionService:
         }
         for alias in (aliases or []):
             self._alias_index[alias.lower()] = ticker
-
-
-def entity_error_details(
-    *,
-    message: str,
-    entity: str | None = None,
-) -> str:
-    """Helper to create consistent error messages."""
-    if entity:
-        return f"{message} (entity={entity})"
-    return message
 
 
 entity_resolution_service = EntityResolutionService()

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from backend.core.exceptions import EquiPilotError, format_error_detail
 
-class SynthesisError(Exception):
+
+class SynthesisError(EquiPilotError):
     """Base class for synthesis related errors."""
 
 
@@ -21,12 +23,5 @@ class SynthesisValidationError(SynthesisError):
     """Raised when parsed synthesis output fails schema validation."""
 
 
-def synthesis_error_details(
-    *,
-    message: str,
-    provider: str | None = None,
-) -> str:
-    """Helper to create consistent error messages."""
-    if provider:
-        return f"{message} (provider={provider})"
-    return message
+# Backward-compatible alias
+synthesis_error_details = format_error_detail

@@ -64,9 +64,9 @@ def _render_step_progress(current_step: str):
             if i < step_index:
                 st.markdown(
                     f"""
-                    <div style="text-align: center; padding: 10px;">
-                        <div style="font-weight: 800;">✓</div>
-                        <div style="font-size: 12px; color: gray;">{step_name}</div>
+                    <div style="text-align: center; padding: 0.625rem;">
+                        <div style="font-weight: var(--font-weight-bold);">✓</div>
+                        <div style="font-size: var(--font-size-xs); color: var(--muted);">{step_name}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -74,9 +74,9 @@ def _render_step_progress(current_step: str):
             elif i == step_index:
                 st.markdown(
                     f"""
-                    <div style="text-align: center; padding: 10px;">
-                        <div style="font-weight: 800; color: var(--accent-2);">•</div>
-                        <div style="font-size: 12px; font-weight: 800;">{step_name}</div>
+                    <div style="text-align: center; padding: 0.625rem;">
+                        <div style="font-weight: var(--font-weight-bold); color: var(--accent-2);">•</div>
+                        <div style="font-size: var(--font-size-xs); font-weight: var(--font-weight-bold);">{step_name}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -84,9 +84,9 @@ def _render_step_progress(current_step: str):
             else:
                 st.markdown(
                     f"""
-                    <div style="text-align: center; padding: 10px; opacity: 0.3;">
-                        <div style="font-weight: 800;">•</div>
-                        <div style="font-size: 12px; color: lightgray;">{step_name}</div>
+                    <div style="text-align: center; padding: 0.625rem; opacity: 0.3;">
+                        <div style="font-weight: var(--font-weight-bold);">•</div>
+                        <div style="font-size: var(--font-size-xs); color: var(--muted); opacity: 0.3;">{step_name}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,

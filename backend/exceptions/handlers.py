@@ -1,23 +1,22 @@
 # EquiPilot AI - Centralized Exception Handlers
 # Production-grade error handling with structured logging
 
-
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.config import settings
 from backend.utils.logger import get_logger
+from backend.core.constants import (
+    ErrorType,
+    HTTP_AMBIGUOUS_ENTITY,
+    HTTP_ENTITY_NOT_FOUND,
+    HTTP_SENTIMENT_TIMEOUT,
+    HTTP_SYNTHESIS_TIMEOUT,
+    HTTP_VALIDATION_ERROR,
+)
 
 logger = get_logger(__name__)
-
-# HTTP status codes for domain exceptions
-HTTP_ENTITY_NOT_FOUND = 404
-HTTP_AMBIGUOUS_ENTITY = 409
-HTTP_SENTIMENT_TIMEOUT = 504
-HTTP_SYNTHESIS_TIMEOUT = 504
-HTTP_VALIDATION_ERROR = 422
-HTTP_RATE_LIMITED = 429
 
 
 def get_request_id(request: Request) -> str:
@@ -29,7 +28,7 @@ def error_response(
     status_code: int,
     detail: str,
     request_id: str,
-    error_type: str = "internal_error",
+    error_type: str = ErrorType.INTERNAL_ERROR,
 ) -> JSONResponse:
     """Create a standardized error response.
 
@@ -71,7 +70,7 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
         status_code=500,
         detail=error_detail,
         request_id=request_id,
-        error_type="internal_error",
+        error_type=ErrorType.INTERNAL_ERROR,
     )
 
 
@@ -100,7 +99,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
         status_code=exc.status_code,
         detail=str(exc.detail),
         request_id=request_id,
-        error_type="http_error",
+        error_type=ErrorType.HTTP_ERROR,
     )
 
 
@@ -121,7 +120,7 @@ async def starlette_http_exception_handler(
         status_code=exc.status_code,
         detail=str(exc.detail),
         request_id=request_id,
-        error_type="http_error",
+        error_type=ErrorType.HTTP_ERROR,
     )
 
 
@@ -138,10 +137,10 @@ async def validation_exception_handler(
     )
 
     return error_response(
-        status_code=422,
+        status_code=HTTP_VALIDATION_ERROR,
         detail=str(exc) if settings.is_development else "Request validation failed",
         request_id=request_id,
-        error_type="validation_error",
+        error_type=ErrorType.VALIDATION_ERROR,
     )
 
 
@@ -196,43 +195,43 @@ def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(
         EntityNotFoundError,
         lambda req, exc: domain_exception_handler(
-            req, exc, HTTP_ENTITY_NOT_FOUND, "entity_not_found"
+            req, exc, HTTP_ENTITY_NOT_FOUND, ErrorType.ENTITY_NOT_FOUND
         ),
     )
     app.add_exception_handler(
         AmbiguousEntityError,
         lambda req, exc: domain_exception_handler(
-            req, exc, HTTP_AMBIGUOUS_ENTITY, "ambiguous_entity"
+            req, exc, HTTP_AMBIGUOUS_ENTITY, ErrorType.AMBIGUOUS_ENTITY
         ),
     )
     app.add_exception_handler(
         EntityValidationError,
         lambda req, exc: domain_exception_handler(
-            req, exc, HTTP_VALIDATION_ERROR, "entity_validation_error"
+            req, exc, HTTP_VALIDATION_ERROR, ErrorType.ENTITY_VALIDATION
         ),
     )
     app.add_exception_handler(
         SentimentTimeoutError,
         lambda req, exc: domain_exception_handler(
-            req, exc, HTTP_SENTIMENT_TIMEOUT, "sentiment_timeout"
+            req, exc, HTTP_SENTIMENT_TIMEOUT, ErrorType.SENTIMENT_TIMEOUT
         ),
     )
     app.add_exception_handler(
         SentimentValidationError,
         lambda req, exc: domain_exception_handler(
-            req, exc, HTTP_VALIDATION_ERROR, "sentiment_validation_error"
+            req, exc, HTTP_VALIDATION_ERROR, ErrorType.SENTIMENT_VALIDATION
         ),
     )
     app.add_exception_handler(
         SynthesisTimeoutError,
         lambda req, exc: domain_exception_handler(
-            req, exc, HTTP_SYNTHESIS_TIMEOUT, "synthesis_timeout"
+            req, exc, HTTP_SYNTHESIS_TIMEOUT, ErrorType.SYNTHESIS_TIMEOUT
         ),
     )
     app.add_exception_handler(
         SynthesisValidationError,
         lambda req, exc: domain_exception_handler(
-            req, exc, HTTP_VALIDATION_ERROR, "synthesis_validation_error"
+            req, exc, HTTP_VALIDATION_ERROR, ErrorType.SYNTHESIS_VALIDATION
         ),
     )
 

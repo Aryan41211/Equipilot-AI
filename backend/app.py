@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from backend.config import settings
+from backend.core.constants import APP_NAME, APP_VERSION, AppStatus, ExecutionStatus
 from backend.exceptions.handlers import register_exception_handlers
 from backend.graphs.graph import create_first_graph
 from backend.middleware.production import (
@@ -18,10 +19,6 @@ from backend.middleware.production import (
 )
 from backend.schemas.research import ResearchRequest, ResearchResponse, ResearchStatus
 from backend.utils.logger import get_logger, setup_logging
-
-# Application version
-APP_VERSION = "0.1.0"
-APP_NAME = "EquiPilot AI"
 
 # Configure structured logging
 setup_logging()
@@ -195,7 +192,7 @@ def create_app() -> FastAPI:
         """
         startup_errors = getattr(app.state, "startup_errors", [])
         return {
-            "status": "healthy" if not startup_errors else "degraded",
+            "status": AppStatus.HEALTHY if not startup_errors else AppStatus.DEGRADED,
             "version": APP_VERSION,
             "services": {
                 "openai": settings.has_openai,
@@ -217,12 +214,12 @@ def create_app() -> FastAPI:
             return JSONResponse(
                 status_code=503,
                 content={
-                    "status": "not_ready",
+                    "status": AppStatus.NOT_READY,
                     "errors": startup_errors,
                 },
             )
         return {
-            "status": "ready",
+            "status": AppStatus.READY,
             "version": APP_VERSION,
         }
 

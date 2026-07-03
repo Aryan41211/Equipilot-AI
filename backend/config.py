@@ -6,6 +6,13 @@ from functools import lru_cache
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from backend.core.constants import (
+    APP_NAME,
+    APP_VERSION,
+    VALID_LOG_FORMATS,
+    VALID_LOG_LEVELS,
+)
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
@@ -21,11 +28,11 @@ class Settings(BaseSettings):
     # Application Metadata
     # -------------------------------------------------------------------------
     app_name: str = Field(
-        default="EquiPilot AI",
+        default=APP_NAME,
         description="Application name",
     )
     app_version: str = Field(
-        default="0.1.0",
+        default=APP_VERSION,
         description="Application version",
     )
     environment: str = Field(
@@ -224,18 +231,16 @@ class Settings(BaseSettings):
     @classmethod
     def validate_log_level(cls, v: str) -> str:
         """Validate log level."""
-        valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
-        if v.upper() not in valid_levels:
-            raise ValueError(f"log_level must be one of {valid_levels}")
+        if v.upper() not in VALID_LOG_LEVELS:
+            raise ValueError(f"log_level must be one of {VALID_LOG_LEVELS}")
         return v.upper()
 
     @field_validator("log_format")
     @classmethod
     def validate_log_format(cls, v: str) -> str:
         """Validate log format."""
-        valid_formats = {"json", "text"}
-        if v.lower() not in valid_formats:
-            raise ValueError(f"log_format must be one of {valid_formats}")
+        if v.lower() not in VALID_LOG_FORMATS:
+            raise ValueError(f"log_format must be one of {VALID_LOG_FORMATS}")
         return v.lower()
 
     @field_validator("news_api_provider")

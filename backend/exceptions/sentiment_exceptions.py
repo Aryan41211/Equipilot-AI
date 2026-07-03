@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from backend.core.exceptions import EquiPilotError, format_error_detail
 
-class SentimentError(Exception):
+
+class SentimentError(EquiPilotError):
     """Base class for Sentiment analysis related errors."""
 
 
@@ -21,12 +23,5 @@ class SentimentValidationError(SentimentError):
     """Raised when parsed sentiment output fails schema validation."""
 
 
-def sentiment_error_details(
-    *,
-    message: str,
-    provider: str | None = None,
-) -> str:
-    """Helper to create consistent error messages."""
-    if provider:
-        return f"{message} (provider={provider})"
-    return message
+# Backward-compatible alias
+sentiment_error_details = format_error_detail

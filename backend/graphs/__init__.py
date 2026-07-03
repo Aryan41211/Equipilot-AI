@@ -1,9 +1,11 @@
 # EquiPilot AI - Backend Graphs Package
 # LangGraph workflow definitions
 
-from backend.graphs.research_graph import ResearchState, create_research_graph
+from backend.graphs.graph import create_first_graph, create_initial_state
+from backend.graphs.state import GraphState
 
 __all__ = [
-    "create_research_graph",
-    "ResearchState",
+    "create_first_graph",
+    "create_initial_state",
+    "GraphState",
 ]

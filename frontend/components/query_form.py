@@ -1,7 +1,7 @@
 # EquiPilot AI - Query Form Component
 # Reusable research query input form
 
-from typing import Any
+from typing import Any, Callable, Optional
 
 import streamlit as st
 
@@ -10,7 +10,7 @@ def render_query_form(
     key: str = "query_form",
     default_query: str = "",
     default_tickers: list[str] | None = None,
-    on_submit: callable | None = None,
+    on_submit: Callable | None = None,
 ) -> dict[str, Any] | None:
     """
     Render a research query form.

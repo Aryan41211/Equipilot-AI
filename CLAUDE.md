@@ -1,8 +1,8 @@
-# CLAUDE.md - EquiPilot AI Project Context
+# CLAUDE.md — EquiPilot AI Project Context
 
 ## Repository Understanding
 
-This repository contains **EquiPilot AI** - an agentic equity research system built with Python, FastAPI, LangGraph, and Streamlit.
+This repository contains **EquiPilot AI** — an agentic equity research system built with Python, FastAPI, LangGraph, and Streamlit.
 
 **Key Principle**: This is an **informational equity research assistant only**. It does NOT:
 - Execute trades
@@ -13,10 +13,10 @@ This repository contains **EquiPilot AI** - an agentic equity research system bu
 ## Working Guidelines
 
 ### Context Management
-- **Read this file first** - it contains all essential project context
-- **Never rescan the whole repository** - only read files related to the current task
-- **Preserve architecture** - maintain the modular structure (backend/frontend separation, schemas/services/agents/tools/graphs separation)
-- **Continue previous implementation** - build upon existing foundations
+- **Read this file first** — it contains all essential project context
+- **Never rescan the whole repository** — only read files related to the current task
+- **Preserve architecture** — maintain the modular structure (backend/frontend separation, core/schemas/services/agents/tools/graphs separation)
+- **Continue previous implementation** — build upon existing foundations
 
 ### Code Style
 - Keep prompts concise
@@ -26,8 +26,8 @@ This repository contains **EquiPilot AI** - an agentic equity research system bu
 
 ### Task Completion Reporting
 When completing work, explain in two parts:
-1. **Technical Explanation** - Files created, architecture decisions, dependencies
-2. **User-Friendly Explanation** - What was created, why it was created
+1. **Technical Explanation** — Files created, architecture decisions, dependencies
+2. **User-Friendly Explanation** — What was created, why it was created
 
 ## Project Structure
 
@@ -35,32 +35,70 @@ When completing work, explain in two parts:
 equipilot-ai/
 ├── CLAUDE.md
 ├── README.md
+├── AUDIT_REPORT.md          # Repository audit findings
 ├── .env.example
-├── requirements.txt
+├── requirements.txt         # Runtime dependencies
+├── requirements-dev.txt     # Development dependencies
+├── pyproject.toml           # Tool configuration
 ├── backend/
-│   ├── app.py
-│   ├── config.py
-│   ├── schemas/
-│   ├── services/
-│   ├── agents/
-│   ├── tools/
-│   ├── prompts/
-│   ├── graphs/
-│   └── utils/
+│   ├── app.py              # FastAPI app factory & routes
+│   ├── config.py           # Pydantic settings management
+│   ├── core/               # 🔵 NEW: Centralized infrastructure
+│   │   ├── __init__.py
+│   │   ├── constants.py    # Enums, status codes, constants
+│   │   └── exceptions.py   # Base exception hierarchy
+│   ├── schemas/            # Pydantic request/response models
+│   ├── services/           # Business logic & external integrations
+│   ├── agents/             # LangGraph agent definitions
+│   ├── tools/              # LangGraph function tools
+│   ├── prompts/            # LLM prompt templates
+│   ├── graphs/             # LangGraph workflow definitions
+│   ├── middleware/         # Production middleware
+│   ├── exceptions/         # Domain exception hierarchy & handlers
+│   └── utils/              # Utility functions (logger, helpers, validators)
 ├── frontend/
-│   ├── app.py
-│   └── components/
+│   ├── app.py             # Streamlit main application
+│   ├── healthz.py         # Docker health check server
+│   └── components/        # Reusable UI components
 ├── docs/
-│   ├── ARCHITECTURE.md
-│   └── DATA_SOURCES.md
-└── tests/
+│   ├── architecture.md    # System architecture
+│   ├── api.md             # API reference
+│   ├── deployment.md      # Deployment guide
+│   ├── testing.md         # Testing guide
+│   └── troubleshooting.md # Common issues
+└── tests/                 # Comprehensive test suite
 ```
 
 ## Technology Stack
 
-- **Backend**: Python, FastAPI, LangGraph
-- **Frontend**: Streamlit
-- **LLM**: OpenAI (ChatGPT API)
-- **Data**: yfinance, News API (placeholder)
-- **Config**: python-dotenv, pydantic-settings
-- **Data Processing**: pandas
+- **Backend**: Python 3.12, FastAPI 0.115, LangGraph 0.2
+- **Frontend**: Streamlit 1.39
+- **LLM**: OpenAI (GPT-4o / GPT-4o-mini)
+- **Data**: yfinance, News API, Alpha Vantage, Finnhub
+- **Config**: pydantic-settings
+- **Logging**: structlog (structured JSON)
+- **Testing**: pytest, pytest-asyncio
+
+## Key Architecture Decisions
+
+### Centralized Infrastructure (`backend/core/`)
+- **constants.py**: Application-wide enums (`ExecutionStatus`, `ResearchIntent`, `ErrorType`) eliminate hardcoded strings
+- **exceptions.py**: Base `EquiPilotError` class for all domain exceptions
+
+### Exception Hierarchy
+```
+EquiPilotError
+├── ConfigurationError
+├── ServiceError
+├── ToolError
+├── ProviderError
+└── ValidationError
+```
+
+### UI Design System
+- Single design system: `frontend/components/design_system_ui.py`
+- Duplicates (`design_system.py`, `design_system_clean.py`) archived
+
+### Dependency Management
+- `requirements.txt`: Runtime dependencies only
+- `requirements-dev.txt`: Testing & development tools

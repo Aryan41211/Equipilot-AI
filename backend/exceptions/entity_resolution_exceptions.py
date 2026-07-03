@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from backend.core.exceptions import EquiPilotError, format_error_detail
 
-class EntityResolutionError(Exception):
+
+class EntityResolutionError(EquiPilotError):
     """Base class for Entity Resolution related errors."""
 
 
@@ -17,12 +19,5 @@ class EntityValidationError(EntityResolutionError):
     """Raised when entity resolution input validation fails."""
 
 
-def entity_error_details(
-    *,
-    message: str,
-    entity: str | None = None,
-) -> str:
-    """Helper to create consistent error messages."""
-    if entity:
-        return f"{message} (entity={entity})"
-    return message
+# Backward-compatible alias
+entity_error_details = format_error_detail

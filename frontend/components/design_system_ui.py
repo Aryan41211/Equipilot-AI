@@ -4,85 +4,347 @@ from typing import Any
 
 THEME_CSS = """
 :root{
-  --bg: #f7f8fb;
+  --bg: #f8fafc;
   --panel: #ffffff;
-  --text: #111827;   /* dark charcoal */
-  --muted: #6b7280;   /* medium gray */
-  --border: #e5e7eb;  /* subtle light gray */
-  --shadow: 0 6px 20px rgba(17, 24, 39, 0.06);
+  --text: #0f172a;   /* dark blue-gray */
+  --muted: #64748b;   /* slate */
+  --border: #e2e8f0;  /* light gray */
+  --border-dark: #cbd5e1;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+  --transition: all 0.2s ease;
 
+  --primary: #2563eb;   /* blue-600 */
+  --primary-hover: #1d4ed8;
+  --secondary: #64748b;
   --accent: #0b3d91;   /* deep blue */
   --accent-2: #06b6d4; /* cyan */
 
-  --success: #16a34a;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
 
-  --radius-xl: 18px;
-  --radius-lg: 14px;
-  --radius-md: 12px;
+  --info-bg: rgba(6, 182, 212, 0.04);
+  --success-bg: rgba(5, 150, 105, 0.05);
+  --warning-bg: rgba(217, 119, 6, 0.05);
+  --error-bg: rgba(220, 38, 38, 0.05);
 
-  --focus: rgba(11, 61, 145, .35);
+  --radius-xl: 1rem;
+  --radius-lg: 0.75rem;
+  --radius-md: 0.5rem;
+  --radius-sm: 0.25rem;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --focus-ring: rgba(37, 99, 235, 0.25);
 }
 
+/* Base */
 html, body{
   background: var(--bg) !important;
   color: var(--text) !important;
   font-family: var(--font-sans) !important;
+  font-size: var(--font-size-base);
+  line-height: 1.6;
 }
 
+/* Containers */
 .block-container{
-  padding-top: 1.2rem;
-  padding-bottom: 2rem;
+  padding-top: 2rem;
+  padding-bottom: 3rem;
+  max-width: 1200px;
 }
 
+/* Sidebar */
 .stApp [data-testid="stSidebar"]{
-  background: #ffffff !important;
+  background: var(--panel) !important;
   border-right: 1px solid var(--border) !important;
 }
 
-.stAlert{
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius-lg) !important;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.02) !important;
+/* Headings */
+h1, h2, h3, h4, h5, h6{
+  color: var(--text);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+h1{ font-size: var(--font-size-3xl); }
+h2{ font-size: var(--font-size-2xl); }
+h3{ font-size: var(--font-size-xl); }
+h4{ font-size: var(--font-size-lg); }
+h5{ font-size: var(--font-size-base); }
+h6{ font-size: var(--font-size-sm); }
+
+/* Text */
+p{
+  margin-bottom: 1rem;
+  color: var(--text);
 }
 
-.stExpander section{
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius-lg) !important;
-  background: #fff !important;
+/* Links */
+a{
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+a:hover{
+  color: var(--primary-hover);
+  text-decoration: underline;
 }
 
+/* Buttons */
+.stButton > button{
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  transition: var(--transition);
+  border: 1px solid transparent;
+  padding: 0.5rem 1rem;
+}
+.stButton > button[kind="primary"]{
+  background-color: var(--primary);
+  color: white;
+  border: none;
+}
+.stButton > button[kind="primary"]:hover{
+  background-color: var(--primary-hover);
+  box-shadow: var(--shadow-sm);
+}
+.stButton > button[kind="secondary"]{
+  background-color: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+.stButton > button[kind="secondary"]:hover{
+  background-color: rgba(37, 99, 235, 0.08);
+  border-color: var(--primary-hover);
+}
+
+/* Inputs */
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div > select{
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  font-size: var(--font-size-base);
+  background-color: var(--panel);
+  color: var(--text);
+  transition: var(--transition);
+}
+.stTextInput > div > div > input:focus,
+.stTextArea > div > div > textarea:focus,
+.stSelectbox > div > div > select:focus{
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--focus-ring);
+  outline: none;
+}
+.stTextInput > div > div > input::placeholder,
+.stTextArea > div > div > textarea::placeholder{
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+/* Metrics */
 [data-testid="stMetric"]{
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 0.75rem 0.9rem;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+  padding: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+[data-testid="stMetric"]:hover{
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
 }
 
+/* Progress bar */
+.stProgress > div > div > div > div {
+  background-color: var(--primary);
+  height: 0.5rem;
+  border-radius: var(--radius-sm);
+}
+.stProgress > div > div {
+  background-color: rgba(37, 99, 235, 0.2);
+  border-radius: var(--radius-sm);
+  height: 0.5rem;
+}
+
+/* Ensure progress bar container has proper spacing */
+.stProgress {
+  margin: 1rem 0;
+}
+
+/* Expander */
+.stExpander{
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 1rem;
+}
+.stExpander > details > summary{
+  padding: 0.75rem 1rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+  background-color: transparent;
+  cursor: pointer;
+}
+.stExpander > details > summary:hover{
+  background-color: rgba(0,0,0,0.02);
+}
+.stExpander > details > .content{
+  padding: 1rem;
+}
+
+/* Tabs */
+.stTabs [data-baseweb="tab-list"]{
+  gap: 0.5rem;
+}
+.stTabs [data-baseweb="tab"]{
+  background-color: transparent;
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  font-weight: var(--font-weight-medium);
+  transition: var(--transition);
+}
+.stTabs [data-baseweb="tab"][aria-selected="true"]{
+  background-color: var(--primary);
+  color: white;
+}
+
+/* Alerts */
+.stAlert{
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.stAlert[data-baseweb="notification"]{
+  background-color: rgba(13, 110, 253, 0.05);
+  border-left: 4px solid var(--primary);
+}
+.stAlert[data-baseweb="notification"][kind="info"]{
+  background-color: rgba(13, 110, 253, 0.05);
+  border-left-color: var(--primary);
+}
+.stAlert[data-baseweb="notification"][kind="success"]{
+  background-color: rgba(5, 150, 105, 0.05);
+  border-left-color: var(--success);
+}
+.stAlert[data-baseweb="notification"][kind="warning"]{
+  background-color: rgba(217, 119, 6, 0.05);
+  border-left-color: var(--warning);
+}
+.stAlert[data-baseweb="notification"][kind="error"]{
+  background-color: rgba(220, 38, 38, 0.05);
+  border-left-color: var(--danger);
+}
+
+/* Cards */
 .ds-card{
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+.ds-card:hover{
   box-shadow: var(--shadow);
+  transform: translateY(-2px);
 }
 
+/* Layout utilities */
 .ds-flex{
   display:flex;
   align-items:center;
-  gap: .6rem;
+  gap: .75rem;
+}
+.ds-grid{
+  display: grid;
+  gap: 1rem;
 }
 
-:focus{
-  outline: 2px solid var(--focus);
+/* Misc */
+:focus-visible{
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
+hr{
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 1.5rem 0;
+}
+code{
+  background-color: rgba(0,0,0,0.04);
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+}
+pre{
+  background-color: rgba(0,0,0,0.04);
+  padding: 1rem;
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+}
+blockquote{
+  border-left: 4px solid var(--border);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: var(--muted);
+}
+img{
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+}
 
-a{ color: var(--accent) !important; text-decoration: none !important; }
-a:hover{ text-decoration: underline !important; }
+/* Dark mode adjustments (if needed) */
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --border: #334155;
+    --border-dark: #475569;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow: 0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -1px rgba(0,0,0,0.2);
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info-bg: rgba(6, 182, 212, 0.15);
+    --success-bg: rgba(5, 150, 105, 0.15);
+    --warning-bg: rgba(217, 119, 6, 0.15);
+    --error-bg: rgba(220, 38, 38, 0.15);
+  }
+}
+
+/* Animation for smooth appearance */
+@keyframes fadeIn{
+  from{ opacity: 0; transform: translateY(10px); }
+  to{ opacity: 1; transform: translateY(0); }
+}
+.fade-in{
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+
 """
 
 
@@ -96,12 +358,12 @@ def title_brand() -> str:
     # Keep to simple HTML (used with st.markdown(..., unsafe_allow_html=True)).
     return """
     <div class="ds-flex" style="gap: .85rem;">
-      <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(180deg, rgba(11,61,145,1) 0%, rgba(11,61,145,.86) 100%);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;">
+      <div style="width:38px;height:38px;border-radius:var(--radius-md);background:linear-gradient(180deg, rgba(11,61,145,1) 0%, rgba(11,61,145,.86) 100%);display:flex;align-items:center;justify-content:center;color:white;font-weight:var(--font-weight-bold);">
         EP
       </div>
       <div>
-        <div style="font-size: 28px; line-height: 1.15; font-weight: 800; letter-spacing: -0.02em;">EquiPilot AI</div>
-        <div style="margin-top: 2px; font-size: 13px; color: var(--muted); font-weight: 600;">Agentic Equity Research Assistant</div>
+        <div style="font-size: var(--font-size-2xl); line-height: 1.15; font-weight: var(--font-weight-bold); letter-spacing: -0.02em;">EquiPilot AI</div>
+        <div style="margin-top: 0.125rem; font-size: var(--font-size-sm); color: var(--muted); font-weight: var(--font-weight-medium);">Agentic Equity Research Assistant</div>
       </div>
     </div>
     """
@@ -118,14 +380,14 @@ def ds_card_end() -> str:
 def section_header(title: str, subtitle: str | None = None) -> str:
     if subtitle:
         return f"""
-        <div style="margin: 10px 0 14px 0;">
-          <div style="font-size: 18px; font-weight: 800; letter-spacing: -0.01em;">{safe_html_escape(title)}</div>
-          <div style="margin-top: 4px; font-size: 13px; color: var(--muted); font-weight: 600;">{safe_html_escape(subtitle)}</div>
+        <div style="margin: 0.5rem 0 0.75rem 0;">
+          <div style="font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); letter-spacing: -0.01em;">{safe_html_escape(title)}</div>
+          <div style="margin-top: 0.25rem; font-size: var(--font-size-xs); color: var(--muted); font-weight: var(--font-weight-medium);">{safe_html_escape(subtitle)}</div>
         </div>
         """
     return f"""
-    <div style="margin: 10px 0 14px 0;">
-      <div style="font-size: 18px; font-weight: 800; letter-spacing: -0.01em;">{safe_html_escape(title)}</div>
+    <div style="margin: 0.5rem 0 0.75rem 0;">
+      <div style="font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); letter-spacing: -0.01em;">{safe_html_escape(title)}</div>
     </div>
     """
 
@@ -149,41 +411,48 @@ def status_badge(status: str) -> str:
     <span style="
       display:inline-flex;
       align-items:center;
-      gap:8px;
-      padding: 6px 10px;
+      gap:0.5rem;
+      padding: 0.375rem 0.625rem;
       border-radius: 999px;
       background: rgba(0,0,0,0.03);
       border: 1px solid var(--border);
       color: var(--text);
-      font-weight: 700;
-      font-size: 12px;
+      font-weight: var(--font-weight-semibold);
+      font-size: var(--font-size-xs);
     ">
-      <span style="width:8px;height:8px;border-radius:99px;background:{color};display:inline-block;"></span>
+      <span style="width:0.5rem;height:0.5rem;border-radius:99px;background:{color};display:inline-block;"></span>
       {safe_html_escape(label)}
     </span>
     """
 
 
 def alert_markdown(message: str, kind: str = "info") -> str:
-    kind_map = {
+    color_map = {
         "info": "var(--accent-2)",
         "success": "var(--success)",
         "warning": "var(--warning)",
         "danger": "var(--danger)",
     }
-    color = kind_map.get(kind, "var(--accent-2)")
+    bg_map = {
+        "info": "var(--info-bg)",
+        "success": "var(--success-bg)",
+        "warning": "var(--warning-bg)",
+        "danger": "var(--error-bg)",
+    }
+    color = color_map.get(kind, "var(--accent-2)")
+    bg = bg_map.get(kind, "var(--info-bg)")
 
     return f"""
     <div class="ds-card" style="
-      padding: 14px 16px;
+      padding: 0.875rem 1rem;
       border-radius: var(--radius-lg);
       box-shadow: none;
       border: 1px solid var(--border);
-      background: rgba(6,182,212,0.04);
+      background: {bg};
     ">
-      <div style="display:flex; align-items:flex-start; gap: 10px;">
-        <div style="width:10px;height:10px;border-radius:99px;background:{color};margin-top: 6px;"></div>
-        <div style="font-weight: 700; line-height: 1.35;">{safe_html_escape(message)}</div>
+      <div style="display:flex; align-items:flex-start; gap: 0.5rem;">
+        <div style="width:0.625rem;height:0.625rem;border-radius:99px;background:{color};display:inline-block;"></div>
+        <div style="font-weight: var(--font-weight-bold); line-height: 1.35;">{safe_html_escape(message)}</div>
       </div>
     </div>
     """
@@ -196,17 +465,17 @@ def quick_action_card(icon: str, title: str, description: str, cta: str) -> str:
         background: var(--panel);
         border: 1px solid var(--border);
         border-radius: var(--radius-lg);
-        padding: 16px;
+        padding: 1rem;
         box-shadow: var(--shadow);
         height: 100%;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 0.5rem;
     ">
-        <div style="font-size: 24px;">{icon}</div>
-        <div style="font-weight: 700; font-size: 14px; color: var(--text);">{safe_html_escape(title)}</div>
-        <div style="font-size: 12px; color: var(--muted); line-height: 1.4;">{safe_html_escape(description)}</div>
-        <div style="font-size: 13px; color: var(--accent); font-weight: 600; margin-top: auto;">{safe_html_escape(cta)}</div>
+        <div style="font-size: 1.5rem;">{icon}</div>
+        <div style="font-weight: var(--font-weight-bold); font-size: var(--font-size-sm); color: var(--text);">{safe_html_escape(title)}</div>
+        <div style="font-size: var(--font-size-xs); color: var(--muted); line-height: 1.4;">{safe_html_escape(description)}</div>
+        <div style="font-size: var(--font-size-xs); color: var(--accent); font-weight: var(--font-weight-medium); margin-top: auto;">{safe_html_escape(cta)}</div>
     </div>
     """
 
