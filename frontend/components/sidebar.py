@@ -1,6 +1,7 @@
 # EquiPilot AI - Sidebar Component
 # Navigation, recent reports, and system status
 
+import os
 from collections.abc import Callable
 from typing import Any
 
@@ -12,7 +13,10 @@ from frontend.components.design_system_ui import (
     status_badge,
 )
 
-API_BASE_URL = "http://localhost:8000/api/v1"
+API_BASE_URL = os.environ.get(
+    "EQUIPILOT_API_URL",
+    "http://localhost:8000/api/v1",
+)
 
 
 def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):

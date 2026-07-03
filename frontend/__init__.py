@@ -1,0 +1,1 @@
+# EquiPilot AI - Frontend Package
