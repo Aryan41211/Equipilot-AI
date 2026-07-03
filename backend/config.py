@@ -1,6 +1,7 @@
 # EquiPilot AI - Backend Configuration
 # Centralized configuration management using Pydantic Settings
 
+import os
 from functools import lru_cache
 
 from pydantic import Field, field_validator
@@ -112,8 +113,8 @@ class Settings(BaseSettings):
         description="Backend server host",
     )
     backend_port: int = Field(
-        default=8000,
-        description="Backend server port",
+        default_factory=lambda: int(os.environ.get("PORT", "8000")),
+        description="Backend server port (from PORT env var in production)",
     )
     backend_reload: bool = Field(
         default=True,
@@ -140,7 +141,7 @@ class Settings(BaseSettings):
         description="API route prefix",
     )
     cors_origins: list[str] = Field(
-        default=["http://localhost:8501", "http://localhost:3000"],
+        default=["*"],
         description="Allowed CORS origins",
     )
 
