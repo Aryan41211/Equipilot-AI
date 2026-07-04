@@ -1,12 +1,13 @@
 # EquiPilot AI - Streamlit Frontend
 # Production dashboard (thin API client, no business logic in Streamlit)
 
+import logging
 import os
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, TypeVar, cast
 
 import requests
 import streamlit as st
@@ -25,6 +26,61 @@ from frontend.components.design_system_ui import inject_global_styles, title_bra
 # API configuration — configurable via environment variable for production deployment
 API_BASE_URL = os.environ.get("EQUIPILOT_API_URL", "").rstrip("/")
 API_HEALTH_URL = os.environ.get("EQUIPILOT_HEALTH_URL", "").rstrip("/")
+
+T = TypeVar("T")
+
+
+def _get_logger() -> logging.Logger:
+    """Create a production-safe logger (never crash Streamlit)."""
+    try:
+        logger_ = logging.getLogger("frontend")
+        if not logger_.handlers:
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+            handler.setFormatter(formatter)
+            logger_.addHandler(handler)
+        logger_.setLevel(logging.INFO)
+        return logger_
+    except Exception:
+        # As a last resort, return root logger; never fail import.
+        return logging.getLogger()
+
+
+_LOGGER = _get_logger()
+
+
+def run_safely(
+    fn: Callable[[], T],
+    context: str,
+    fallback: T,
+    *,
+    error_placeholder=None,
+) -> T:
+    """
+    Execute fn() safely:
+    - logs full stack trace on exception
+    - shows friendly inline error (no traceback) near the failing component
+    - returns provided fallback to keep the dashboard functional
+    """
+    try:
+        return fn()
+    except Exception as e:
+        try:
+            _LOGGER.exception("Frontend runtime failure in %s: %s", context, e)
+        except Exception:
+            # Never allow logging failure to break the UI
+            pass
+
+        # Inline friendly error near the component that failed.
+        try:
+            if error_placeholder is not None:
+                error_placeholder.error(f"Something went wrong while {context}. Please try again.")
+            else:
+                st.error(f"Something went wrong while {context}. Please try again.")
+        except Exception:
+            pass
+
+        return fallback
 
 
 def main():
@@ -214,43 +270,53 @@ def handle_sidebar_submit(form_data: dict[str, Any]) -> None:
     Thin-client callback invoked by sidebar. Starts research on backend and
     triggers polling rendering in the main page.
     """
-    # Store for UI/debug
-    st.session_state.analysis_form_data = form_data
 
-    max_length = form_data.get("max_report_length", st.session_state.get("max_report_length", 5000))
-    st.session_state.max_report_length = max_length
+    def _impl() -> None:
+        # Store for UI/debug
+        st.session_state.analysis_form_data = form_data
 
-    with st.spinner("Submitting research request..."):
-        request_data = submit_research(
-            query=form_data["query"],
-            tickers=form_data.get("tickers"),
-            include_news=form_data.get("include_news", True),
-            include_sentiment=form_data.get("include_sentiment", True),
-            include_fundamentals=form_data.get("include_fundamentals", True),
-            include_technicals=form_data.get("include_technicals", False),
-            max_length=max_length,
-        )
+        # Session state hardening (avoid missing-key crashes)
+        current_max_length = st.session_state.get("max_report_length", 5000)
+        max_length = form_data.get("max_report_length", current_max_length)
+        st.session_state.max_report_length = max_length
 
-    if not request_data:
-        return
+        with st.spinner("Submitting research request..."):
+            request_data = submit_research(
+                query=form_data.get("query", ""),
+                tickers=form_data.get("tickers"),
+                include_news=form_data.get("include_news", True),
+                include_sentiment=form_data.get("include_sentiment", True),
+                include_fundamentals=form_data.get("include_fundamentals", True),
+                include_technicals=form_data.get("include_technicals", False),
+                max_length=max_length,
+            )
 
-    st.success(f"Research started! Request ID: {request_data.get('request_id', 'N/A')[:12]}...")
-    st.session_state.current_request_id = request_data.get("request_id")
-    st.session_state.is_processing = True
-    st.session_state.current_report = None
-    st.session_state.execution_trace = None
+        if not request_data:
+            return
 
-    st.session_state.research_history.append(
-        {
-            "request_id": request_data.get("request_id"),
-            "query": form_data.get("query"),
-            "tickers": form_data.get("tickers") or [],
-            "status": request_data.get("status"),
-            "created_at": datetime.utcnow().isoformat(),
-        }
-    )
+        st.success(f"Research started! Request ID: {request_data.get('request_id', 'N/A')[:12]}...")
+        st.session_state.current_request_id = request_data.get("request_id")
+        st.session_state.is_processing = True
+        st.session_state.current_report = None
+        st.session_state.execution_trace = None
 
-    st.rerun()
+        history = st.session_state.get("research_history", [])
+        if isinstance(history, list):
+            history.append(
+                {
+                    "request_id": request_data.get("request_id"),
+                    "query": form_data.get("query"),
+                    "tickers": form_data.get("tickers") or [],
+                    "status": request_data.get("status"),
+                    "created_at": datetime.utcnow().isoformat(),
+                }
+            )
+            st.session_state.research_history = history
+
+        st.rerun()
+
+    error_ph = st.empty()
+    return run_safely(lambda: _impl(), "sidebar submission", fallback=None, error_placeholder=error_ph)  # type: ignore[return-value]
 
 
 def render_main_page():
@@ -272,48 +338,53 @@ def render_loading_workflow(request_id: str) -> None:
     """
     Poll backend and render stage-based loading UI + execution trace live.
     """
-    from frontend.components.design_system_ui import alert_markdown
 
-    status_data = check_status(request_id)
-    if not status_data:
-        st.markdown(alert_markdown("Waiting for backend response...", kind="warning"), unsafe_allow_html=True)
-        time.sleep(1)
+    def _impl() -> None:
+        from frontend.components.design_system_ui import alert_markdown
+
+        status_data = check_status(request_id)
+        if not status_data:
+            st.markdown(alert_markdown("Waiting for backend response...", kind="warning"), unsafe_allow_html=True)
+            time.sleep(1)
+            st.rerun()
+            return
+
+        status = status_data.get("status", "unknown")
+        execution_metadata = status_data.get("execution_metadata", {}) or {}
+        current_step = status_data.get("current_step") or execution_metadata.get("current_step") or "router"
+
+        stage_label = map_trace_step_to_stage(current_step)
+
+        render_progress(
+            current_step=current_step,
+            status="in_progress" if status in ("pending", "in_progress") else status,
+            message=f"Stage: {stage_label}",
+            show_steps=True,
+            show_spinner=True,
+        )
+
+        st.divider()
+        render_execution_trace_explicit_partial(status_data)
+
+        if status in ("completed", "success"):
+            st.session_state.is_processing = False
+            st.session_state.current_report = status_data
+            st.session_state.execution_trace = execution_metadata
+            st.rerun()
+            return
+
+        if status == "failed":
+            st.session_state.is_processing = False
+            err = status_data.get("error", status_data.get("message", "Unknown error"))
+            st.markdown(alert_markdown(str(err), kind="danger"), unsafe_allow_html=True)
+            st.rerun()
+            return
+
+        time.sleep(2)
         st.rerun()
-        return
 
-    status = status_data.get("status", "unknown")
-    execution_metadata = status_data.get("execution_metadata", {}) or {}
-    current_step = status_data.get("current_step") or execution_metadata.get("current_step") or "router"
-
-    stage_label = map_trace_step_to_stage(current_step)
-
-    render_progress(
-        current_step=current_step,
-        status="in_progress" if status in ("pending", "in_progress") else status,
-        message=f"Stage: {stage_label}",
-        show_steps=True,
-        show_spinner=True,
-    )
-
-    st.divider()
-    render_execution_trace_explicit_partial(status_data)
-
-    if status in ("completed", "success"):
-        st.session_state.is_processing = False
-        st.session_state.current_report = status_data
-        st.session_state.execution_trace = execution_metadata
-        st.rerun()
-        return
-
-    if status == "failed":
-        st.session_state.is_processing = False
-        err = status_data.get("error", status_data.get("message", "Unknown error"))
-        st.markdown(alert_markdown(str(err), kind="danger"), unsafe_allow_html=True)
-        st.rerun()
-        return
-
-    time.sleep(2)
-    st.rerun()
+    error_ph = st.empty()
+    return run_safely(lambda: _impl(), "loading workflow", fallback=None, error_placeholder=error_ph)  # type: ignore[return-value]
 
 
 def map_trace_step_to_stage(step_id: str) -> str:
@@ -452,38 +523,42 @@ def render_execution_trace_explicit(report: dict[str, Any]) -> None:
 
 
 def render_execution_trace_explicit_partial(status_data: dict[str, Any]) -> None:
-    fields = _extract_execution_metadata_fields(status_data)
+    def _impl() -> None:
+        fields = _extract_execution_metadata_fields(status_data)
 
-    with st.expander("🔍 Execution Trace (Live)", expanded=False):
-        st.markdown("**Detected Intent**")
-        st.write(fields["detected_intent"] or "Not available")
+        with st.expander("🔍 Execution Trace (Live)", expanded=False):
+            st.markdown("**Detected Intent**")
+            st.write(fields["detected_intent"] or "Not available")
 
-        st.markdown("**Resolved Entity**")
-        st.write(fields["resolved_entity"] or "Not available")
+            st.markdown("**Resolved Entity**")
+            st.write(fields["resolved_entity"] or "Not available")
 
-        st.markdown("**Selected Tools**")
-        st.write(", ".join([str(x) for x in (fields["selected_tools"] or [])]) if fields["selected_tools"] else "Not available")
+            st.markdown("**Selected Tools**")
+            st.write(", ".join([str(x) for x in (fields["selected_tools"] or [])]) if fields["selected_tools"] else "Not available")
 
-        st.markdown("**Skipped Tools**")
-        st.write(", ".join([str(x) for x in (fields["skipped_tools"] or [])]) if fields["skipped_tools"] else "Not available")
+            st.markdown("**Skipped Tools**")
+            st.write(", ".join([str(x) for x in (fields["skipped_tools"] or [])]) if fields["skipped_tools"] else "Not available")
 
-        st.markdown("**Execution Status**")
-        st.write(str(fields["execution_status"]).title())
+            st.markdown("**Execution Status**")
+            st.write(str(fields["execution_status"]).title())
 
-        st.markdown("**Execution Time**")
-        ms = fields.get("execution_time_ms")
-        if ms is None:
-            st.write("Not available")
-        else:
-            st.write(f"{float(ms)/1000:.2f}s")
+            st.markdown("**Execution Time**")
+            ms = fields.get("execution_time_ms")
+            if ms is None:
+                st.write("Not available")
+            else:
+                st.write(f"{float(ms)/1000:.2f}s")
 
-        st.markdown("**Errors**")
-        errs = fields["errors"]
-        if errs:
-            for e in errs:
-                st.error(str(e))
-        else:
-            st.write("No errors")
+            st.markdown("**Errors**")
+            errs = fields["errors"]
+            if errs:
+                for e in errs:
+                    st.error(str(e))
+            else:
+                st.write("No errors")
+
+    error_ph = st.empty()
+    return run_safely(lambda: _impl(), "execution trace", fallback=None, error_placeholder=error_ph)  # type: ignore[return-value]
 
 
 def submit_research(
@@ -499,7 +574,8 @@ def submit_research(
     Submit research request to backend API.
     Thin client: no business logic here.
     """
-    try:
+
+    def _impl() -> dict[str, Any] | None:
         payload = {
             "query": query,
             "tickers": tickers,
@@ -510,29 +586,35 @@ def submit_research(
             "max_report_length": max_length,
         }
 
+        if not API_BASE_URL:
+            st.error("Backend API URL is not configured for this deployment.")
+            return None
+
         response = requests.post(f"{API_BASE_URL}/research", json=payload, timeout=30)
         if response.status_code == 200:
             return response.json()
 
         st.error(f"API Error: {response.status_code} - {response.text}")
         return None
-    except requests.exceptions.ConnectionError:
-        st.error(f"Cannot connect to backend at {API_BASE_URL}. Is it running?")
-        return None
-    except Exception as e:
-        st.error(f"Error submitting request: {e!s}")
-        return None
+
+    error_ph = st.empty()
+    return run_safely(lambda: _impl(), "submit research", fallback=None, error_placeholder=error_ph)
 
 
 def check_status(request_id: str) -> dict[str, Any] | None:
     """Check research status (thin client)."""
-    try:
+
+    def _impl() -> dict[str, Any] | None:
+        if not API_BASE_URL:
+            return None
+
         response = requests.get(f"{API_BASE_URL}/research/{request_id}", timeout=5)
         if response.status_code == 200:
             return response.json()
         return None
-    except Exception:
-        return None
+
+    error_ph = st.empty()
+    return run_safely(lambda: _impl(), "check status", fallback=None, error_placeholder=error_ph)
 
 
 if __name__ == "__main__":
