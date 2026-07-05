@@ -228,3 +228,8 @@ def get_sentiment_service() -> SentimentService:
     if _sentiment_service is None:
         _sentiment_service = SentimentService()
     return _sentiment_service
+
+
+# Backwards-compatible symbol expected by agents/tests.
+# This provides a singleton instance at import time.
+sentiment_service: SentimentService = get_sentiment_service()

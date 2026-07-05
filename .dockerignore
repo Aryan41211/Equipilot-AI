@@ -1,0 +1,14 @@
+# Keep docker builds small
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv
+venv
+dist
+build
+tests
+runtime.txt

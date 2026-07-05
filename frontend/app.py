@@ -683,9 +683,6 @@ def check_status(request_id: str) -> dict[str, Any] | None:
     """Check research status (thin client)."""
 
     def _impl() -> dict[str, Any] | None:
-        if not API_BASE_URL:
-            return None
-
         candidate_gets = [
             f"{API_BASE_URL}/research/{request_id}",
             f"{API_BASE_URL}/api/v1/research/{request_id}",

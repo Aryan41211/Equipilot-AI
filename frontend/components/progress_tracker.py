@@ -10,12 +10,13 @@ import streamlit as st
 from frontend.components.design_system_ui import alert_markdown
 
 RESEARCH_STEPS = [
-    ("router", "Entity Resolution"),
-    ("market_data_tool", "Market Data"),
-    ("news_tool", "News"),
-    ("sentiment_tool", "Sentiment"),
-    ("research", "Research"),
-    ("completed", "Completed"),
+    # (step_id, step_name, phase_label_for_ui)
+    ("router", "Entity Resolution", "Resolving entity"),
+    ("market_data_tool", "Market Data", "Fetching market data"),
+    ("news_tool", "News", "Fetching news"),
+    ("sentiment_tool", "Sentiment", "Running sentiment analysis"),
+    ("research", "Research", "Generating research report"),
+    ("completed", "Completed", "Finalizing"),
 ]
 
 
@@ -59,7 +60,7 @@ def _render_step_progress(current_step: str):
     step_index = _get_step_index(current_step)
 
     cols = st.columns(len(RESEARCH_STEPS))
-    for i, (step_id, step_name) in enumerate(RESEARCH_STEPS):
+    for i, (step_id, step_name, _phase_label) in enumerate(RESEARCH_STEPS):
         with cols[i]:
             if i < step_index:
                 st.markdown(
@@ -95,7 +96,7 @@ def _render_step_progress(current_step: str):
 
 def _get_step_index(step_id: str) -> int:
     """Get index of step in RESEARCH_STEPS."""
-    for i, (sid, _step_name) in enumerate(RESEARCH_STEPS):
+    for i, (sid, _step_name, _phase_label) in enumerate(RESEARCH_STEPS):
         if sid == step_id:
             return i
     return -1
