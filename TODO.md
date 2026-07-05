@@ -1,51 +1,16 @@
-# Equipilot AI - Streamlit Production Dashboard TODO
-
-## Step 1: Sidebar spec compliance
-- [ ] Update `frontend/components/sidebar.py` to include:
-  - Company / Ticker input
-  - Query input
-  - Analysis Type selector (Fundamentals, News, Sentiment, Full Research)
-  - Analyze button
-- [ ] On submit, store required values in `st.session_state` and trigger backend request via a callback passed from `frontend/app.py`.
-
-## Step 2: Refactor Streamlit layout
-- [ ] Refactor `frontend/app.py` to replace tabs with production-style main-page sections:
-  - Market Data
-  - News Headlines
-  - Sentiment Analysis
-  - AI Research Report
-
-## Step 3: Execution trace panel
-- [ ] Implement an Execution Trace panel that explicitly shows:
-  - Detected Intent
-  - Resolved Entity
-  - Selected Tools
-  - Skipped Tools
-  - Execution Time
-  - Execution Status
-  - Errors (if any)
-
-## Step 4: Loading workflow / progress stages
-- [ ] Implement a clear loading workflow with progress stages matching backend traces when available:
-  - Resolving entity
-  - Routing request
-  - Fetching market data
-  - Fetching news
-  - Running sentiment analysis
-  - Generating research report
-
-## Step 5: Reuse existing components
-- [ ] Reuse existing components:
-  - `frontend/components/progress_tracker.py`
-  - `frontend/components/report_display.py`
-  - (extend sidebar only; no duplicates)
-
-## Step 6: Manual verification
-- [ ] Run the Streamlit frontend manually.
-- [ ] Verify backend connectivity.
-- [ ] Verify loading states and error handling.
-- [ ] Verify empty-state placeholders.
-- [ ] Verify report sections render.
-
-## Step 7: Final reporting
-- [ ] Provide final task status + technical/user explanations + created/modified files + manual testing instructions + remaining TODOs + recommended git commit message.
+- [x] Dedup POST submissions in frontend/app.py (prevent duplicate in-flight requests)
+- [x] Cap polling in frontend/app.py render_loading_workflow (max polls + timeout guard)
+- [x] Fix “Recent Reports” buttons to actually start polling/render workflow (set is_processing + current_request_id)
+- [ ] Add/repair Refresh / Retry / Reset / Export / Download / Navigation UI controls if missing (after checking current code paths)
+- [x] Verify HTTP request endpoints & response handling (frontend ↔ backend contract) by auditing backend/app.py
+- [ ] Run pytest suite and fix any failing tests
+- [ ] PHASE 3: Performance profiling + optimizations (production-grade)
+- [ ] Phase 3.1: Add timing measurement (backend per-node durations already captured; add completion log + finalize PERF_BENCHMARK.md with sample runs)
+- [ ] Phase 3.2: Remove bottlenecks (reduce state copying in backend/graphs/nodes.py; reduce heavy frontend re-renders during polling)
+- [ ] Phase 3.3: Parallel execution inside safe boundaries (parallelize I/O inside services/tools where independent; do NOT change LangGraph workflow edges)
+- [ ] Phase 3.4: Caching (market/news/sentiment + prompt/config caching; reuse services/clients)
+- [ ] Phase 3.5: Streamlit optimization (reduce rerender frequency; render execution trace only on step change or every K polls)
+- [ ] Phase 3.6: Network optimization (reuse requests.Session; retry only for GET polling; keep POST single-shot)
+- [ ] Phase 3.7: Memory optimization (reduce allocations in nodes/tools; avoid repeated JSON parsing/copies)
+- [ ] Phase 3.8: UX perceived speed (improve progress messaging using measured step durations)
+- [ ] Validation: benchmark before/after + verify no duplicate requests/polls/reruns

@@ -96,6 +96,17 @@ class ResearchResponse(BaseModel):
         default_factory=list,
         description="Tickers analyzed in the research",
     )
+
+    # Frontend-compatible execution/progress fields
+    current_step: str | None = Field(
+        default=None,
+        description="Current workflow step identifier (for polling UI).",
+    )
+    execution_metadata: dict[str, Any] | None = Field(
+        default=None,
+        description="Structured execution metadata (nodes/tools/traces).",
+    )
+
     report: str | None = Field(
         default=None,
         description="Generated research report (markdown format)",

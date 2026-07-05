@@ -3,6 +3,7 @@
 
 import os
 from collections.abc import Callable
+from datetime import datetime
 from typing import Any
 
 import streamlit as st
@@ -161,6 +162,10 @@ def render_recent_reports():
         query = item.get("query", "Unknown")[:40]
         if st.button(f"📄 {query}...", key=f"sidebar_report_{req_id}", use_container_width=True):
             st.session_state.current_request_id = item.get("request_id")
-            st.session_state.is_processing = False
+            # Start polling to actually reload the report from backend
+            st.session_state.is_processing = True
             st.session_state.current_report = None
+            st.session_state.execution_trace = None
+            st.session_state.poll_count = 0
+            st.session_state.poll_started_at = datetime.utcnow().timestamp()
             st.rerun()

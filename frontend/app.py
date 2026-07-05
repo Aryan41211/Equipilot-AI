@@ -128,6 +128,14 @@ def initialize_session_state():
     if "backend_connected" not in st.session_state:
         st.session_state.backend_connected = None
 
+    # Request de-duplication + polling guards
+    if "last_submit_fingerprint" not in st.session_state:
+        st.session_state.last_submit_fingerprint = None
+    if "poll_count" not in st.session_state:
+        st.session_state.poll_count = 0
+    if "poll_started_at" not in st.session_state:
+        st.session_state.poll_started_at = None
+
 
 def render_header():
     col1, col2 = st.columns([3, 1])
@@ -295,6 +303,11 @@ def handle_sidebar_submit(form_data: dict[str, Any]) -> None:
             return
 
         st.success(f"Research started! Request ID: {request_data.get('request_id', 'N/A')[:12]}...")
+
+        # New workflow: reset polling guards for this request
+        st.session_state.poll_count = 0
+        st.session_state.poll_started_at = datetime.utcnow().timestamp()
+
         st.session_state.current_request_id = request_data.get("request_id")
         st.session_state.is_processing = True
         st.session_state.current_report = None
@@ -337,10 +350,34 @@ def render_main_page():
 def render_loading_workflow(request_id: str) -> None:
     """
     Poll backend and render stage-based loading UI + execution trace live.
+
+    Repair goals:
+    - Prevent infinite rerun loops
+    - Prevent duplicate polling bursts
+    - Cap polling attempts
     """
 
     def _impl() -> None:
         from frontend.components.design_system_ui import alert_markdown
+
+        # Polling guards (avoid infinite reruns)
+        max_polls = 60  # ~2 minutes at 2s interval
+        poll_interval_s = 2.0
+
+        st.session_state.poll_count = int(st.session_state.get("poll_count", 0)) + 1
+        poll_started_at = st.session_state.get("poll_started_at")
+        if poll_started_at is not None:
+            elapsed_s = max(0.0, time.time() - float(poll_started_at))
+            if st.session_state.poll_count > max_polls or elapsed_s > (max_polls * poll_interval_s):
+                st.session_state.is_processing = False
+                st.markdown(
+                    alert_markdown(
+                        "⏱️ Research is taking longer than expected. Stop polling.",
+                        kind="warning",
+                    ),
+                    unsafe_allow_html=True,
+                )
+                return
 
         status_data = check_status(request_id)
         if not status_data:
@@ -380,7 +417,7 @@ def render_loading_workflow(request_id: str) -> None:
             st.rerun()
             return
 
-        time.sleep(2)
+        time.sleep(poll_interval_s)
         st.rerun()
 
     error_ph = st.empty()
@@ -573,11 +610,13 @@ def submit_research(
     """
     Submit research request to backend API.
     Thin client: no business logic here.
+
+    Repair goal: de-duplicate repeated submits that can happen from Streamlit reruns.
     """
 
     def _impl() -> dict[str, Any] | None:
         payload = {
-            "query": query,
+            "query": (query or "").strip(),
             "tickers": tickers,
             "include_news": include_news,
             "include_sentiment": include_sentiment,
@@ -590,11 +629,50 @@ def submit_research(
             st.error("Backend API URL is not configured for this deployment.")
             return None
 
-        response = requests.post(f"{API_BASE_URL}/research", json=payload, timeout=30)
-        if response.status_code == 200:
-            return response.json()
+        # Fingerprint for dedup
+        fingerprint = str(
+            (
+                payload.get("query"),
+                payload.get("tickers"),
+                payload.get("include_news"),
+                payload.get("include_sentiment"),
+                payload.get("include_fundamentals"),
+                payload.get("include_technicals"),
+                payload.get("max_report_length"),
+            )
+        )
 
-        st.error(f"API Error: {response.status_code} - {response.text}")
+        # If we're already processing the same payload, block duplicate POST.
+        if st.session_state.get("is_processing") and st.session_state.get("last_submit_fingerprint") == fingerprint:
+            st.info("Request is already in progress; skipping duplicate submit.")
+            return None
+
+        # If we have a current in-flight request, also avoid submitting again for same fingerprint.
+        st.session_state.last_submit_fingerprint = fingerprint
+
+        # Backend routes are under settings.api_prefix (default: /api/v1).
+        # API_BASE_URL may or may not already include that prefix.
+        candidate_posts = [
+            f"{API_BASE_URL}/research",
+            f"{API_BASE_URL}/api/v1/research",
+        ]
+
+        last_exc: Exception | None = None
+        last_response: requests.Response | None = None
+
+        for url in candidate_posts:
+            try:
+                response = requests.post(url, json=payload, timeout=30)
+                last_response = response
+                if response.status_code == 200:
+                    return response.json()
+            except Exception as e:
+                last_exc = e
+
+        if last_response is not None:
+            st.error(f"API Error: {last_response.status_code} - {last_response.text}")
+        else:
+            st.error(f"API Error: {last_exc!s}" if last_exc else "API Error")
         return None
 
     error_ph = st.empty()
@@ -608,9 +686,28 @@ def check_status(request_id: str) -> dict[str, Any] | None:
         if not API_BASE_URL:
             return None
 
-        response = requests.get(f"{API_BASE_URL}/research/{request_id}", timeout=5)
-        if response.status_code == 200:
-            return response.json()
+        candidate_gets = [
+            f"{API_BASE_URL}/research/{request_id}",
+            f"{API_BASE_URL}/api/v1/research/{request_id}",
+        ]
+
+        last_response: requests.Response | None = None
+        last_exc: Exception | None = None
+
+        for url in candidate_gets:
+            try:
+                response = requests.get(url, timeout=5)
+                last_response = response
+                if response.status_code == 200:
+                    return response.json()
+            except Exception as e:
+                last_exc = e
+
+        if last_response is not None:
+            st.error(f"API Error: {last_response.status_code} - {last_response.text}")
+        else:
+            st.error(f"API Error: {last_exc!s}" if last_exc else "API Error")
+
         return None
 
     error_ph = st.empty()
