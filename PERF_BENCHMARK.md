@@ -1,4 +1,5 @@
-git add# EquiPilot AI - Performance Benchmarks (Phase 3)
+# EquiPilot AI - Performance Benchmarks (Phase 3)
+
 
 ## How to run
 - Start backend (uvicorn) and frontend (streamlit).

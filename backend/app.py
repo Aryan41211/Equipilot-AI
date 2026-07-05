@@ -300,6 +300,31 @@ def create_app() -> FastAPI:
 
                 final_state = compiled.invoke(initial_state)
 
+                # Ensure timing metadata exists and emit a single structured completion log
+                execution_metadata = final_state.get("execution_metadata", {}) or {}
+                traces = execution_metadata.get("traces", []) or []
+                total_ms = execution_metadata.get("execution_time_ms")
+                if total_ms is None and traces:
+                    total_ms = sum((t.get("duration_ms", 0) or 0) for t in traces if isinstance(t, dict))
+
+                per_node = [
+                    {
+                        "node": t.get("node_name") or t.get("step"),
+                        "duration_ms": t.get("duration_ms"),
+                        "ok": t.get("success"),
+                    }
+                    for t in traces
+                    if isinstance(t, dict)
+                ]
+
+                logger.info(
+                    "Research request completed",
+                    request_id=rid,
+                    status=final_state.get("status"),
+                    total_duration_ms=total_ms,
+                    per_node_durations=per_node,
+                )
+
                 # Update store with final state
                 _research_store[rid]["state"] = final_state
                 _research_store[rid]["completed"] = True
