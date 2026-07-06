@@ -8,6 +8,8 @@ import streamlit as st
 from frontend.components.design_system_ui import section_header, status_badge, safe_html_escape
 
 
+
+
 def render_report(
     report: dict[str, Any] | None,
     show_metadata: bool = True,
