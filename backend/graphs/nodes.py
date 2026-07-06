@@ -775,6 +775,36 @@ async def parallel_tools_node(state: GraphState) -> GraphState:
                         ok=False,
                         duration_ms=0,
                         error=err,
+                        skipped=False,
+                        reason=None,
+                        cached=False,
+                    )
+                    state = {**state, "sentiment": {}}
+            except Exception as e:
+                err = str(e)
+                state = _record_tool_result(
+                    state,
+                    tool_name="sentiment_tool",
+                    ok=False,
+                    started_at=_get_timestamp(),
+                    finished_at=_get_timestamp(),
+                    result={"error": err},
+                )
+                state = _coalesce_tool_completion_lists(
+                    state, ok=False, tool_name="sentiment_tool"
+                )
+                state = _append_error(state, f"Sentiment Tool exception: {err}")
+                state = _finalize_tool_contract_entry(
+                    state,
+                    tool_node_name="sentiment_tool",
+                    ok=False,
+                    duration_ms=0,
+                    error=err,
+                    skipped=False,
+                    reason=None,
+                    cached=False,
+                )
+                state = {**state, "sentiment": {}}
     # If sentiment not selected, keep state.sentiment as {} (default).
 
     ok_any = bool(market_ok or news_ok)
