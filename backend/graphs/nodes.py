@@ -594,9 +594,7 @@ async def parallel_tools_node(state: GraphState) -> GraphState:
 
     # Apply results + tool status lists only for selected tools
     if "market_data_tool" in selected_tools:
-        # Record tool timing metadata (tests expect this under execution_metadata.tools)
         market_started_at = _get_timestamp()
-        # Use a second timestamp to avoid failing duration computation when clock resolution is low
         market_finished_at = _get_timestamp()
         ok = market_ok
 
@@ -618,7 +616,29 @@ async def parallel_tools_node(state: GraphState) -> GraphState:
             state, ok=ok, tool_name="market_data_tool"
         )
         if not ok:
-            state = _append_error(state, f"Market data failed: {market_result.get('error')}")
+            err = market_result.get("error")
+            state = _append_error(state, f"Market Data Tool failed: {err}")
+            state = _finalize_tool_contract_entry(
+                state,
+                tool_node_name="market_data_tool",
+                ok=False,
+                duration_ms=0,
+                error=err,
+                skipped=False,
+                reason=None,
+                cached=False,
+            )
+        else:
+            state = _finalize_tool_contract_entry(
+                state,
+                tool_node_name="market_data_tool",
+                ok=True,
+                duration_ms=0,
+                error=None,
+                skipped=False,
+                reason=None,
+                cached=False,
+            )
 
     # If not selected, keep state.market_data as {} as set above.
 
@@ -645,7 +665,29 @@ async def parallel_tools_node(state: GraphState) -> GraphState:
             state, ok=ok, tool_name="news_tool"
         )
         if not ok:
-            state = _append_error(state, f"News fetch failed: {news_result.get('error')}")
+            err = news_result.get("error")
+            state = _append_error(state, f"News Tool failed: {err}")
+            state = _finalize_tool_contract_entry(
+                state,
+                tool_node_name="news_tool",
+                ok=False,
+                duration_ms=0,
+                error=err,
+                skipped=False,
+                reason=None,
+                cached=False,
+            )
+        else:
+            state = _finalize_tool_contract_entry(
+                state,
+                tool_node_name="news_tool",
+                ok=True,
+                duration_ms=0,
+                error=None,
+                skipped=False,
+                reason=None,
+                cached=False,
+            )
 
     # Sentiment runs only if selected
     if "sentiment_tool" in selected_tools:
