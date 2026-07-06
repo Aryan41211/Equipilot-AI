@@ -559,9 +559,119 @@ def render_execution_trace_explicit(report: dict[str, Any]) -> None:
             st.write("No errors")
 
 
+def _render_timing_report_from_metadata(execution_metadata: dict[str, Any]) -> None:
+    """
+    Render a stage timing report from execution metadata.
+
+    Contract:
+    - Does not mutate API responses
+    - Uses only execution_metadata.nodes/tools/traces when present
+    """
+    nodes = execution_metadata.get("nodes", {}) or {}
+    tools = execution_metadata.get("tools", {}) or {}
+    traces = execution_metadata.get("traces", []) or []
+
+    def _duration_ms(v: Any) -> float | None:
+        try:
+            if v is None:
+                return None
+            return float(v)
+        except Exception:
+            return None
+
+    def _sum_node_like(keys: list[str]) -> float:
+        total = 0.0
+        for k in keys:
+            n = nodes.get(k) or {}
+            d = _duration_ms(n.get("duration_ms"))
+            if d is not None:
+                total += d
+        return total
+
+    # Node timing (best-effort)
+    router_ms = _sum_node_like(["router"])
+    research_ms = _sum_node_like(["research"])
+    merge_ms = _sum_node_like(["merge_results"])
+
+    # Tool timing (best-effort)
+    def _tool_ms(tool_name: str) -> float:
+        t = tools.get(tool_name) or {}
+        d = _duration_ms(t.get("duration_ms"))
+        if d is not None:
+            return d
+        # fallback: some implementations may store timings via started_at/finished_at only
+        return 0.0
+
+    market_ms = _tool_ms("market_data_tool")
+    news_ms = _tool_ms("news_tool")
+    sentiment_ms = _tool_ms("sentiment_tool")
+
+    # Trace timing (best-effort) — if traces contain duration_ms per node_name
+    trace_total = 0.0
+    for tr in traces:
+        dur = _duration_ms(tr.get("duration_ms"))
+        trace_total += dur or 0.0
+
+    st.markdown("### Timing Report")
+    st.caption("Best-effort timings from backend execution metadata (per node/tool).")
+
+    # Show a compact timing table
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        st.markdown(
+            """
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-top: .5rem;">
+              <div><b>Stage</b></div><div><b>Duration (ms)</b></div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        rows = [
+            ("Router / Entity Resolution", router_ms),
+            ("Market Data Retrieval", market_ms),
+            ("News Collection", news_ms),
+            ("Sentiment Analysis", sentiment_ms),
+            ("LLM Research", research_ms),
+            ("Merge Results", merge_ms),
+        ]
+
+        for stage, ms in rows:
+            st.markdown(
+                f"""
+                <div style="display: contents;">
+                  <div style="opacity: .95;">{stage}</div>
+                  <div style="text-align:right; font-variant-numeric: tabular-nums;">{ms:.2f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("**Trace Total (sum of traces)**")
+        st.write(f"{trace_total:.2f} ms")
+
+        total_backend_ms = execution_metadata.get("execution_time_ms")
+        if total_backend_ms is not None:
+            try:
+                st.markdown("**Execution Total (execution_time_ms)**")
+                st.write(f"{float(total_backend_ms):.2f} ms")
+            except Exception:
+                pass
+
+    # Tools missing a duration_ms field may show as 0; keep report non-blocking.
+
+    st.divider()
+
+
 def render_execution_trace_explicit_partial(status_data: dict[str, Any]) -> None:
     def _impl() -> None:
         fields = _extract_execution_metadata_fields(status_data)
+
+        execution_metadata = status_data.get("execution_metadata", {}) or {}
+        with st.expander("🔍 Timing Report (Live)", expanded=False):
+            _render_timing_report_from_metadata(execution_metadata)
 
         with st.expander("🔍 Execution Trace (Live)", expanded=False):
             st.markdown("**Detected Intent**")
@@ -571,10 +681,18 @@ def render_execution_trace_explicit_partial(status_data: dict[str, Any]) -> None
             st.write(fields["resolved_entity"] or "Not available")
 
             st.markdown("**Selected Tools**")
-            st.write(", ".join([str(x) for x in (fields["selected_tools"] or [])]) if fields["selected_tools"] else "Not available")
+            st.write(
+                ", ".join([str(x) for x in (fields["selected_tools"] or [])])
+                if fields["selected_tools"]
+                else "Not available"
+            )
 
             st.markdown("**Skipped Tools**")
-            st.write(", ".join([str(x) for x in (fields["skipped_tools"] or [])]) if fields["skipped_tools"] else "Not available")
+            st.write(
+                ", ".join([str(x) for x in (fields["skipped_tools"] or [])])
+                if fields["skipped_tools"]
+                else "Not available"
+            )
 
             st.markdown("**Execution Status**")
             st.write(str(fields["execution_status"]).title())
