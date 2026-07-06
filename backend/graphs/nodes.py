@@ -79,6 +79,26 @@ def _finalize_tool_contract_entry(
     *,
     tool_node_name: str,
     ok: bool,
+    duration_ms: float,
+    error: str | None = None,
+    skipped: bool = False,
+    reason: str | None = None,
+    cached: bool = False,
+) -> GraphState:
+    execution_metadata = _ensure_execution_metadata(state)
+    nodes = dict(execution_metadata.get("nodes", {}) or {})
+    node_meta = dict(nodes.get(tool_node_name, {}) or {})
+
+    node_meta["ok"] = ok
+    node_meta["duration_ms"] = int(duration_ms) if duration_ms is not None else 0
+    node_meta["cached"] = bool(cached)
+    node_meta["error"] = error
+    node_meta["skipped"] = bool(skipped)
+    node_meta["reason"] = reason
+
+    nodes[tool_node_name] = node_meta
+    execution_metadata["nodes"] = nodes
+    return {**state, "execution_metadata": execution_metadata}
 
 
 def _record_node_start(state: GraphState, node_name: str) -> GraphState:
