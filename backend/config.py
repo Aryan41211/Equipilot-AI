@@ -265,29 +265,93 @@ class Settings(BaseSettings):
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, v):
-        """Parse CORS origins from various formats into list[str]."""
+        """Parse CORS origins from various formats into list[str].
+
+        Supported input:
+        - JSON array: ["https://a","https://b"]
+        - comma-separated: https://a,https://b
+        - list[str]
+        """
         import json
 
+        def _normalize(items: list[str]) -> list[str]:
+            seen: set[str] = set()
+            out: list[str] = []
+            for item in items:
+                origin = (item or "").strip()
+                if not origin:
+                    continue
+                if origin in seen:
+                    continue
+                seen.add(origin)
+                out.append(origin)
+            return out
+
+        # If CORS_ORIGINS is not provided, we keep default deny-by-default list.
+        if v is None:
+            return []
+
         if isinstance(v, list):
-            return v
+            return _normalize([str(x) for x in v])
+
         if isinstance(v, str):
-            v = v.strip()
-            if not v:
-                return ["*"]
+            raw = v.strip()
+            if not raw:
+                return []
+
             # Try JSON array first
-            if v.startswith("["):
+            if raw.startswith("["):
                 try:
-                    parsed = json.loads(v)
+                    parsed = json.loads(raw)
                     if isinstance(parsed, list):
-                        return parsed
+                        return _normalize([str(x) for x in parsed])
                 except json.JSONDecodeError:
+                    # Fall through to comma parsing
                     pass
+
             # Try comma-separated
-            if "," in v:
-                return [origin.strip() for origin in v.split(",") if origin.strip()]
+            if "," in raw:
+                return _normalize([seg for seg in raw.split(",")])
+
             # Single value
-            return [v]
-        return ["*"]
+            return _normalize([raw])
+
+        # Unknown type => deny-by-default
+        return []
+
+    @field_validator("cors_origins", mode="after")
+    @classmethod
+    def enforce_environment_cors(cls, v: list[str], info):
+        """Environment-based CORS policy:
+        - development: allow localhost origins
+        - production: only allow explicitly configured origins from CORS_ORIGINS
+        - never silently fall back to '*'
+        """
+        data = info.data
+        environment = (data.get("environment") or "development").lower()
+
+        if environment == "development":
+            dev_allow = [
+                "http://localhost:8501",
+                "http://127.0.0.1:8501",
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+            ]
+            # Merge with configured dev origins (if any), normalized already.
+            merged: list[str] = []
+            for origin in dev_allow + list(v or []):
+                if origin not in merged:
+                    merged.append(origin)
+            return merged
+
+        # Production/staging => deny-by-default if nothing configured.
+        # If empty, keep it empty and let FastAPI deny all (no wildcard fallback).
+        if not v:
+            import logging
+            logging.getLogger(__name__).warning(
+                "CORS_ORIGINS not configured for production; CORS will be deny-by-default."
+            )
+        return list(v or [])
 
     @field_validator("backend_workers")
     @classmethod

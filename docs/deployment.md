@@ -64,7 +64,31 @@ docker build -t equipilot-backend -f Dockerfile .
 
 ### Security
 
-- CORS configured via `CORS_ORIGINS`
+#### CORS (deny-by-default in production)
+- Production **does not** allow wildcard origins (`*`).
+- Backend CORS is controlled by `CORS_ORIGINS`.
+- If **no** production origins are configured, CORS remains **disabled** (deny-by-all) and a warning is logged.
+
+**Set `ENVIRONMENT=production` and configure origins:**
+
+**JSON array format**
+```bash
+ENVIRONMENT=production
+CORS_ORIGINS=["https://your-frontend.streamlit.app"]
+```
+
+**Comma-separated format**
+```bash
+ENVIRONMENT=production
+CORS_ORIGINS=https://your-frontend.streamlit.app,https://mycompany.com
+```
+
+#### Development
+- Development allows local Streamlit hosts:
+  - http://localhost:8501 / http://127.0.0.1:8501
+  - http://localhost:3000 / http://127.0.0.1:3000
+
+#### Other security controls
 - Rate limiting via slowapi
 - Security headers (CSP, HSTS, XSS)
 - Request ID tracking for audit trails
