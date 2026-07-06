@@ -708,60 +708,100 @@ async def parallel_tools_node(state: GraphState) -> GraphState:
                 if isinstance(news_state, dict):
                     articles = news_state.get("articles", []) or []
 
-            try:
-                sentiment_started_at = _get_timestamp()
-                sentiment_result = await analyze_sentiment(
-                    articles=articles,
-                    tickers=[ticker],
-                )
-                sentiment_finished_at = _get_timestamp()
-
-                # Determine success robustly across different mock/result shapes:
-                # - Prefer explicit `ok` when present
-                # - Otherwise treat as success when no `error` field exists
-                if "ok" in sentiment_result:
-                    ok = bool(sentiment_result.get("ok"))
-                else:
-                    ok = "error" not in sentiment_result
-
-                state = _record_tool_result(
+            # Contract: if news has no articles, sentiment is skipped but node must exist
+            if not articles:
+                state = _finalize_tool_contract_entry(
                     state,
-                    tool_name="sentiment_tool",
-                    ok=ok,
-                    started_at=sentiment_started_at,
-                    finished_at=sentiment_finished_at,
-                    result=sentiment_result,
+                    tool_node_name="sentiment_tool",
+                    ok=True,
+                    duration_ms=0,
+                    error=None,
+                    skipped=True,
+                    reason="No news articles",
+                    cached=False,
                 )
-                state = _coalesce_tool_completion_lists(
-                    state, ok=ok, tool_name="sentiment_tool"
-                )
+                state = {**state, "sentiment": {}}
+            else:
+                try:
+                    sentiment_started_at = _get_timestamp()
+                    sentiment_result = await analyze_sentiment(
+                        articles=articles,
+                        tickers=[ticker],
+                    )
+                    sentiment_finished_at = _get_timestamp()
 
-                if ok:
-                    state = {
-                        **state,
-                        "sentiment": sentiment_result,
-                        "status": state.get("status", "pending"),
-                    }
-                else:
-                    state = _append_error(
+                    if "ok" in sentiment_result:
+                        ok = bool(sentiment_result.get("ok"))
+                    else:
+                        ok = "error" not in sentiment_result
+
+                    state = _record_tool_result(
                         state,
-                        f"Sentiment failed: {sentiment_result.get('error')}",
+                        tool_name="sentiment_tool",
+                        ok=ok,
+                        started_at=sentiment_started_at,
+                        finished_at=sentiment_finished_at,
+                        result=sentiment_result,
+                    )
+                    state = _coalesce_tool_completion_lists(
+                        state, ok=ok, tool_name="sentiment_tool"
+                    )
+
+                    if ok:
+                        state = _finalize_tool_contract_entry(
+                            state,
+                            tool_node_name="sentiment_tool",
+                            ok=True,
+                            duration_ms=0,
+                            error=None,
+                            skipped=False,
+                            reason=None,
+                            cached=False,
+                        )
+                        state = {
+                            **state,
+                            "sentiment": sentiment_result,
+                            "status": state.get("status", "pending"),
+                        }
+                    else:
+                        err = sentiment_result.get("error")
+                        state = _append_error(state, f"Sentiment Tool failed: {err}")
+                        state = _finalize_tool_contract_entry(
+                            state,
+                            tool_node_name="sentiment_tool",
+                            ok=False,
+                            duration_ms=0,
+                            error=err,
+                            skipped=False,
+                            reason=None,
+                            cached=False,
+                        )
+                        state = {**state, "sentiment": {}}
+                except Exception as e:
+                    err = str(e)
+                    state = _record_tool_result(
+                        state,
+                        tool_name="sentiment_tool",
+                        ok=False,
+                        started_at=_get_timestamp(),
+                        finished_at=_get_timestamp(),
+                        result={"error": err},
+                    )
+                    state = _coalesce_tool_completion_lists(
+                        state, ok=False, tool_name="sentiment_tool"
+                    )
+                    state = _append_error(state, f"Sentiment Tool exception: {err}")
+                    state = _finalize_tool_contract_entry(
+                        state,
+                        tool_node_name="sentiment_tool",
+                        ok=False,
+                        duration_ms=0,
+                        error=err,
+                        skipped=False,
+                        reason=None,
+                        cached=False,
                     )
                     state = {**state, "sentiment": {}}
-            except Exception as e:
-                state = _record_tool_result(
-                    state,
-                    tool_name="sentiment_tool",
-                    ok=False,
-                    started_at=_get_timestamp(),
-                    finished_at=_get_timestamp(),
-                    result={"error": str(e)},
-                )
-                state = _coalesce_tool_completion_lists(
-                    state, ok=False, tool_name="sentiment_tool"
-                )
-                state = _append_error(state, f"Sentiment exception: {e!s}")
-                state = {**state, "sentiment": {}}
     # If sentiment not selected, keep state.sentiment as {} (default).
 
     ok_any = bool(market_ok or news_ok)
