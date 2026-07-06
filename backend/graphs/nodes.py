@@ -45,6 +45,42 @@ def _ensure_execution_metadata(state: GraphState) -> dict[str, Any]:
     return execution_metadata
 
 
+def _init_tool_contract_entry(
+    state: GraphState, *, tool_node_name: str, ok: bool | None = None, skipped: bool = False
+) -> GraphState:
+    """
+    Tests expect `execution_metadata["nodes"][tool_node_name]` to always exist with:
+      - ok
+      - duration_ms
+      - cached
+      - error
+      - skipped
+      - reason
+    """
+    execution_metadata = _ensure_execution_metadata(state)
+    nodes = dict(execution_metadata.get("nodes", {}) or {})
+    node_meta = nodes.get(tool_node_name, {}) or {}
+
+    if ok is not None:
+        node_meta["ok"] = ok
+    node_meta.setdefault("duration_ms", 0)
+    node_meta.setdefault("cached", False)
+    node_meta["error"] = node_meta.get("error") if "error" in node_meta else None
+    node_meta["skipped"] = bool(skipped)
+    node_meta["reason"] = node_meta.get("reason") if "reason" in node_meta else None
+
+    nodes[tool_node_name] = node_meta
+    execution_metadata["nodes"] = nodes
+    return {**state, "execution_metadata": execution_metadata}
+
+
+def _finalize_tool_contract_entry(
+    state: GraphState,
+    *,
+    tool_node_name: str,
+    ok: bool,
+
+
 def _record_node_start(state: GraphState, node_name: str) -> GraphState:
     execution_metadata = _ensure_execution_metadata(state)
     nodes = dict(execution_metadata.get("nodes", {}) or {})
