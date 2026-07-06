@@ -79,7 +79,6 @@ def render_report(
 
         st.divider()
 
-
     # Legacy payload support:
     # - `report["report"]` contains raw LLM text
     # - `report["sections"]` contains structured sections
