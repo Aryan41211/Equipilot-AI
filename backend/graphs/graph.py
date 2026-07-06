@@ -6,12 +6,13 @@ from typing import Literal
 from langgraph.graph import END, StateGraph
 
 from backend.graphs.nodes import (
-    market_data_tool_node,
-    merge_results_node,
-    news_tool_node,
+    parallel_tools_node,
     research_node,
     router_node,
+    market_data_tool_node,
+    news_tool_node,
     sentiment_tool_node,
+    merge_results_node,
 )
 from backend.graphs.state import GraphState, _get_timestamp
 
@@ -58,64 +59,42 @@ def route_after_sentiment(state: GraphState) -> Literal["merge_results", "__end_
 
 def create_first_graph():
     """
-    Create the dynamically routed LangGraph workflow:
+    Create the optimized dynamically routed LangGraph workflow.
 
-    START -> router -> [market_data_tool | news_tool] -> [news_tool | sentiment_tool | merge_results] -> research -> END
+    Phase 3:
+      START -> router -> parallel_tools -> research -> END
+
+    `parallel_tools_node` runs:
+      - market_data + news concurrently
+      - sentiment after news (depends on news articles)
     """
     workflow = StateGraph(GraphState)
 
     workflow.add_node("router", router_node)
+    workflow.add_node("parallel_tools", parallel_tools_node)
+    workflow.add_node("research", research_node)
+
+    # Keep legacy nodes registered for compatibility/testing, though not used
+    # in the optimized main path.
     workflow.add_node("market_data_tool", market_data_tool_node)
     workflow.add_node("news_tool", news_tool_node)
     workflow.add_node("sentiment_tool", sentiment_tool_node)
     workflow.add_node("merge_results", merge_results_node)
-    workflow.add_node("research", research_node)
 
     workflow.set_entry_point("router")
 
     workflow.add_conditional_edges(
         "router",
-        route_after_router,
+        lambda state: "__end__" if state.get("status") == "failed" else "parallel_tools",
         {
-            "market_data_tool": "market_data_tool",
-            "news_tool": "news_tool",
+            "parallel_tools": "parallel_tools",
             "__end__": END,
         },
     )
 
-    workflow.add_conditional_edges(
-        "market_data_tool",
-        route_after_market_data,
-        {
-            "merge_results": "merge_results",
-            "news_tool": "news_tool",
-            "__end__": END,
-        },
-    )
-
-    workflow.add_conditional_edges(
-        "news_tool",
-        route_after_news,
-        {
-            "sentiment_tool": "sentiment_tool",
-            "merge_results": "merge_results",
-            "__end__": END,
-        },
-    )
-
-    workflow.add_conditional_edges(
-        "sentiment_tool",
-        route_after_sentiment,
-        {
-            "merge_results": "merge_results",
-            "__end__": END,
-        },
-    )
-
-    workflow.add_edge("merge_results", "research")
+    workflow.add_edge("parallel_tools", "research")
     workflow.add_edge("research", END)
 
-    # Avoid checkpointer configuration issues in test/runtime environments.
     return workflow.compile(checkpointer=False)
 
 

@@ -1,16 +1,31 @@
-- [x] Dedup POST submissions in frontend/app.py (prevent duplicate in-flight requests)
-- [x] Cap polling in frontend/app.py render_loading_workflow (max polls + timeout guard)
-- [x] Fix “Recent Reports” buttons to actually start polling/render workflow (set is_processing + current_request_id)
-- [ ] Add/repair Refresh / Retry / Reset / Export / Download / Navigation UI controls if missing (after checking current code paths)
-- [x] Verify HTTP request endpoints & response handling (frontend ↔ backend contract) by auditing backend/app.py
-- [ ] Run pytest suite and fix any failing tests
-- [ ] PHASE 3: Performance profiling + optimizations (production-grade)
-- [ ] Phase 3.1: Add timing measurement (backend per-node durations already captured; add completion log + finalize PERF_BENCHMARK.md with sample runs)
-- [ ] Phase 3.2: Remove bottlenecks (reduce state copying in backend/graphs/nodes.py; reduce heavy frontend re-renders during polling)
-- [ ] Phase 3.3: Parallel execution inside safe boundaries (parallelize I/O inside services/tools where independent; do NOT change LangGraph workflow edges)
-- [ ] Phase 3.4: Caching (market/news/sentiment + prompt/config caching; reuse services/clients)
-- [ ] Phase 3.5: Streamlit optimization (reduce rerender frequency; render execution trace only on step change or every K polls)
-- [ ] Phase 3.6: Network optimization (reuse requests.Session; retry only for GET polling; keep POST single-shot)
-- [ ] Phase 3.7: Memory optimization (reduce allocations in nodes/tools; avoid repeated JSON parsing/copies)
-- [ ] Phase 3.8: UX perceived speed (improve progress messaging using measured step durations)
-- [ ] Validation: benchmark before/after + verify no duplicate requests/polls/reruns
+# Phase 3 TODO — Enterprise Performance Optimization
+
+- [ ] Profile pipeline stages (Frontend + Backend timing spans)
+  - [ ] Frontend timing instrumentation + “Timing Report” expander (collapsed by default; only after completion)
+  - [ ] Backend execution metadata: ensure node/tool traces include durations and add overall stage timings if missing
+
+- [ ] Parallel execution in backend
+  - [ ] Implement `parallel_tools_node` in `backend/graphs/nodes.py`
+  - [ ] Update `backend/graphs/graph.py` routing to: `router -> parallel_tools -> research -> END`
+  - [ ] Ensure market+news run concurrently; sentiment runs after news
+  - [ ] Ensure partial failures don’t break entire workflow; isolate exceptions per task
+
+- [ ] Intelligent caching (TTL + deterministic-only + thread-safe)
+  - [ ] Add TTL cache + hit/miss metrics to `backend/services/news_service.py`
+  - [ ] Add TTL cache + hit/miss metrics to `backend/services/sentiment_service.py`
+  - [ ] Make TTL configurable from `backend/config.py` (or add local defaults if already there)
+
+- [ ] Streamlit rerun/poll optimization
+  - [ ] Reduce expensive UI work during polling (progress/trace rendering frequency)
+  - [ ] Keep duplicate polling/reruns prevented
+
+- [ ] Validation + benchmarking
+  - [ ] Run baseline benchmarks (before)
+  - [ ] Run optimized benchmarks (after)
+  - [ ] Compare output identity/quality (report text shape remains identical)
+  - [ ] Validate no duplicate API calls and no duplicate polling loops
+
+- [ ] Final deliverables
+  - [ ] Update `PERF_BENCHMARK.md` with before/after table
+  - [ ] Provide performance bottlenecks found, optimizations implemented, files modified, remaining limitations
+  - [ ] Provide git commit message

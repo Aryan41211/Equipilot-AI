@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import re
 from datetime import datetime
 from typing import Any
@@ -425,6 +426,166 @@ async def news_tool_node(state: GraphState) -> GraphState:
         state = {**state, "news": {}, "status": state.get("status", "pending"), "executed_nodes": executed_nodes, "completed_tools": completed_tools, "failed_tools": failed_tools}
         state = _record_node_finish(state, "news_tool", ok=False, error=str(e))
         return state
+
+
+def _coalesce_tool_completion_lists(state: GraphState, *, ok: bool, tool_name: str) -> GraphState:
+    completed_tools = list(state.get("completed_tools", []))
+    failed_tools = list(state.get("failed_tools", []))
+
+    if ok and tool_name not in completed_tools:
+        completed_tools.append(tool_name)
+    elif (not ok) and tool_name not in failed_tools:
+        failed_tools.append(tool_name)
+
+    return {**state, "completed_tools": completed_tools, "failed_tools": failed_tools}
+
+
+async def parallel_tools_node(state: GraphState) -> GraphState:
+    """
+    router -> parallel_tools -> research
+
+    Executes:
+      - market_data_tool and news_tool concurrently
+      - sentiment_tool after news_tool completes (depends on articles)
+
+    Partial failures are isolated:
+      - if market fails, keep market_data empty but allow workflow to continue
+      - if news fails, keep news empty; sentiment is skipped if no articles
+      - if sentiment fails, keep sentiment empty but allow research to complete
+    """
+    state = _record_node_start(state, "parallel_tools")
+
+    executed_nodes = list(state.get("executed_nodes", []))
+    if "parallel_tools" not in executed_nodes:
+        executed_nodes.append("parallel_tools")
+
+    ticker = state.get("ticker")
+    if not ticker:
+        state = _append_error(state, "Ticker missing; cannot run parallel tools.")
+        state = {**state, "market_data": {}, "news": {}, "sentiment": {}, "status": "failed"}
+        state = _record_node_finish(state, "parallel_tools", ok=False, error="No ticker")
+        return state
+
+    async def _run_market() -> tuple[bool, dict[str, Any]]:
+        try:
+            # Use existing tool wrapper so we reuse the same result shape/keys.
+            result = await fetch_market_data(ticker)
+            return ("error" not in result), result
+        except Exception as e:
+            return False, {"error": str(e), "error_type": "exception"}
+
+    async def _run_news() -> tuple[bool, dict[str, Any]]:
+        try:
+            result = await fetch_news(
+                tickers=[ticker],
+                date_from=None,
+                date_to=None,
+                limit=20,
+            )
+            return ("error" not in result), result
+        except Exception as e:
+            return False, {"error": str(e), "error_type": "exception"}
+
+    # Concurrent: market + news
+    market_ok: bool = False
+    news_ok: bool = False
+    market_result: dict[str, Any] = {}
+    news_result: dict[str, Any] = {}
+
+    try:
+        market_task = asyncio.create_task(_run_market())
+        news_task = asyncio.create_task(_run_news())
+
+        (market_ok, market_result), (news_ok, news_result) = await asyncio.gather(
+            market_task, news_task, return_exceptions=False
+        )
+    except Exception as e:
+        # Extremely defensive: should not happen due to inner exception handling,
+        # but keep workflow alive.
+        state = _append_error(state, f"Parallel tool execution error: {e!s}")
+
+    # Update state with branch results + tool timing via traces:
+    # We already have node-level timing for `parallel_tools_node`, but research UI
+    # relies on `market_data` / `news` / `sentiment` fields and tool status lists.
+    if market_ok:
+        state = {**state, "market_data": market_result}
+        state = _coalesce_tool_completion_lists(state, ok=True, tool_name="market_data_tool")
+    else:
+        state = {**state, "market_data": {}}
+        state = _coalesce_tool_completion_lists(state, ok=False, tool_name="market_data_tool")
+        state = _append_error(state, f"Market data failed: {market_result.get('error')}")
+
+    if news_ok:
+        state = {**state, "news": news_result}
+        state = _coalesce_tool_completion_lists(state, ok=True, tool_name="news_tool")
+    else:
+        state = {**state, "news": {}}
+        state = _coalesce_tool_completion_lists(state, ok=False, tool_name="news_tool")
+        state = _append_error(state, f"News fetch failed: {news_result.get('error')}")
+
+    # Sentiment depends on news articles
+    sentiment_enabled = True
+    # If sentiment pipeline is disabled via config, keep it skipped.
+    try:
+        from backend.config import settings
+        sentiment_enabled = bool(getattr(settings, "enable_sentiment_analysis", True))
+    except Exception:
+        sentiment_enabled = True
+
+    if sentiment_enabled:
+        articles = []
+        if isinstance(state.get("news"), dict):
+            articles = state["news"].get("articles", []) or []
+
+        if articles:
+            # Run sentiment in-process (still isolate failure)
+            try:
+                sentiment_started_at = _get_timestamp()
+                sentiment_result = await analyze_sentiment(
+                    articles=articles,
+                    tickers=[ticker],
+                )
+                sentiment_finished_at = _get_timestamp()
+
+                ok = bool(sentiment_result.get("ok", False)) or ("error" not in sentiment_result)
+                state = _record_tool_result(
+                    state,
+                    tool_name="sentiment_tool",
+                    ok=ok,
+                    started_at=sentiment_started_at,
+                    finished_at=sentiment_finished_at,
+                    result=sentiment_result,
+                )
+
+                state = _coalesce_tool_completion_lists(
+                    state, ok=ok, tool_name="sentiment_tool"
+                )
+                if not ok:
+                    state = _append_error(state, f"Sentiment failed: {sentiment_result.get('error')}")
+                else:
+                    state = {**state, "sentiment": sentiment_result, "status": state.get("status", "pending")}
+            except Exception as e:
+                state = _record_tool_result(
+                    state,
+                    tool_name="sentiment_tool",
+                    ok=False,
+                    started_at=_get_timestamp(),
+                    finished_at=_get_timestamp(),
+                    result={"error": str(e)},
+                )
+                state = _coalesce_tool_completion_lists(
+                    state, ok=False, tool_name="sentiment_tool"
+                )
+                state = _append_error(state, f"Sentiment exception: {e!s}")
+                state = {**state, "sentiment": {}}
+        else:
+            # Skip sentiment deterministically if no articles
+            state = _append_error(state, "Sentiment skipped: no news articles available.")
+    # Ensure node finishes with ok if at least one branch succeeded.
+    ok_any = bool(market_ok or news_ok)
+    state = _record_node_finish(state, "parallel_tools", ok=ok_any, error=None if ok_any else "All parallel tools failed")
+    state = {**state, "executed_nodes": executed_nodes}
+    return state
 
 
 async def sentiment_tool_node(state: GraphState) -> GraphState:
