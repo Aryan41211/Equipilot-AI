@@ -583,6 +583,15 @@ async def parallel_tools_node(state: GraphState) -> GraphState:
     except Exception as e:
         state = _append_error(state, f"Parallel tool execution error: {e!s}")
 
+    # Ensure contract entries exist for each selected tool node
+    # (including skipped sentiment path).
+    if "market_data_tool" in selected_tools:
+        state = _init_tool_contract_entry(state, tool_node_name="market_data_tool", ok=None, skipped=False)
+    if "news_tool" in selected_tools:
+        state = _init_tool_contract_entry(state, tool_node_name="news_tool", ok=None, skipped=False)
+    if "sentiment_tool" in selected_tools:
+        state = _init_tool_contract_entry(state, tool_node_name="sentiment_tool", ok=None, skipped=False)
+
     # Apply results + tool status lists only for selected tools
     if "market_data_tool" in selected_tools:
         # Record tool timing metadata (tests expect this under execution_metadata.tools)
