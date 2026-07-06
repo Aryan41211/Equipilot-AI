@@ -8,7 +8,7 @@ import streamlit as st
 from frontend.components.design_system_ui import section_header, status_badge, safe_html_escape
 
 
-def _premium_card(icon: str, title: str, content: str, badge: str | None = None):
+def _premium_card(icon: str, title: str, content: str, badge: str | None = None) -> str:
     badge_html = f"""
       <span style="
         display:inline-flex;
@@ -79,40 +79,6 @@ def render_report(
 
         st.divider()
 
-    def _premium_card(icon: str, title: str, content: str, badge: str | None = None):
-        badge_html = f"""
-          <span style="
-            display:inline-flex;
-            align-items:center;
-            gap:0.4rem;
-            padding: 0.25rem 0.55rem;
-            border-radius: 999px;
-            border: 1px solid var(--border);
-            background: rgba(37, 99, 235, 0.06);
-            color: var(--accent);
-            font-weight: var(--font-weight-semibold);
-            font-size: var(--font-size-xs);
-          ">{badge}</span>
-        """ if badge else ""
-
-        return f"""
-        <div class="ds-card ds-card--premium" style="padding: 1rem 1rem; margin-bottom: 1rem;">
-          <div style="display:flex; align-items:flex-start; justify-content: space-between; gap: 1rem;">
-            <div style="display:flex; align-items:flex-start; gap: .75rem;">
-              <div style="width:34px;height:34px;border-radius: var(--radius-md);background: rgba(59,130,246,0.12);display:flex;align-items:center;justify-content:center;font-size: 1.1rem;">
-                {icon}
-              </div>
-              <div>
-                <div style="font-weight: var(--font-weight-bold); font-size: var(--font-size-base);">{safe_html_escape(title)}</div>
-                {badge_html}
-              </div>
-            </div>
-          </div>
-          <div style="margin-top: .75rem;">
-            {content}
-          </div>
-        </div>
-        """
 
     # Legacy payload support:
     # - `report["report"]` contains raw LLM text
