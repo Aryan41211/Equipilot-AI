@@ -1,0 +1,11 @@
+- [ ] (Phase 4) Update global design system (`frontend/components/design_system_ui.py`) for premium enterprise look (typography, colors, premium cards, stepper visuals, improved focus/hover, skeleton styles).
+- [ ] (Phase 4) Redesign sidebar layout (`frontend/components/sidebar.py`) with logo/project header, research form block, quick actions, session history, system health, API status, theme toggle (visual only).
+- [ ] (Phase 4) Upgrade progress experience (`frontend/components/progress_tracker.py`) to an animated stepper UI using existing `RESEARCH_STEPS` (no extra reruns/polling).
+- [ ] (Phase 4) Premium report page cards + collapsibles (`frontend/components/report_display.py`) for Executive Summary, Key Insights, Market Data, News, Sentiment, Financial Metrics, Risk Analysis, Recommendation, Sources; keep existing fallbacks/data contract.
+- [ ] (Phase 4) Improve dashboard landing + loading UI (`frontend/app.py`) to use new premium layout (welcome section, example prompts, recent analyses, performance metrics panel from existing session data, current execution stage).
+- [ ] (Phase 4) Accessibility pass: ensure focus states, contrast, no overflow; add aria-like labels via HTML wrappers where practical.
+- [ ] Thorough testing after implementation:
+  - [ ] Desktop (1920px), Laptop (1366px), Tablet (768px), Mobile (390px) checks: no overflow/horizontal scroll, spacing, clipped text.
+  - [ ] End-to-end flow: user input → submit → polling/loading → progress/stepper → timing report/trace → report rendering → recent reports → reopen previous report.
+  - [ ] Regression: confirm buttons, sidebar submit, example prompt buttons, polling, progress tracker, report expanders all work.
+  - [ ] Performance: verify no extra reruns, polling, API requests, and lightweight animations.

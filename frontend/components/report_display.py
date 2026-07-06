@@ -43,6 +43,44 @@ def render_report(
 
         st.divider()
 
+    def _premium_card(icon: str, title: str, content: str, badge: str | None = None):
+        badge_html = f"""
+          <span style="
+            display:inline-flex;
+            align-items:center;
+            gap:0.4rem;
+            padding: 0.25rem 0.55rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: rgba(37, 99, 235, 0.06);
+            color: var(--accent);
+            font-weight: var(--font-weight-semibold);
+            font-size: var(--font-size-xs);
+          ">{badge}</span>
+        """ if badge else ""
+
+        return f"""
+        <div class="ds-card ds-card--premium" style="padding: 1rem 1rem; margin-bottom: 1rem;">
+          <div style="display:flex; align-items:flex-start; justify-content: space-between; gap: 1rem;">
+            <div style="display:flex; align-items:flex-start; gap: .75rem;">
+              <div style="width:34px;height:34px;border-radius: var(--radius-md);background: rgba(59,130,246,0.12);display:flex;align-items:center;justify-content:center;font-size: 1.1rem;">
+                {icon}
+              </div>
+              <div>
+                <div style="font-weight: var(--font-weight-bold); font-size: var(--font-size-base);">{safe_html_escape(title)}</div>
+                {badge_html}
+              </div>
+            </div>
+          </div>
+          <div style="margin-top: .75rem;">
+            {content}
+          </div>
+        </div>
+        """
+
+    # Legacy payload support:
+    # - `report["report"]` contains raw LLM text
+    # - `report["sections"]` contains structured sections
     if report.get("report"):
         if expandable:
             with st.expander("Full Report", expanded=True):
@@ -67,33 +105,57 @@ def render_report(
 
 def render_structured_sections(sections: list[dict[str, Any]], expandable: bool = True):
     """Render structured report sections."""
+    SECTION_ICON = {
+        "Executive Summary": "🧠",
+        "Key Insights": "🔎",
+        "Market Snapshot": "📈",
+        "Market Data": "📊",
+        "News Summary": "📰",
+        "News": "📰",
+        "Sentiment Summary": "🧾",
+        "Sentiment Analysis": "🧾",
+        "Risk Factors": "⚠️",
+        "Risks": "⚠️",
+        "Opportunities": "🚀",
+        "Recommendation": "✅",
+        "Sources": "🔗",
+        "Sources & Citations": "🔗",
+        "Disclaimer": "🛡️",
+    }
+
+    def section_title_to_key(t: str) -> str:
+        # Normalize to known keys (best-effort, keeps contract)
+        tt = (t or "").strip()
+        return tt
+
     for i, section in enumerate(sections):
         title = section.get("title", f"Section {i+1}")
         content = section.get("content", "")
 
-        if title == "Executive Summary":
-            st.markdown(section_header("Executive Summary", None), unsafe_allow_html=True)
-            st.markdown(content)
-        elif title == "Market Snapshot":
-            st.markdown(section_header("Market Snapshot", None), unsafe_allow_html=True)
-            st.markdown(content)
-        elif title == "News Summary":
-            st.markdown(section_header("News Summary", None), unsafe_allow_html=True)
-            st.markdown(content)
-        elif title == "Sentiment Analysis" or title == "Sentiment Summary":
-            st.markdown(section_header("Sentiment Summary", None), unsafe_allow_html=True)
-            st.markdown(content)
-        elif title == "Risk Factors" or title == "Risks":
-            st.markdown(section_header("Risks", None), unsafe_allow_html=True)
-            st.markdown(content)
-        elif title == "Opportunities":
-            st.markdown(section_header("Opportunities", None), unsafe_allow_html=True)
-            st.markdown(content)
-        elif title == "Disclaimer":
-            st.caption(f"*{content}*")
+        icon = SECTION_ICON.get(section_title_to_key(title), "📌")
+        badge = None
+        if "sentiment" in (title or "").lower():
+            badge = "Sentiment"
+        elif "news" in (title or "").lower():
+            badge = "News"
+        elif "market" in (title or "").lower():
+            badge = "Market"
+        elif "risk" in (title or "").lower():
+            badge = "Risks"
+        elif "opportun" in (title or "").lower():
+            badge = "Opportunities"
+
+        body = f"<div style='white-space: pre-wrap;'>{content}</div>"
+        card_html = _premium_card(icon=icon, title=title, content=body, badge=badge)
+
+        if expandable and title != "Disclaimer":
+            with st.expander(title, expanded=False):
+                st.markdown(card_html, unsafe_allow_html=True)
         else:
-            st.markdown(section_header(str(title), None), unsafe_allow_html=True)
-            st.markdown(content)
+            st.markdown(card_html, unsafe_allow_html=True)
+
+        if title == "Disclaimer":
+            st.caption(f"*{content}*")
 
 
 def render_synthesized_report(report: dict[str, Any]):

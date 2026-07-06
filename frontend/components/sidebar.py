@@ -21,10 +21,11 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
     """Render sidebar with analysis inputs, system status, and recent reports."""
     st.markdown(title_brand(), unsafe_allow_html=True)
     st.caption("Agentic Equity Research Assistant")
+
     st.divider()
 
-    # --- Analysis Inputs (required by spec) ---
-    st.markdown(section_header("Research Setup", "Configure the research you want."), unsafe_allow_html=True)
+    # --- Research (primary CTA) ---
+    st.markdown(section_header("Research", "Configure the research you want."), unsafe_allow_html=True)
 
     with st.form("analysis_form"):
         company_or_ticker = st.text_input(
@@ -91,8 +92,46 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
 
     st.divider()
 
-    # --- Current Model ---
-    st.markdown(section_header("Current Model"), unsafe_allow_html=True)
+    # --- Quick Actions (visual only; uses same backend submission via callback) ---
+    st.markdown(section_header("Quick Actions", "One-click example requests."), unsafe_allow_html=True)
+    quick_examples = [
+        ("AAPL", "Compare AAPL's competitive positioning and upcoming catalysts."),
+        ("MSFT", "Summarize key recent news and market-moving sentiment."),
+        ("NVDA", "Analyze fundamentals and risks affecting valuation."),
+    ]
+    for t, q in quick_examples:
+        if st.button(f"⚡ {t}", use_container_width=True):
+            if on_analyze:
+                on_analyze(
+                    {
+                        "company_or_ticker": t,
+                        "query": q,
+                        "tickers": [t],
+                        "include_news": True,
+                        "include_sentiment": True,
+                        "include_fundamentals": True,
+                        "include_technicals": False,
+                        "analysis_type": "Full Research",
+                        "max_report_length": st.session_state.get("max_report_length", 5000),
+                    }
+                )
+            else:
+                st.session_state["_last_analysis_form_data"] = {
+                    "company_or_ticker": t,
+                    "query": q,
+                    "tickers": [t],
+                    "include_news": True,
+                    "include_sentiment": True,
+                    "include_fundamentals": True,
+                    "include_technicals": False,
+                    "analysis_type": "Full Research",
+                    "max_report_length": st.session_state.get("max_report_length", 5000),
+                }
+
+    st.divider()
+
+    # --- Session Model ---
+    st.markdown(section_header("Model"), unsafe_allow_html=True)
     model_name = st.session_state.get("model_name", "gpt-4o")
     st.caption(model_name)
 
@@ -111,7 +150,7 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
     st.divider()
 
     # --- About ---
-    st.markdown(section_header("About EquiPilot AI", "Informational equity research assistant."), unsafe_allow_html=True)
+    st.markdown(section_header("About", "Informational equity research assistant."), unsafe_allow_html=True)
     st.caption(
         "Agentic equity research system using LangGraph orchestration "
         "to combine market data, news, and LLM synthesis."

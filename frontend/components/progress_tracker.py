@@ -50,48 +50,38 @@ def render_progress(
     if show_steps:
         _render_step_progress(current_step)
 
+    # Keep existing progress bar for compatibility, but align with stepper.
     step_index = _get_step_index(current_step)
     progress = (step_index + 1) / len(RESEARCH_STEPS)
     st.progress(min(progress, 1.0))
 
 
 def _render_step_progress(current_step: str):
-    """Render visual step progress."""
+    """Render visual step progress as a lightweight responsive stepper."""
     step_index = _get_step_index(current_step)
 
     cols = st.columns(len(RESEARCH_STEPS))
     for i, (step_id, step_name, _phase_label) in enumerate(RESEARCH_STEPS):
         with cols[i]:
+            state_class = "ds-step"
+            icon = str(i + 1)
             if i < step_index:
-                st.markdown(
-                    f"""
-                    <div style="text-align: center; padding: 0.625rem;">
-                        <div style="font-weight: var(--font-weight-bold);">✓</div>
-                        <div style="font-size: var(--font-size-xs); color: var(--muted);">{step_name}</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+                state_class += " ds-step--done"
+                icon = "✓"
             elif i == step_index:
-                st.markdown(
-                    f"""
-                    <div style="text-align: center; padding: 0.625rem;">
-                        <div style="font-weight: var(--font-weight-bold); color: var(--accent-2);">•</div>
-                        <div style="font-size: var(--font-size-xs); font-weight: var(--font-weight-bold);">{step_name}</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(
-                    f"""
-                    <div style="text-align: center; padding: 0.625rem; opacity: 0.3;">
-                        <div style="font-weight: var(--font-weight-bold);">•</div>
-                        <div style="font-size: var(--font-size-xs); color: var(--muted); opacity: 0.3;">{step_name}</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+                state_class += " ds-step--active"
+                icon = "•"
+
+            # Use design-system stepper classes (from design_system_ui.py)
+            st.markdown(
+                f"""
+                <div class="{state_class}" style="text-align:center;">
+                  <div class="ds-step__icon" aria-label="step {step_name}">{icon}</div>
+                  <div class="ds-step__title">{step_name}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
 
 def _get_step_index(step_id: str) -> int:
