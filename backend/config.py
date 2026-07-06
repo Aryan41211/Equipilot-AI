@@ -141,8 +141,8 @@ class Settings(BaseSettings):
         description="API route prefix",
     )
     cors_origins: list[str] = Field(
-        default=["*"],
-        description="Allowed CORS origins",
+        default=[],
+        description="Allowed CORS origins (fallback/allowed list; production uses CORS_ORIGINS env var)",
     )
 
     # -------------------------------------------------------------------------
