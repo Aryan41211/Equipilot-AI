@@ -80,13 +80,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         log_format=settings.log_format,
     )
 
-    startup_errors = []
+    # Required deterministic startup log line (deployment audit).
+    import os
 
-    # Validate environment
-    try:
-        startup_errors.extend(await validate_environment())
-    except Exception as e:
-        startup_errors.append(f"Environment validation: {e!s}")
+    raw_cors = os.environ.get("CORS_ORIGINS")
+    if raw_cors is None:
+        raw_cors = os.environ.get("cors_origins")
+
+    raw_cors_str = (raw_cors or "").strip() if raw_cors is not None else None
+    if raw_cors_str is None or raw_cors_str == "":
 
     # Initialize LangGraph research workflow
     try:

@@ -361,7 +361,19 @@ class Settings(BaseSettings):
             return merged
 
         # Production/staging => deny-by-default if nothing configured.
-        # If empty, keep it empty and let FastAPI deny all (no wildcard fallback).
+        # In production, if raw env var was provided but parsed into empty list,
+        # refuse startup (fail-fast).
+        raw = os.environ.get("CORS_ORIGINS") or os.environ.get("cors_origins")
+        if environment == "production" and raw is not None:
+            raw_str = str(raw).strip()
+            if raw_str and not (v or []):
+                import logging
+                logging.getLogger(__name__).error(
+                    "CORS_ORIGINS parsing produced empty allow-list in production",
+                    extra={"raw": raw_str},
+                )
+                raise ValueError("CORS_ORIGINS parsed to empty allow-list in production")
+
         if not v:
             import logging
             logging.getLogger(__name__).warning(
