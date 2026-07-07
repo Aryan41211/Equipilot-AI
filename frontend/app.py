@@ -1,5 +1,4 @@
 
-4 .
 # EquiPilot AI - Streamlit Frontend
 # Production dashboard (thin API client, no business logic in Streamlit)
 
