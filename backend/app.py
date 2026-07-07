@@ -34,6 +34,11 @@ research_graph = None
 # Maps request_id -> GraphState (and derived response payload)
 _research_store: dict[str, dict[str, Any]] = {}
 
+# Server-side idempotency map (per-process, in-memory TTL)
+# Key: fingerprint derived from incoming request (query + tickers)
+# Value: dict with timestamps and associated request_id/state
+_idempotency_store: dict[str, dict[str, Any]] = {}
+
 
 async def validate_environment() -> list:
     """Validate environment configuration on startup.
@@ -300,6 +305,119 @@ def create_app() -> FastAPI:
         """Submit a new research request and start the LangGraph workflow."""
         logger.info("Research request received", query=request.query, tickers=request.tickers)
 
+        # ----------------------------
+        # Server-side idempotency check (in-memory TTL)
+        # ----------------------------
+        import hashlib
+        import os as _os
+        import time as _time
+
+        enable_idempotency = _os.environ.get("ENABLE_IDEMPOTENCY_CHECK", "true").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "y",
+            "on",
+        )
+        idempotency_ttl_seconds = int(_os.environ.get("IDEMPOTENCY_TTL_SECONDS", "60"))
+
+        fingerprint: str | None = None
+        if enable_idempotency:
+            # Derive from query + tickers (as requested)
+            tickers = request.tickers or []
+            raw = f"{(request.query or '').strip()}|{','.join(tickers)}"
+            fingerprint = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+            now = _time.time()
+            entry = _idempotency_store.get(fingerprint) if fingerprint else None
+            if entry:
+                created_at_ts = float(entry.get("created_at_ts", 0) or 0)
+                age_s = now - created_at_ts
+                job_rid = entry.get("request_id")
+                job_completed = bool(entry.get("completed", False))
+
+                if age_s <= idempotency_ttl_seconds and job_rid and job_completed:
+                    # Completed already: return the existing result payload from store
+                    state = _research_store.get(job_rid, {}).get("state")
+                    if state is not None:
+                        graph_status = state.get("status")
+                        # Map GraphState.status -> ResearchStatus
+                        if graph_status == "success":
+                            r_status = ResearchStatus.COMPLETED
+                        elif graph_status == "failed":
+                            r_status = ResearchStatus.FAILED
+                        else:
+                            r_status = ResearchStatus.IN_PROGRESS
+
+                        report = state.get("report") or None
+                        t = state.get("ticker")
+                        tickers_out = [t] if t else []
+
+                        # execution_metadata/traces for frontend
+                        execution_metadata = state.get("execution_metadata", {}) or {}
+                        traces = execution_metadata.get("traces", []) or []
+                        current_step = "router"
+                        if traces:
+                            last = traces[-1]
+                            current_step = last.get("node_name") or last.get("step") or "router"
+                        execution_metadata = {
+                            **execution_metadata,
+                            "current_step": current_step,
+                            "traces": traces,
+                        }
+
+                        message = (
+                            "Research completed."
+                            if r_status == ResearchStatus.COMPLETED
+                            else (
+                                "Research in progress."
+                                if r_status == ResearchStatus.IN_PROGRESS
+                                else "Research failed."
+                            )
+                        )
+
+                        return ResearchResponse(
+                            request_id=job_rid,
+                            status=r_status,
+                            query=request.query,
+                            tickers=tickers_out,
+                            report=report,
+                            sections=None,
+                            citations=None,
+                            current_step=current_step,
+                            execution_metadata=execution_metadata,
+                            message=message,
+                        )
+
+                # If still within TTL, treat as in-flight: return the existing request_id,
+                # and a PENDING response shell (no new task launched).
+                if age_s <= idempotency_ttl_seconds and job_rid:
+                    now_state = _research_store.get(job_rid, {}).get("state", {}) or {}
+                    execution_metadata = now_state.get("execution_metadata", {}) or {}
+                    traces = execution_metadata.get("traces", []) or []
+                    current_step = "router"
+                    if traces:
+                        last = traces[-1]
+                        current_step = last.get("node_name") or last.get("step") or "router"
+                    execution_metadata = {
+                        **execution_metadata,
+                        "current_step": current_step,
+                        "traces": traces,
+                    }
+
+                    return ResearchResponse(
+                        request_id=job_rid,
+                        status=ResearchStatus.PENDING,
+                        query=request.query,
+                        tickers=request.tickers or [],
+                        current_step=current_step,
+                        execution_metadata={
+                            "current_step": current_step,
+                            "traces": traces,
+                        },
+                        message="Research request already submitted; returning existing job.",
+                    )
+
         # Build request_id + initial state for the graph
         rid = str(uuid.uuid4())
         initial_state = create_initial_state(request.query)
@@ -316,6 +434,14 @@ def create_app() -> FastAPI:
             "created_at": datetime.utcnow().isoformat(),
             "completed": False,
         }
+
+        # Store idempotency mapping entry (if enabled)
+        if enable_idempotency and fingerprint:
+            _idempotency_store[fingerprint] = {
+                "request_id": rid,
+                "created_at_ts": _time.time(),
+                "completed": False,
+            }
 
         async def _run_graph() -> None:
             try:
@@ -355,12 +481,25 @@ def create_app() -> FastAPI:
                 # Update store with final state
                 _research_store[rid]["state"] = final_state
                 _research_store[rid]["completed"] = True
+
+                # Mark idempotency mapping as completed (if enabled)
+                if enable_idempotency and fingerprint:
+                    existing = _idempotency_store.get(fingerprint)
+                    if existing is not None:
+                        existing["completed"] = True
             except Exception as e:
                 # Store failure in state
                 state = _research_store.get(rid, {}).get("state", initial_state)
                 state = {**state, "status": "failed", "errors": [str(e)]}
                 _research_store[rid]["state"] = state
                 _research_store[rid]["completed"] = True
+
+                # Mark idempotency mapping as completed (even on failure)
+                if enable_idempotency and fingerprint:
+                    existing = _idempotency_store.get(fingerprint)
+                    if existing is not None:
+                        existing["completed"] = True
+
                 logger.exception("Graph execution failed", request_id=rid, error=str(e))
 
         # Launch background task (FastAPI will keep it running in the same process)
