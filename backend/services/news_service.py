@@ -322,5 +322,13 @@ class NewsService:
         )
 
 
-# Singleton instance
-news_service = NewsService()
+# Lazy singleton - created on first use
+_news_service: NewsService | None = None
+
+
+def get_news_service() -> NewsService:
+    """Get or create news service singleton lazily."""
+    global _news_service
+    if _news_service is None:
+        _news_service = NewsService()
+    return _news_service

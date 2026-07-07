@@ -230,6 +230,5 @@ def get_sentiment_service() -> SentimentService:
     return _sentiment_service
 
 
-# Backwards-compatible symbol expected by agents/tests.
-# This provides a singleton instance at import time.
-sentiment_service: SentimentService = get_sentiment_service()
+# Note: Do not instantiate a singleton at import time.
+# Use `get_sentiment_service()` lazily to avoid import-time dependency/env failures.
