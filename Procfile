@@ -1,1 +1,2 @@
-web: python -m uvicorn backend.app:app --host 0.0.0.0 --port $PORT
+# Disabled: Railway start command is controlled by Dockerfile (production stage CMD).
+# Keeping this file to avoid confusion, but it intentionally contains no executable process entry.
