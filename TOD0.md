@@ -1,5 +1,5 @@
 - [ ] Dockerfile: remove dead frontend build stage; ensure production is last; keep production stage (HEALTHCHECK, CMD) unchanged.
 - [ ] backend/app.py: in _run_graph() change compiled.invoke(initial_state) to await asyncio.to_thread(compiled.invoke, initial_state) (only that line).
-- [ ] frontend/app.py: in check_status() remove first candidate URL and candidate iteration; call only {API_BASE_URL}/api/v1/research/{request_id} while preserving error handling and run_safely wrapper.
+- [x] frontend/app.py: in check_status() remove first candidate URL and candidate iteration; call only {API_BASE_URL}/api/v1/research/{request_id} while preserving error handling and run_safely wrapper.
 - [ ] Run test suite: pytest
 - [ ] Review test results and report.
