@@ -89,6 +89,31 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     raw_cors_str = (raw_cors or "").strip() if raw_cors is not None else None
     if raw_cors_str is None or raw_cors_str == "":
+        cors_detected_format = "empty_or_missing"
+    elif raw_cors_str.startswith("["):
+        cors_detected_format = "json_array_candidate"
+    elif "," in raw_cors_str:
+        cors_detected_format = "comma_separated"
+    else:
+        cors_detected_format = "single_value"
+
+    logger.info(
+        "StartupConfig",
+        port=settings.backend_port,
+        host=settings.backend_host,
+        cors_origins_raw=raw_cors_str,
+        cors_origins_raw_detected_format=cors_detected_format,
+        cors_origins_parsed=settings.cors_origins,
+        openai_api_key_present=bool(settings.openai_api_key),
+    )
+
+    startup_errors = []
+
+    # Validate environment
+    try:
+        startup_errors.extend(await validate_environment())
+    except Exception as e:
+        startup_errors.append(f"Environment validation: {e!s}")
 
     # Initialize LangGraph research workflow
     try:
