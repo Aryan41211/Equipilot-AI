@@ -271,6 +271,9 @@ class Settings(BaseSettings):
         - JSON array: ["https://a","https://b"]
         - comma-separated: https://a,https://b
         - list[str]
+
+        In production, malformed CORS_ORIGINS must fail fast (raise) rather than
+        silently falling back to an empty allow-list.
         """
         import json
 
@@ -287,9 +290,13 @@ class Settings(BaseSettings):
                 out.append(origin)
             return out
 
-        # If CORS_ORIGINS is not provided, we keep default deny-by-default list.
+        # If CORS_ORIGINS is not provided, keep default deny-by-default list.
         if v is None:
             return []
+
+        # Determine environment early for fail-fast behavior.
+        env = (os.environ.get("ENVIRONMENT") or os.environ.get("environment") or "development").lower()
+        is_prod = env == "production"
 
         if isinstance(v, list):
             return _normalize([str(x) for x in v])
@@ -305,9 +312,18 @@ class Settings(BaseSettings):
                     parsed = json.loads(raw)
                     if isinstance(parsed, list):
                         return _normalize([str(x) for x in parsed])
-                except json.JSONDecodeError:
+                    if is_prod:
+                        raise ValueError("CORS_ORIGINS JSON value must be an array")
+                    return []
+                except json.JSONDecodeError as e:
+                    if is_prod:
+                        raise ValueError(f"CORS_ORIGINS JSON parsing failed: {e!s}")
                     # Fall through to comma parsing
                     pass
+
+            # If it contains brackets but is not a valid JSON array, treat as malformed in prod.
+            if is_prod and ("[" in raw or "]" in raw):
+                raise ValueError("CORS_ORIGINS appears malformed (brackets present but not valid JSON array)")
 
             # Try comma-separated
             if "," in raw:
@@ -316,7 +332,7 @@ class Settings(BaseSettings):
             # Single value
             return _normalize([raw])
 
-        # Unknown type => deny-by-default
+        # Unknown type => deny-by-default (never raises for non-string types)
         return []
 
     @field_validator("cors_origins", mode="after")
