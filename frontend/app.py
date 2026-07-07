@@ -1,3 +1,5 @@
+
+4 .
 # EquiPilot AI - Streamlit Frontend
 # Production dashboard (thin API client, no business logic in Streamlit)
 
@@ -801,22 +803,18 @@ def check_status(request_id: str) -> dict[str, Any] | None:
     """Check research status (thin client)."""
 
     def _impl() -> dict[str, Any] | None:
-        candidate_gets = [
-            f"{API_BASE_URL}/research/{request_id}",
-            f"{API_BASE_URL}/api/v1/research/{request_id}",
-        ]
+        url = f"{API_BASE_URL}/api/v1/research/{request_id}"
 
         last_response: requests.Response | None = None
         last_exc: Exception | None = None
 
-        for url in candidate_gets:
-            try:
-                response = requests.get(url, timeout=5)
-                last_response = response
-                if response.status_code == 200:
-                    return response.json()
-            except Exception as e:
-                last_exc = e
+        try:
+            response = requests.get(url, timeout=5)
+            last_response = response
+            if response.status_code == 200:
+                return response.json()
+        except Exception as e:
+            last_exc = e
 
         if last_response is not None:
             st.error(f"API Error: {last_response.status_code} - {last_response.text}")

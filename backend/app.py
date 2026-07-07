@@ -298,7 +298,7 @@ def create_app() -> FastAPI:
                 if compiled is None:
                     raise RuntimeError("Research graph not initialized")
 
-                final_state = compiled.invoke(initial_state)
+                final_state = await asyncio.to_thread(compiled.invoke, initial_state)
 
                 # Ensure timing metadata exists and emit a single structured completion log
                 execution_metadata = final_state.get("execution_metadata", {}) or {}

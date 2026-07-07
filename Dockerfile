@@ -19,6 +19,3 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD python -c "import requests,os; url=os.getenv('EQUIPILOT_HEALTH_URL','http://localhost:8000/health'); requests.get(url,timeout=3).raise_for_status()"
 
 CMD ["python", "-m", "backend.app"]
-
-FROM base AS frontend
-COPY frontend /app/frontend
