@@ -139,7 +139,7 @@ class ResearchResponse(BaseModel):
         default=None,
         description="Error message if status is FAILED",
     )
-    created_at: datetime = Field(
+    created_at: datetime | None = Field(
         default_factory=datetime.utcnow,
         description="Request creation timestamp",
     )

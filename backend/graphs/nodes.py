@@ -5,6 +5,18 @@ import re
 from datetime import datetime
 from typing import Any
 
+def _run_coroutine_sync(coro):
+    """Run an async coroutine to completion from sync graph nodes.
+
+    LangGraph nodes registered as synchronous callables must not return coroutines.
+    We create a dedicated event loop to avoid 'event loop already running' issues.
+    """
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
+
 from backend.graphs.state import GraphState, _get_timestamp
 from backend.tools.market_data_tool import fetch_market_data
 from backend.tools.news_tool import fetch_news

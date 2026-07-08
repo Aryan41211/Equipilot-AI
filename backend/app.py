@@ -451,7 +451,8 @@ def create_app() -> FastAPI:
                 if compiled is None:
                     raise RuntimeError("Research graph not initialized")
 
-                final_state = await asyncio.to_thread(compiled.invoke, initial_state)
+                # Use async invocation so LangGraph can correctly execute async nodes/runnables
+                final_state = await compiled.ainvoke(initial_state)
 
                 # Ensure timing metadata exists and emit a single structured completion log
                 execution_metadata = final_state.get("execution_metadata", {}) or {}
@@ -603,9 +604,27 @@ def create_app() -> FastAPI:
         description="Check the current status of a research request.",
     )
     async def get_research_status(request_id: str) -> ResearchStatus:
-        """Get research status by request ID."""
-        # TODO: Implement actual status checking
-        return ResearchStatus.NOT_FOUND
+        """Get research status by request ID (in-memory)."""
+        record = _research_store.get(request_id)
+        if not record:
+            return ResearchStatus.NOT_FOUND
+
+        state: Any = record.get("state") or {}
+        completed = bool(record.get("completed"))
+
+        graph_status = state.get("status")
+        if completed and graph_status == "success":
+            return ResearchStatus.COMPLETED
+        if completed and graph_status == "failed":
+            return ResearchStatus.FAILED
+
+        # Map in-progress graph states
+        if graph_status in ("in_progress", "pending", None, "success", "failed"):
+            # If graph_status is success/failed but not completed, treat as in-progress.
+            return ResearchStatus.IN_PROGRESS
+
+        # Fallback: treat unknown as in-progress to keep UI polling stable.
+        return ResearchStatus.IN_PROGRESS
 
     return app
 
