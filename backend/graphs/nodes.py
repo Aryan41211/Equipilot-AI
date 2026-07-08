@@ -6,6 +6,8 @@ from datetime import datetime
 from typing import Any
 from unittest.mock import Mock
 
+from langchain_core.tools import StructuredTool
+
 from backend.graphs.state import GraphState, _get_timestamp
 from backend.tools.market_data_tool import fetch_market_data
 from backend.tools.news_tool import fetch_news
@@ -303,6 +305,14 @@ async def _call_news_tool(
     date_to: str | None,
     limit: int,
 ) -> dict[str, Any]:
+    if isinstance(fetch_news, StructuredTool):
+        return await fetch_news.coroutine(
+            tickers,
+            date_from=date_from,
+            date_to=date_to,
+            limit=limit,
+        )
+
     if hasattr(fetch_news, "ainvoke") and not isinstance(fetch_news, Mock):
         return await fetch_news.ainvoke(
             {
@@ -325,6 +335,9 @@ async def _call_sentiment_tool(
     articles: list[dict[str, Any]],
     tickers: list[str],
 ) -> dict[str, Any]:
+    if isinstance(analyze_sentiment, StructuredTool):
+        return await analyze_sentiment.coroutine(articles=articles, tickers=tickers)
+
     if hasattr(analyze_sentiment, "ainvoke") and not isinstance(analyze_sentiment, Mock):
         return await analyze_sentiment.ainvoke({"articles": articles, "tickers": tickers})
     return await analyze_sentiment(articles=articles, tickers=tickers)
