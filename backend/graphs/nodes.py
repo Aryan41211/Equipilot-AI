@@ -248,36 +248,36 @@ def _append_error(state: GraphState, error_message: str) -> GraphState:
     return {**state, "errors": errors}
 
 
-        user_query = state["user_query"]
+def _classify_intent(query: str) -> str:
+    """Classify user query into a research intent using deterministic rules."""
+    q = query.lower()
+    tokens = set(q.split())
 
-        # Validate empty query
-        if not user_query or not user_query.strip():
-            executed_nodes = list(state.get("executed_nodes", []))
-            if "router" not in executed_nodes:
-                executed_nodes.append("router")
-            state = _append_error(state, "Query is empty.")
-            state = {
-                **state,
-                "ticker": None,
-                "status": "failed",
-                "executed_nodes": executed_nodes,
-            }
-            state = _record_node_finish(state, "router", ok=False, error="Empty query")
-            return state
+    # Check multi-word phrases first
+    for kw in _FUNDAMENTALS_KEYWORDS:
+        if " " in kw and kw in q:
+            return "fundamentals"
 
-        # Extract ticker from query via simple heuristic
-        matches = _TICKER_RE.findall(user_query.upper())
+    if tokens & _FUNDAMENTALS_KEYWORDS:
+        return "fundamentals"
+    if tokens & _SENTIMENT_KEYWORDS:
+        return "sentiment"
+    if tokens & _NEWS_KEYWORDS:
+        return "news"
+    if tokens & _MARKET_OVERVIEW_KEYWORDS:
+        return "market_overview"
 
-        # Avoid common English uppercase false positives in heuristic extraction.
-        common_non_tickers = {
-            "GIVE",
-            "WHAT",
-            "NO",
-            "HERE",
-            "UPDATES",
-            "HAPPENING",
-            "ME",
-            "THE",
+    return "full_research"
+
+
+def _select_tools(intent: str) -> tuple[list[str], list[str]]:
+    """Return (selected_tools, skipped_tools) for a given intent."""
+    if intent == "fundamentals":
+        return (["market_data_tool"], ["news_tool", "sentiment_tool"])
+    if intent == "news":
+        return (["news_tool", "sentiment_tool"], ["market_data_tool"])
+    if intent == "sentiment":
+        return (["news_tool", "sentiment_tool"], ["market_data_tool"])
             "THIS",
             "THAT",
             "ABOUT",
