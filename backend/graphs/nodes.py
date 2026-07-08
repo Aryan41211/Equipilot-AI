@@ -107,18 +107,18 @@ def _init_tool_contract_entry(
       - cached
       - error
       - skipped
-
-    nodes[tool_node_name] = node_meta
-    execution_metadata["nodes"] = nodes
-    return {**state, "execution_metadata": execution_metadata}
-
-
-def _record_node_start(state: GraphState, node_name: str) -> GraphState:
+      - reason
+    """
     execution_metadata = _ensure_execution_metadata(state)
     nodes = dict(execution_metadata.get("nodes", {}) or {})
-    node_meta = nodes.get(node_name, {})
-    started_at = _get_timestamp()
-    node_meta["started_at"] = started_at
+    node_meta = nodes.get(tool_node_name, {}) or {}
+
+    if ok is not None:
+        node_meta["ok"] = ok
+    node_meta.setdefault("duration_ms", 0)
+    node_meta.setdefault("cached", False)
+    node_meta["error"] = node_meta.get("error") if "error" in node_meta else None
+    node_meta["skipped"] = bool(skipped)
     nodes[node_name] = node_meta
     execution_metadata["nodes"] = nodes
     logger.info("Node started", node=node_name, request_id=state.get("request_id"))
