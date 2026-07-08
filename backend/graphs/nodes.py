@@ -10,43 +10,79 @@ from backend.tools.news_tool import fetch_news
 from backend.tools.sentiment_tool import analyze_sentiment
 from backend.utils.logger import get_logger
 
-    """
-    loop = asyncio.new_event_loop()
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
-
-from backend.graphs.state import GraphState, _get_timestamp
-from backend.tools.market_data_tool import fetch_market_data
-from backend.tools.news_tool import fetch_news
-from backend.tools.sentiment_tool import analyze_sentiment
-from backend.utils.logger import get_logger
-
 logger = get_logger(__name__)
 
 _TICKER_RE = re.compile(r"\b([A-Z]{1,5})\b")
 
 _FUNDAMENTALS_KEYWORDS = {
-    "fundamental", "financial", "financials", "earnings", "revenue", "profit", "valuation",
-    "pe", "p/e", "margin", "balance", "cash flow", "dividend", "growth",
-    "ROE", "ROI", "debt", "asset", "liability", "income", "expense",
-    "fundamentals", "balance sheet", "income statement",
+    "fundamental",
+    "financial",
+    "financials",
+    "earnings",
+    "revenue",
+    "profit",
+    "valuation",
+    "pe",
+    "p/e",
+    "margin",
+    "balance",
+    "cash flow",
+    "dividend",
+    "growth",
+    "ROE",
+    "ROI",
+    "debt",
+    "asset",
+    "liability",
+    "income",
+    "expense",
+    "fundamentals",
+    "balance sheet",
+    "income statement",
 }
 
 _NEWS_KEYWORDS = {
-    "news", "headline", "headlines", "article", "announcement", "press", "media",
+    "news",
+    "headline",
+    "headlines",
+    "article",
+    "announcement",
+    "press",
+    "media",
     "report",
 }
 
 _SENTIMENT_KEYWORDS = {
-    "sentiment", "bullish", "bearish", "mood", "outlook", "optimistic",
+    "sentiment",
+    "bullish",
+    "bearish",
+    "mood",
+    "outlook",
+    "optimistic",
     "pessimistic",
 }
 
 _MARKET_OVERVIEW_KEYWORDS = {
-    "overview", "summary", "general", "market",
+    "overview",
+    "summary",
+    "general",
+    "market",
 }
+
+
+def _run_coroutine_sync(coro):
+    """
+    Run an async coroutine to completion from sync graph nodes.
+
+    LangGraph nodes registered as synchronous callables must not return coroutines.
+    """
+    import asyncio
+
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
 
 
 def _ensure_execution_metadata(state: GraphState) -> dict[str, Any]:
@@ -58,7 +94,11 @@ def _ensure_execution_metadata(state: GraphState) -> dict[str, Any]:
 
 
 def _init_tool_contract_entry(
-    state: GraphState, *, tool_node_name: str, ok: bool | None = None, skipped: bool = False
+    state: GraphState,
+    *,
+    tool_node_name: str,
+    ok: bool | None = None,
+    skipped: bool = False,
 ) -> GraphState:
     """
     Tests expect `execution_metadata["nodes"][tool_node_name]` to always exist with:
@@ -67,46 +107,6 @@ def _init_tool_contract_entry(
       - cached
       - error
       - skipped
-      - reason
-    """
-    execution_metadata = _ensure_execution_metadata(state)
-    nodes = dict(execution_metadata.get("nodes", {}) or {})
-    node_meta = nodes.get(tool_node_name, {}) or {}
-
-    if ok is not None:
-        node_meta["ok"] = ok
-    node_meta.setdefault("duration_ms", 0)
-    node_meta.setdefault("cached", False)
-    node_meta["error"] = node_meta.get("error") if "error" in node_meta else None
-    node_meta["skipped"] = bool(skipped)
-    node_meta["reason"] = node_meta.get("reason") if "reason" in node_meta else None
-
-    nodes[tool_node_name] = node_meta
-    execution_metadata["nodes"] = nodes
-    return {**state, "execution_metadata": execution_metadata}
-
-
-def _finalize_tool_contract_entry(
-    state: GraphState,
-    *,
-    tool_node_name: str,
-    ok: bool,
-    duration_ms: float,
-    error: str | None = None,
-    skipped: bool = False,
-    reason: str | None = None,
-    cached: bool = False,
-) -> GraphState:
-    execution_metadata = _ensure_execution_metadata(state)
-    nodes = dict(execution_metadata.get("nodes", {}) or {})
-    node_meta = dict(nodes.get(tool_node_name, {}) or {})
-
-    node_meta["ok"] = ok
-    node_meta["duration_ms"] = int(duration_ms) if duration_ms is not None else 0
-    node_meta["cached"] = bool(cached)
-    node_meta["error"] = error
-    node_meta["skipped"] = bool(skipped)
-    node_meta["reason"] = reason
 
     nodes[tool_node_name] = node_meta
     execution_metadata["nodes"] = nodes
