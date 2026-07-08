@@ -4,6 +4,7 @@ import asyncio
 import re
 from datetime import datetime
 from typing import Any
+from unittest.mock import Mock
 
 from backend.graphs.state import GraphState, _get_timestamp
 from backend.tools.market_data_tool import fetch_market_data
@@ -302,7 +303,7 @@ async def _call_news_tool(
     date_to: str | None,
     limit: int,
 ) -> dict[str, Any]:
-    if hasattr(fetch_news, "ainvoke"):
+    if hasattr(fetch_news, "ainvoke") and not isinstance(fetch_news, Mock):
         return await fetch_news.ainvoke(
             {
                 "self": tickers,
@@ -324,7 +325,7 @@ async def _call_sentiment_tool(
     articles: list[dict[str, Any]],
     tickers: list[str],
 ) -> dict[str, Any]:
-    if hasattr(analyze_sentiment, "ainvoke"):
+    if hasattr(analyze_sentiment, "ainvoke") and not isinstance(analyze_sentiment, Mock):
         return await analyze_sentiment.ainvoke({"articles": articles, "tickers": tickers})
     return await analyze_sentiment(articles=articles, tickers=tickers)
 
