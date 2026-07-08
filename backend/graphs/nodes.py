@@ -217,37 +217,37 @@ def _record_node_finish(
         except Exception:
             pass
 
-        return "sentiment"
-    if tokens & _NEWS_KEYWORDS:
-        return "news"
-    if tokens & _MARKET_OVERVIEW_KEYWORDS:
-        return "market_overview"
+    traces.append(
+        {
+            "node_name": node_name,
+            "start_time": started_at,
+            "end_time": node_meta["finished_at"],
+            "duration_ms": duration_ms,
+            "success": ok,
+            "error": error,
+        }
+    )
+    execution_metadata["traces"] = traces
 
-    return "full_research"
+    if ok:
+        logger.info("Node completed", node=node_name, ok=True, request_id=state.get("request_id"))
+    else:
+        logger.warning(
+            "Node failed",
+            node=node_name,
+            error=error,
+            request_id=state.get("request_id"),
+        )
+
+    return {**state, "execution_metadata": execution_metadata}
 
 
-def _select_tools(intent: str) -> tuple:
-    """Return (selected_tools, skipped_tools) for a given intent."""
-    if intent == "fundamentals":
-        return (["market_data_tool"], ["news_tool", "sentiment_tool"])
-    if intent == "news":
-        return (["news_tool", "sentiment_tool"], ["market_data_tool"])
-    if intent == "sentiment":
-        return (["news_tool", "sentiment_tool"], ["market_data_tool"])
-    if intent == "market_overview":
-        return (["news_tool"], ["market_data_tool", "sentiment_tool"])
-    return (["market_data_tool", "news_tool", "sentiment_tool"], [])
+def _append_error(state: GraphState, error_message: str) -> GraphState:
+    errors = list(state.get("errors", []))
+    errors.append(error_message)
+    return {**state, "errors": errors}
 
 
-def router_node(state: GraphState) -> GraphState:
-    """
-    START -> router
-
-    Deterministic rule-based router that validates input, extracts the ticker,
-    classifies intent, and returns a structured routing decision.
-    """
-    state = _record_node_start(state, "router")
-    try:
         user_query = state["user_query"]
 
         # Validate empty query
