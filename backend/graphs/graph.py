@@ -74,11 +74,9 @@ def create_first_graph():
     workflow.add_node("parallel_tools", parallel_tools_node)
     workflow.add_node("research", research_node)
 
-    # Keep legacy nodes registered for compatibility/testing, though not used
-    # in the optimized main path.
-    workflow.add_node("market_data_tool", market_data_tool_node)
-    workflow.add_node("news_tool", news_tool_node)
-    workflow.add_node("sentiment_tool", sentiment_tool_node)
+    # Legacy tool nodes are executed inside parallel_tools_node; they are not
+    # part of the optimized routed graph path, so they must not be registered
+    # as standalone nodes to avoid unreachable-node compile failures.
     workflow.add_node("merge_results", merge_results_node)
 
     workflow.set_entry_point("router")
