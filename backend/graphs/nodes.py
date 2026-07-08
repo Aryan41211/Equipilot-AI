@@ -197,26 +197,26 @@ def _record_node_finish(
     state: GraphState, node_name: str, *, ok: bool, error: str | None = None
 ) -> GraphState:
     execution_metadata = _ensure_execution_metadata(state)
+    nodes = dict(execution_metadata.get("nodes", {}) or {})
+    node_meta = nodes.get(node_name, {})
+    node_meta["ok"] = ok
+    if error:
+        node_meta["error"] = error
+    node_meta["finished_at"] = _get_timestamp()
+    nodes[node_name] = node_meta
+    execution_metadata["nodes"] = nodes
 
-def _append_error(state: GraphState, error_message: str) -> GraphState:
-    errors = list(state.get("errors", []))
-    errors.append(error_message)
-    return {**state, "errors": errors}
+    traces = list(execution_metadata.get("traces", []))
+    started_at = node_meta.get("started_at")
+    duration_ms = None
+    if started_at:
+        try:
+            start = datetime.fromisoformat(started_at)
+            end = datetime.fromisoformat(node_meta["finished_at"])
+            duration_ms = (end - start).total_seconds() * 1000
+        except Exception:
+            pass
 
-
-def _classify_intent(query: str) -> str:
-    """Classify user query into a research intent using deterministic rules."""
-    q = query.lower()
-    tokens = set(q.split())
-
-    # Check multi-word phrases first
-    for kw in _FUNDAMENTALS_KEYWORDS:
-        if " " in kw and kw in q:
-            return "fundamentals"
-
-    if tokens & _FUNDAMENTALS_KEYWORDS:
-        return "fundamentals"
-    if tokens & _SENTIMENT_KEYWORDS:
         return "sentiment"
     if tokens & _NEWS_KEYWORDS:
         return "news"
