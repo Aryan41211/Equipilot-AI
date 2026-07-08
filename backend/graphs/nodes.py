@@ -393,20 +393,20 @@ def market_data_tool_node(state: GraphState) -> GraphState:
     """router -> Market Data Tool (synchronous wrapper)."""
     state = _record_node_start(state, "market_data_tool")
 
-        state = _record_node_finish(state, "market_data_tool", ok=ok)
-        state = {**state, "executed_nodes": executed_nodes, "completed_tools": completed_tools, "failed_tools": failed_tools}
-        return state
-    except Exception as e:
-        finished_at = _get_timestamp()
-        state = _record_tool_result(
-            state,
-            tool_name="market_data_tool",
-            ok=False,
-            started_at=started_at,
-            finished_at=finished_at,
-            result={"error": str(e)},
-        )
-        state = _append_error(state, f"Market Data Tool exception: {e!s}")
+    executed_nodes = list(state.get("executed_nodes", []))
+    if "market_data_tool" not in executed_nodes:
+        executed_nodes.append("market_data_tool")
+
+    ticker = state.get("ticker")
+    if not ticker:
+        state = _append_error(state, "Ticker missing; cannot run Market Data Tool.")
+        state = {**state, "market_data": {}, "executed_nodes": executed_nodes}
+        state = _record_node_finish(state, "market_data_tool", ok=False, error="No ticker")
+        failed_tools = list(state.get("failed_tools", []))
+        if "market_data_tool" not in failed_tools:
+            failed_tools.append("market_data_tool")
+        return {**state, "failed_tools": failed_tools}
+
         completed_tools = list(state.get("completed_tools", []))
         failed_tools = list(state.get("failed_tools", []))
         if "market_data_tool" not in failed_tools:
