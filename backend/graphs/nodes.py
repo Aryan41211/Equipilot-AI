@@ -278,22 +278,22 @@ def _select_tools(intent: str) -> tuple[list[str], list[str]]:
         return (["news_tool", "sentiment_tool"], ["market_data_tool"])
     if intent == "sentiment":
         return (["news_tool", "sentiment_tool"], ["market_data_tool"])
-            "THIS",
-            "THAT",
-            "ABOUT",
-            "IS",
-            "IN",
-            "ON",
-            "FOR",
-            "WITH",
-            "SHOW",
-            "OVERVIEW",
-        }
+    if intent == "market_overview":
+        return (["news_tool"], ["market_data_tool", "sentiment_tool"])
+    return (["market_data_tool", "news_tool", "sentiment_tool"], [])
 
-        filtered = [m for m in matches if m not in common_non_tickers]
-        ticker: str | None = filtered[-1] if filtered else None
 
-        executed_nodes = list(state.get("executed_nodes", []))
+def router_node(state: GraphState) -> GraphState:
+    """
+    Deterministic rule-based router.
+
+    This node is synchronous by design (100% sync execution architecture).
+    """
+    state = _record_node_start(state, "router")
+    try:
+        user_query = state["user_query"]
+
+        # Validate empty query
         if "router" not in executed_nodes:
             executed_nodes.append("router")
 
