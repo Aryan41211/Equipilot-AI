@@ -445,6 +445,12 @@ def create_app() -> FastAPI:
 
         async def _run_graph() -> None:
             try:
+                current_state = _research_store.get(rid, {}).get("state", initial_state)
+                _research_store[rid]["state"] = {
+                    **current_state,
+                    "status": "in_progress",
+                }
+
                 # Execute the compiled graph synchronously; we store the latest state
                 # after each node execution is not streamed here, so we run fully.
                 compiled = research_graph
