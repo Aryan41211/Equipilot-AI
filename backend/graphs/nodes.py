@@ -295,6 +295,40 @@ def _extract_ticker(query: str) -> str | None:
     return filtered[-1] if filtered else None
 
 
+async def _call_news_tool(
+    *,
+    tickers: list[str],
+    date_from: str | None,
+    date_to: str | None,
+    limit: int,
+) -> dict[str, Any]:
+    if hasattr(fetch_news, "ainvoke"):
+        return await fetch_news.ainvoke(
+            {
+                "self": tickers,
+                "date_from": date_from,
+                "date_to": date_to,
+                "limit": limit,
+            }
+        )
+    return await fetch_news(
+        tickers=tickers,
+        date_from=date_from,
+        date_to=date_to,
+        limit=limit,
+    )
+
+
+async def _call_sentiment_tool(
+    *,
+    articles: list[dict[str, Any]],
+    tickers: list[str],
+) -> dict[str, Any]:
+    if hasattr(analyze_sentiment, "ainvoke"):
+        return await analyze_sentiment.ainvoke({"articles": articles, "tickers": tickers})
+    return await analyze_sentiment(articles=articles, tickers=tickers)
+
+
 async def router_node(state: GraphState) -> GraphState:
     state = _record_node_start(state, "router")
 
@@ -432,7 +466,12 @@ async def news_tool_node(state: GraphState) -> GraphState:
 
     started_at = _get_timestamp()
     try:
-        result = await fetch_news(tickers=[ticker], date_from=None, date_to=None, limit=20)
+        result = await _call_news_tool(
+            tickers=[ticker],
+            date_from=None,
+            date_to=None,
+            limit=20,
+        )
     except Exception as exc:
         result = {"error": str(exc), "error_type": "exception"}
     finished_at = _get_timestamp()
@@ -477,7 +516,10 @@ async def sentiment_tool_node(state: GraphState) -> GraphState:
 
     started_at = _get_timestamp()
     try:
-        result = await analyze_sentiment(articles=articles, tickers=[ticker] if ticker else [])
+        result = await _call_sentiment_tool(
+            articles=articles,
+            tickers=[ticker] if ticker else [],
+        )
     except Exception as exc:
         result = {"ok": False, "error": str(exc)}
     finished_at = _get_timestamp()
@@ -558,7 +600,12 @@ async def parallel_tools_node(state: GraphState) -> GraphState:
     async def _run_news() -> tuple[bool, dict[str, Any], str, str]:
         started_at = _get_timestamp()
         try:
-            result = await fetch_news(tickers=[ticker], date_from=None, date_to=None, limit=20)
+            result = await _call_news_tool(
+                tickers=[ticker],
+                date_from=None,
+                date_to=None,
+                limit=20,
+            )
         except Exception as exc:
             result = {"error": str(exc), "error_type": "exception"}
         finished_at = _get_timestamp()
@@ -656,7 +703,10 @@ async def parallel_tools_node(state: GraphState) -> GraphState:
 
             sentiment_started_at = _get_timestamp()
             try:
-                sentiment_result = await analyze_sentiment(articles=articles, tickers=[ticker])
+                sentiment_result = await _call_sentiment_tool(
+                    articles=articles,
+                    tickers=[ticker],
+                )
             except Exception as exc:
                 sentiment_result = {"ok": False, "error": str(exc)}
             sentiment_finished_at = _get_timestamp()
