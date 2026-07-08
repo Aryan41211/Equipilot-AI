@@ -375,23 +375,23 @@ def router_node(state: GraphState) -> GraphState:
         return state
     except Exception as e:
         executed_nodes = list(state.get("executed_nodes", []))
-            started_at=started_at,
-            finished_at=finished_at,
-            result=result,
-        )
+        if "router" not in executed_nodes:
+            executed_nodes.append("router")
+        state = _append_error(state, f"Router error: {e!s}")
+        state = {**state, "status": "failed", "executed_nodes": executed_nodes}
+        state = _record_node_finish(state, "router", ok=False, error=str(e))
+        return state
 
-        completed_tools = list(state.get("completed_tools", []))
-        failed_tools = list(state.get("failed_tools", []))
-        if ok and "market_data_tool" not in completed_tools:
-            completed_tools.append("market_data_tool")
-        elif not ok and "market_data_tool" not in failed_tools:
-            failed_tools.append("market_data_tool")
 
-        if not ok:
-            state = _append_error(state, f"Market Data Tool failed: {result.get('error')}")
-            state = {**state, "market_data": {}, "status": state.get("status", "pending")}
-        else:
-            state = {**state, "market_data": result, "status": state.get("status", "pending")}
+# Backwards-compatible alias kept for existing imports.
+def market_data_node(state: GraphState) -> GraphState:
+    """Alias for `market_data_tool_node`."""
+    return market_data_tool_node(state)
+
+
+def market_data_tool_node(state: GraphState) -> GraphState:
+    """router -> Market Data Tool (synchronous wrapper)."""
+    state = _record_node_start(state, "market_data_tool")
 
         state = _record_node_finish(state, "market_data_tool", ok=ok)
         state = {**state, "executed_nodes": executed_nodes, "completed_tools": completed_tools, "failed_tools": failed_tools}
