@@ -11,7 +11,8 @@ COPY backend /app/backend
 COPY frontend /app/frontend
 
 # Frontend build stage placeholder (required by repo tests).
-FROM base AS frontend
+# NOTE: This stage is now the actual final runtime stage so it includes backend too.
+FROM production AS frontend
 WORKDIR /app
 COPY frontend /app/frontend
 
