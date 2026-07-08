@@ -356,25 +356,25 @@ def router_node(state: GraphState) -> GraphState:
             "ticker": ticker,
             "detected_intent": detected_intent,
             "selected_tools": selected_tools,
-    if not ticker:
-        state = _append_error(state, "Ticker missing; cannot run Market Data Tool.")
-        state = {**state, "market_data": {}, "executed_nodes": executed_nodes}
-        state = _record_node_finish(state, "market_data_tool", ok=False, error="No ticker")
-        failed_tools = list(state.get("failed_tools", []))
-        if "market_data_tool" not in failed_tools:
-            failed_tools.append("market_data_tool")
-        return {**state, "failed_tools": failed_tools}
+            "skipped_tools": skipped_tools,
+            "completed_tools": [],
+            "failed_tools": [],
+            "status": state.get("status", "pending"),
+            "executed_nodes": executed_nodes,
+        }
 
-    started_at = _get_timestamp()
-    try:
-        result = await fetch_market_data(ticker)
-        finished_at = _get_timestamp()
+        logger.info(
+            "Routing decision",
+            intent=detected_intent,
+            selected_tools=selected_tools,
+            skipped_tools=skipped_tools,
+            request_id=state.get("request_id"),
+        )
 
-        ok = "error" not in result
-        state = _record_tool_result(
-            state,
-            tool_name="market_data_tool",
-            ok=ok,
+        state = _record_node_finish(state, "router", ok=True)
+        return state
+    except Exception as e:
+        executed_nodes = list(state.get("executed_nodes", []))
             started_at=started_at,
             finished_at=finished_at,
             result=result,
