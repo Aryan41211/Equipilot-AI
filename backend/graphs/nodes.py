@@ -294,39 +294,39 @@ def router_node(state: GraphState) -> GraphState:
         user_query = state["user_query"]
 
         # Validate empty query
-        if "router" not in executed_nodes:
-            executed_nodes.append("router")
-
-        if ticker is None:
-            state = _append_error(state, "Ticker could not be extracted from query.")
-            state = {**state, "ticker": None, "status": "failed", "executed_nodes": executed_nodes}
-            state = _record_node_finish(state, "router", ok=False, error="Ticker extraction failed")
+        if not user_query or not user_query.strip():
+            executed_nodes = list(state.get("executed_nodes", []))
+            if "router" not in executed_nodes:
+                executed_nodes.append("router")
+            state = _append_error(state, "Query is empty.")
+            state = {
+                **state,
+                "ticker": None,
+                "status": "failed",
+                "executed_nodes": executed_nodes,
+            }
+            state = _record_node_finish(state, "router", ok=False, error="Empty query")
             return state
 
-        detected_intent = _classify_intent(user_query)
-        selected_tools, skipped_tools = _select_tools(detected_intent)
+        # Extract ticker from query via simple heuristic
+        matches = _TICKER_RE.findall(user_query.upper())
 
-        state = {
-            **state,
-            "ticker": ticker,
-            "detected_intent": detected_intent,
-            "selected_tools": selected_tools,
-            "skipped_tools": skipped_tools,
-            "completed_tools": [],
-            "failed_tools": [],
-            "status": state.get("status", "pending"),
-            "executed_nodes": executed_nodes,
-        }
-        logger.info(
-            "Routing decision",
-            intent=detected_intent,
-            selected_tools=selected_tools,
-            skipped_tools=skipped_tools,
-            request_id=state.get("request_id"),
-        )
-        state = _record_node_finish(state, "router", ok=True)
-        return state
-    except Exception as e:
+        # Avoid common English uppercase false positives in heuristic extraction.
+        common_non_tickers = {
+            "GIVE",
+            "WHAT",
+            "NO",
+            "HERE",
+            "UPDATES",
+            "HAPPENING",
+            "ME",
+            "THE",
+            "THIS",
+            "THAT",
+            "ABOUT",
+            "IS",
+            "IN",
+            "ON",
         executed_nodes = list(state.get("executed_nodes", []))
         if "router" not in executed_nodes:
             executed_nodes.append("router")
