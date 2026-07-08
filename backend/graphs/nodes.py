@@ -407,7 +407,7 @@ def market_data_tool_node(state: GraphState) -> GraphState:
             failed_tools.append("market_data_tool")
         return {**state, "failed_tools": failed_tools}
 
-        completed_tools = list(state.get("completed_tools", []))
+    started_at = _get_timestamp()
         failed_tools = list(state.get("failed_tools", []))
         if "market_data_tool" not in failed_tools:
             failed_tools.append("market_data_tool")
