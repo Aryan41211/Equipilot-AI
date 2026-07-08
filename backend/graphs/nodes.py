@@ -327,35 +327,35 @@ def router_node(state: GraphState) -> GraphState:
             "IS",
             "IN",
             "ON",
+            "FOR",
+            "WITH",
+            "SHOW",
+            "OVERVIEW",
+        }
+
+        filtered = [m for m in matches if m not in common_non_tickers]
+        ticker: str | None = filtered[-1] if filtered else None
+
         executed_nodes = list(state.get("executed_nodes", []))
         if "router" not in executed_nodes:
             executed_nodes.append("router")
-        state = _append_error(state, f"Router error: {e!s}")
-        state = {**state, "status": "failed", "executed_nodes": executed_nodes}
-        state = _record_node_finish(state, "router", ok=False, error=str(e))
-        return state
 
+        if ticker is None:
+            state = _append_error(state, "Ticker could not be extracted from query.")
+            state = {**state, "ticker": None, "status": "failed", "executed_nodes": executed_nodes}
+            state = _record_node_finish(
+                state, "router", ok=False, error="Ticker extraction failed"
+            )
+            return state
 
-# Backwards-compatible alias:
-# `backend/graphs/graph.py` currently imports `market_data_node`.
-async def market_data_node(state: GraphState) -> GraphState:
-    """
-    Alias for `market_data_tool_node` (kept to preserve existing graph imports).
-    """
-    return await market_data_tool_node(state)
+        detected_intent = _classify_intent(user_query)
+        selected_tools, skipped_tools = _select_tools(detected_intent)
 
-
-async def market_data_tool_node(state: GraphState) -> GraphState:
-    """
-    router -> Market Data Tool
-    """
-    state = _record_node_start(state, "market_data_tool")
-
-    executed_nodes = list(state.get("executed_nodes", []))
-    if "market_data_tool" not in executed_nodes:
-        executed_nodes.append("market_data_tool")
-
-    ticker = state.get("ticker")
+        state = {
+            **state,
+            "ticker": ticker,
+            "detected_intent": detected_intent,
+            "selected_tools": selected_tools,
     if not ticker:
         state = _append_error(state, "Ticker missing; cannot run Market Data Tool.")
         state = {**state, "market_data": {}, "executed_nodes": executed_nodes}
