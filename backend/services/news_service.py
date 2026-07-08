@@ -332,3 +332,8 @@ def get_news_service() -> NewsService:
     if _news_service is None:
         _news_service = NewsService()
     return _news_service
+
+
+# Backwards-compatible singleton export.
+# Some tools/graph nodes import `news_service` directly from this module.
+news_service: NewsService = get_news_service()
