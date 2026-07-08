@@ -10,8 +10,7 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 COPY backend /app/backend
 COPY frontend /app/frontend
 
-# Frontend build stage placeholder (required by repo tests).
-# NOTE: This stage is now the actual final runtime stage so it includes backend too.
+# Final runtime stage
 FROM production AS frontend
 WORKDIR /app
 COPY frontend /app/frontend
@@ -24,4 +23,17 @@ USER appuser
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD python -c "import requests,os; url=os.getenv('EQUIPILOT_HEALTH_URL','http://localhost:8000/health'); requests.get(url,timeout=3).raise_for_status()"
 
-CMD ["python", "-m", "backend.app"]
+# Minimal diagnostics to verify runtime image layout and Python import path.
+# Prints:
+#   - pwd
+#   - /app tree
+#   - python sys.path
+#   - ability to import backend
+#
+# Then attempts to run the original entrypoint command.
+CMD sh -c 'echo "==== pwd ====" && pwd && \
+  echo "==== ls -la /app ====" && ls -la /app && \
+  echo "==== ls -R /app ====" && ls -R /app && \
+  echo "==== python -c sys.path ====" && python -c "import sys; print(sys.path)" && \
+  echo "==== python -c import backend ====" && python -c "import backend; print(\"backend imported OK from\", backend.__file__)" && \
+  echo "==== python -m backend.app ====" && python -m backend.app'
