@@ -119,49 +119,49 @@ def _init_tool_contract_entry(
     node_meta.setdefault("cached", False)
     node_meta["error"] = node_meta.get("error") if "error" in node_meta else None
     node_meta["skipped"] = bool(skipped)
-    nodes[node_name] = node_meta
+    node_meta["reason"] = node_meta.get("reason") if "reason" in node_meta else None
+
+    nodes[tool_node_name] = node_meta
     execution_metadata["nodes"] = nodes
-    logger.info("Node started", node=node_name, request_id=state.get("request_id"))
     return {**state, "execution_metadata": execution_metadata}
 
 
-def _record_tool_result(
+def _finalize_tool_contract_entry(
     state: GraphState,
     *,
-    tool_name: str,
+    tool_node_name: str,
     ok: bool,
-    started_at: str,
-    finished_at: str,
-    result: Any,
-) -> GraphState:
-    execution_metadata = _ensure_execution_metadata(state)
-    tools = dict(execution_metadata.get("tools", {}) or {})
-
-    tools[tool_name] = {
-        "ok": ok,
-        "started_at": started_at,
-        "finished_at": finished_at,
-        "result": result,
-    }
-    execution_metadata["tools"] = tools
-    logger.info(
-        "Tool completed",
-        tool=tool_name,
-        ok=ok,
-        request_id=state.get("request_id"),
-    )
-    return {**state, "execution_metadata": execution_metadata}
-
-
-def _record_node_finish(
-    state: GraphState, node_name: str, *, ok: bool, error: str | None = None
+    duration_ms: float,
+    error: str | None = None,
+    skipped: bool = False,
+    reason: str | None = None,
+    cached: bool = False,
 ) -> GraphState:
     execution_metadata = _ensure_execution_metadata(state)
     nodes = dict(execution_metadata.get("nodes", {}) or {})
-    node_meta = nodes.get(node_name, {})
+    node_meta = dict(nodes.get(tool_node_name, {}) or {})
+
     node_meta["ok"] = ok
-    if error:
-        node_meta["error"] = error
+    node_meta["duration_ms"] = int(duration_ms) if duration_ms is not None else 0
+    node_meta["cached"] = bool(cached)
+    node_meta["error"] = error
+    node_meta["skipped"] = bool(skipped)
+    node_meta["reason"] = reason
+
+    nodes[tool_node_name] = node_meta
+    execution_metadata["nodes"] = nodes
+    return {**state, "execution_metadata": execution_metadata}
+
+
+def _record_node_start(state: GraphState, node_name: str) -> GraphState:
+    execution_metadata = _ensure_execution_metadata(state)
+    nodes = dict(execution_metadata.get("nodes", {}) or {})
+    node_meta = nodes.get(node_name, {})
+    started_at = _get_timestamp()
+    node_meta["started_at"] = started_at
+    nodes[node_name] = node_meta
+    execution_metadata["nodes"] = nodes
+    logger.info("Node started", node=node_name, request_id=state.get("request_id"))
     node_meta["finished_at"] = _get_timestamp()
     nodes[node_name] = node_meta
     execution_metadata["nodes"] = nodes
