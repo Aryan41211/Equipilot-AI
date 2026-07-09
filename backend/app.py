@@ -60,11 +60,13 @@ async def validate_environment() -> list:
         logger.error("Configuration validation failed", error=str(e))
 
     # Validate critical environment variables
-    if not settings.openai_api_key:
+    # Fail fast in production to avoid partially-functional API instances.
+    if settings.is_production and not settings.openai_api_key:
         errors.append("OPENAI_API_KEY is not set - LLM features unavailable")
 
     if not settings.news_api_key:
         logger.info("NEWS_API_KEY not set - news features will use fallback sources")
+
 
     # Validate port availability (basic check)
     if settings.backend_port < 1024 and not settings.is_development:
