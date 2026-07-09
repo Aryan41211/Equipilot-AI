@@ -222,6 +222,11 @@ def create_app() -> FastAPI:
             )
             raise
 
+    # Root endpoint (for proxies/load balancers that hit `/` first)
+    @app.get("/", tags=["Health"])
+    async def root():
+        return {"status": "ok", "version": APP_VERSION}
+
     # Health check endpoint
     @app.get("/health", tags=["Health"])
     async def health_check():
