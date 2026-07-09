@@ -113,7 +113,9 @@ class Settings(BaseSettings):
         description="Backend server host",
     )
     backend_port: int = Field(
-        default_factory=lambda: int(os.environ.get("PORT", "8000")),
+        default_factory=lambda: int(
+            (os.environ.get("PORT") or os.environ.get("BACKEND_PORT") or "8000").strip() or "8000"
+        ),
         description="Backend server port (from PORT env var in production)",
     )
     backend_reload: bool = Field(

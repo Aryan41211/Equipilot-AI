@@ -27,6 +27,8 @@ setup_logging()
 
 logger = get_logger(__name__)
 
+logger.info("DIAG: backend.app imported (setup_logging done)")
+
 # Global graph instance (initialized on startup)
 research_graph = None
 
