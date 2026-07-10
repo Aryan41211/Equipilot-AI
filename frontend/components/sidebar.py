@@ -117,14 +117,15 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
     st.markdown(f'<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
 
     # --- Quick Actions ---
-    st.markdown(_sidebar_section(_SECTION_ICONS["quick"], "Quick Actions", "One-click examples"), unsafe_allow_html=True)
+    st.markdown(_sidebar_section(_SECTION_ICONS["quick"], "Quick Actions", "One-click research"), unsafe_allow_html=True)
     quick_examples = [
-        ("AAPL", "Market snapshot with fundamentals, news, and valuation"),
-        ("MSFT", "Recent news, sentiment, and competitive positioning"),
-        ("NVDA", "Growth drivers, risks, and financial health"),
+        ("AAPL", "📊", "Market snapshot with fundamentals, news, and valuation"),
+        ("MSFT", "📰", "Recent news, sentiment, and competitive positioning"),
+        ("NVDA", "⚡", "Growth drivers, risks, and financial health"),
     ]
-    for t, q in quick_examples:
-        if st.button(f"{t}", key=f"qa_{t}", use_container_width=True):
+    for t, icon, q in quick_examples:
+        label = f"{icon} {t}"
+        if st.button(label, key=f"qa_{t}", use_container_width=True):
             if on_analyze:
                 on_analyze(
                     {
