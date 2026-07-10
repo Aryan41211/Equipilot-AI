@@ -3,11 +3,18 @@ from __future__ import annotations
 from typing import Optional
 
 
-def coerce_max_report_length(value: int | float | str | None, *, default: int = 5000, min_value: int = 1000, max_value: int = 10000, step: int = 500) -> int:
+def coerce_max_report_length(
+    value: int | float | str | None,
+    *,
+    default: int = 5000,
+    min_value: int = 1000,
+    max_value: int = 10000,
+    step: int = 500,
+) -> int:
     """
-    Pure helper to normalize max_report_length into an allowed integer bucket.
+    UI-independent helper to normalize max_report_length into an allowed integer bucket.
 
-    NOTE: UI widgets often already enforce ranges; this helper is defensive and UI-independent.
+    Prefer using UI widget ranges, but keep this defensive to preserve behavior.
     """
     try:
         if value is None:
@@ -22,33 +29,41 @@ def coerce_max_report_length(value: int | float | str | None, *, default: int = 
         ivalue = max_value
 
     # Snap to step grid (best-effort).
-    if step > 1:
+    if step and step > 1:
         remainder = (ivalue - min_value) % step
         if remainder != 0:
             ivalue = ivalue - remainder
             if ivalue < min_value:
                 ivalue = min_value
+
     return ivalue
 
 
 def parse_tickers_csv(value: str | None, *, upper: bool = True) -> Optional[list[str]]:
     """
     Parse comma-separated tickers into list[str] or None.
-    Pure function: does not apply any backend-specific validation.
+
+    Pure function; no backend-specific validation.
     """
     if not value:
         return None
+
     tickers = [t.strip() for t in value.split(",") if t.strip()]
     if not tickers:
         return None
+
     if upper:
         tickers = [t.upper() for t in tickers]
+
     return tickers
 
 
 def looks_like_ticker(value: str, *, max_len: int = 12) -> bool:
     """
-    Best-effort heuristic: sidebar previously uppercased and then checked:
+    Best-effort heuristic used by the sidebar for deciding whether to pass tickers.
+
+    Matches previous sidebar behavior:
+      normalized = value.strip().upper()
       normalized.replace(".", "", 1).isalnum() and len(normalized) <= 12
     """
     normalized = (value or "").strip().upper()

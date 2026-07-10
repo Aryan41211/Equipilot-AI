@@ -5,6 +5,8 @@ from typing import Any, Callable, Optional
 
 import streamlit as st
 
+from frontend.components.research_form_helpers import coerce_max_report_length, parse_tickers_csv
+
 
 def render_query_form(
     key: str = "query_form",
@@ -67,7 +69,7 @@ def render_query_form(
                 st.error("Please enter a research query")
                 return None
 
-            tickers = [t.strip().upper() for t in ticker_input.split(",") if t.strip()]
+            tickers = parse_tickers_csv(ticker_input, upper=True)
 
             form_data = {
                 "query": query,
@@ -76,7 +78,13 @@ def render_query_form(
                 "include_sentiment": include_sentiment,
                 "include_fundamentals": include_fundamentals,
                 "include_technicals": include_technicals,
-                "max_report_length": max_length,
+                "max_report_length": coerce_max_report_length(
+                    max_length,
+                    default=5000,
+                    min_value=1000,
+                    max_value=10000,
+                    step=500,
+                ),
             }
 
             if on_submit:
