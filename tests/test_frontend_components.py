@@ -105,7 +105,7 @@ class TestReportDisplay:
         }
 
         with patch.object(st, 'markdown') as mock_md:
-            render_report(report, show_metadata=True)
+            render_report(report)
             assert mock_md.call_count >= 1
 
     def test_render_report_shows_markdown_content(self):
