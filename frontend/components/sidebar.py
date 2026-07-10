@@ -1,6 +1,6 @@
 
 # EquiPilot AI - Sidebar Component
-# Navigation, recent reports, and system status
+# Navigation, research inputs, system status, and history
 
 import os
 from collections.abc import Callable
@@ -20,15 +20,38 @@ from frontend.components.design_system_ui import (
 API_BASE_URL = os.environ.get("EQUIPILOT_API_URL", "").rstrip("/")
 
 
+_SECTION_ICONS = {
+    "research": "🔬",
+    "quick": "⚡",
+    "model": "🧠",
+    "status": "🖥",
+    "history": "📋",
+    "about": "ℹ️",
+}
+
+
+def _sidebar_section(icon: str, title: str, subtitle: str | None = None) -> str:
+    """Compact sidebar section header with icon."""
+    subtitle_html = f'<div style="font-size:var(--font-size-xs);color:var(--muted);margin-top:1px;line-height:1.3;">{subtitle}</div>' if subtitle else ""
+    return f"""
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+      <span style="font-size:14px;width:20px;flex-shrink:0;">{icon}</span>
+      <div>
+        <div style="font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);color:var(--text);letter-spacing:-0.01em;text-transform:uppercase;opacity:0.7;">{title}</div>
+        {subtitle_html}
+      </div>
+    </div>
+    """
+
+
 def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
     """Render sidebar with analysis inputs, system status, and recent reports."""
     st.markdown(title_brand(), unsafe_allow_html=True)
-    st.caption("Agentic Equity Research Assistant")
 
-    st.divider()
+    st.markdown(f'<hr style="margin:1rem 0 !important;" />', unsafe_allow_html=True)
 
     # --- Research (primary CTA) ---
-    st.markdown(section_header("Research", "Configure the research you want."), unsafe_allow_html=True)
+    st.markdown(_sidebar_section(_SECTION_ICONS["research"], "Research", "Configure and run analysis"), unsafe_allow_html=True)
 
     with st.form("analysis_form"):
         company_or_ticker = st.text_input(
@@ -39,19 +62,19 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
 
         query = st.text_area(
             "Query",
-            placeholder="What do you want to research? (e.g., fundamentals, catalysts, risks)",
-            height=120,
+            placeholder="What do you want to research?",
+            height=100,
             key="query_input",
         )
 
         analysis_type = st.selectbox(
             "Analysis Type",
-            options=["Fundamentals", "News", "Sentiment", "Full Research"],
-            index=3,  # default to Full Research
+            options=["Full Research", "Fundamentals", "News", "Sentiment"],
+            index=0,
             key="analysis_type",
         )
 
-        submitted = st.form_submit_button("🔎 Analyze", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("Analyze", type="primary", use_container_width=True)
 
     if submitted:
         company_or_ticker_val = (company_or_ticker or "").strip()
@@ -64,13 +87,10 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
             st.error("Please enter a Query.")
             return
 
-        # Convert analysis type into backend boolean flags.
         include_news = analysis_type in ("News", "Full Research")
         include_sentiment = analysis_type in ("Sentiment", "Full Research")
         include_fundamentals = analysis_type in ("Fundamentals", "Full Research")
 
-        # Backend accepts tickers; when user enters a name, entity resolution
-        # can map it. We pass tickers only when it looks like a ticker.
         normalized = company_or_ticker_val.strip().upper()
         tickers = [normalized] if looks_like_ticker(company_or_ticker_val) else None
 
@@ -89,20 +109,19 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
         if on_analyze:
             on_analyze(form_data)
         else:
-            # Fallback for cases where parent didn't pass callback.
             st.session_state["_last_analysis_form_data"] = form_data
 
-    st.divider()
+    st.markdown(f'<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
 
-    # --- Quick Actions (visual only; uses same backend submission via callback) ---
-    st.markdown(section_header("Quick Actions", "One-click example requests."), unsafe_allow_html=True)
+    # --- Quick Actions ---
+    st.markdown(_sidebar_section(_SECTION_ICONS["quick"], "Quick Actions", "One-click examples"), unsafe_allow_html=True)
     quick_examples = [
-        ("AAPL", "Compare AAPL's competitive positioning and upcoming catalysts."),
-        ("MSFT", "Summarize key recent news and market-moving sentiment."),
-        ("NVDA", "Analyze fundamentals and risks affecting valuation."),
+        ("AAPL", "Market snapshot with fundamentals, news, and valuation"),
+        ("MSFT", "Recent news, sentiment, and competitive positioning"),
+        ("NVDA", "Growth drivers, risks, and financial health"),
     ]
     for t, q in quick_examples:
-        if st.button(f"⚡ {t}", use_container_width=True):
+        if st.button(f"{t}", key=f"qa_{t}", use_container_width=True):
             if on_analyze:
                 on_analyze(
                     {
@@ -130,32 +149,25 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
                     "max_report_length": st.session_state.get("max_report_length", 5000),
                 }
 
-    st.divider()
-
-    # --- Session Model ---
-    st.markdown(section_header("Model"), unsafe_allow_html=True)
-    model_name = st.session_state.get("model_name", "gpt-4o")
-    st.caption(model_name)
-
-    st.divider()
+    st.markdown(f'<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
 
     # --- System Status ---
-    st.markdown(section_header("System Status", "Backend health & integration."), unsafe_allow_html=True)
+    st.markdown(_sidebar_section(_SECTION_ICONS["status"], "System Status", "Backend health & integrations"), unsafe_allow_html=True)
     render_system_status()
 
-    st.divider()
+    st.markdown(f'<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
 
     # --- Recent Reports ---
-    st.markdown(section_header("Recent Reports", "Session history for quick re-runs."), unsafe_allow_html=True)
+    st.markdown(_sidebar_section(_SECTION_ICONS["history"], "Recent Reports", "Session research history"), unsafe_allow_html=True)
     render_recent_reports()
 
-    st.divider()
+    st.markdown(f'<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
 
     # --- About ---
-    st.markdown(section_header("About", "Informational equity research assistant."), unsafe_allow_html=True)
+    st.markdown(_sidebar_section(_SECTION_ICONS["about"], "About"), unsafe_allow_html=True)
     st.caption(
-        "Agentic equity research system using LangGraph orchestration "
-        "to combine market data, news, and LLM synthesis."
+        "EquiPilot AI is an **informational equity research assistant** built with LangGraph orchestration. "
+        "It combines market data, news, and LLM synthesis — but does not provide investment advice."
     )
 
 
@@ -163,40 +175,76 @@ def render_system_status():
     """Render backend health status."""
     try:
         if not API_BASE_URL:
-            st.info("API not configured (set EQUIPILOT_API_URL).")
+            st.caption("API not configured (set EQUIPILOT_API_URL).")
             return
 
         import requests
 
-        # Use the canonical URL builder from the main frontend entrypoint.
-        # Lazy import avoids circular import at module import time.
-        from frontend.app import build_backend_url  # type: ignore
+        from frontend.app import build_backend_url
 
         health_url = build_backend_url("health")
         response = requests.get(health_url, timeout=5)
         if response.status_code == 200:
             health = response.json()
-            st.success("🟢 Connected")
+
+            # Status indicator row
+            c1, c2 = st.columns([1, 3])
+            with c1:
+                st.markdown(
+                    '<span style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:var(--success);">'
+                    '<span style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block;"></span>'
+                    "Connected</span>",
+                    unsafe_allow_html=True,
+                )
+            with c2:
+                st.markdown(
+                    f'<span style="font-size:var(--font-size-xs);color:var(--muted);">{API_BASE_URL}</span>',
+                    unsafe_allow_html=True,
+                )
+
             services = health.get("services", {})
+            svc_status = []
             if services.get("openai"):
-                st.caption("✓ OpenAI API")
+                svc_status.append(
+                    '<span style="color:var(--success)">●</span> OpenAI'
+                )
             else:
-                st.caption("○ OpenAI API (optional)")
+                svc_status.append(
+                    '<span style="color:var(--muted)">○</span> OpenAI'
+                )
             if services.get("news_api"):
-                st.caption("✓ News API")
+                svc_status.append(
+                    '<span style="color:var(--success)">●</span> News'
+                )
             else:
-                st.caption("○ News API (optional)")
+                svc_status.append(
+                    '<span style="color:var(--muted)">○</span> News'
+                )
+
+            st.markdown(
+                f'<div style="display:flex;gap:12px;margin-top:4px;font-size:var(--font-size-xs);">{ "".join(svc_status) }</div>',
+                unsafe_allow_html=True,
+            )
         else:
-            st.error("🔴 Error")
+            st.markdown(
+                '<span style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:var(--danger);">'
+                '<span style="width:6px;height:6px;border-radius:50%;background:var(--danger);display:inline-block;"></span>'
+                "Error</span>",
+                unsafe_allow_html=True,
+            )
     except Exception:
-        st.error("🔴 Unreachable")
+        st.markdown(
+            '<span style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:var(--danger);">'
+            '<span style="width:6px;height:6px;border-radius:50%;background:var(--danger);display:inline-block;"></span>'
+            "Unreachable</span>",
+            unsafe_allow_html=True,
+        )
         if API_BASE_URL:
             try:
-                from frontend.app import build_backend_url  # type: ignore
+                from frontend.app import build_backend_url
 
                 st.caption(f"Checked: {build_backend_url('health')}")
             except Exception:
-                # Fallback to avoid UI breakage; preserves prior “Checked:” intent.
                 st.caption("Checked: /health")
 
 
@@ -211,9 +259,8 @@ def render_recent_reports():
     for item in history[-5:]:
         req_id = item.get("request_id", "")[:8]
         query = item.get("query", "Unknown")[:40]
-        if st.button(f"📄 {query}...", key=f"sidebar_report_{req_id}", use_container_width=True):
+        if st.button(f"{query}...", key=f"sidebar_report_{req_id}", use_container_width=True):
             st.session_state.current_request_id = item.get("request_id")
-            # Start polling to actually reload the report from backend
             st.session_state.is_processing = True
             st.session_state.current_report = None
             st.session_state.execution_trace = None
