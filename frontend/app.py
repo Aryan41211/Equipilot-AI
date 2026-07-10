@@ -22,7 +22,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 from frontend.components.progress_tracker import render_progress
 from frontend.components.report_display import render_report
 from frontend.components.sidebar import render_sidebar
-from frontend.components.design_system_ui import inject_global_styles, title_brand
+from frontend.components.design_system_ui import inject_global_styles, safe_html_escape, title_brand
 
 # API configuration — configurable via environment variable for production deployment
 API_BASE_URL = os.environ.get("EQUIPILOT_API_URL", "").rstrip("/")
@@ -474,7 +474,7 @@ def render_loading_workflow(request_id: str) -> None:
     """
 
     def _impl() -> None:
-        from frontend.components.design_system_ui import alert_markdown
+        from frontend.components.design_system_ui import alert_markdown, safe_html_escape
 
         # Polling guards (avoid infinite reruns)
         max_polls = 60  # ~2 minutes at 2s interval
@@ -487,17 +487,27 @@ def render_loading_workflow(request_id: str) -> None:
             if st.session_state.poll_count > max_polls or elapsed_s > (max_polls * poll_interval_s):
                 st.session_state.is_processing = False
                 st.markdown(
-                    alert_markdown(
-                        "⏱️ Research is taking longer than expected. Stop polling.",
-                        kind="warning",
-                    ),
+                    '<div class="ds-state-card ds-state-card--warning" style="margin-bottom:var(--space-4);">'
+                    '<div class="ds-state-card__icon">⏱️</div>'
+                    '<div class="ds-state-card__body">'
+                    '<div class="ds-state-card__title">Research Timeout</div>'
+                    '<div class="ds-state-card__detail">The research is taking longer than expected. You can submit a new request or check the backend status.</div>'
+                    '</div></div>',
                     unsafe_allow_html=True,
                 )
                 return
 
         status_data = check_status(request_id)
         if not status_data:
-            st.markdown(alert_markdown("Waiting for backend response...", kind="warning"), unsafe_allow_html=True)
+            st.markdown(
+                '<div class="ds-state-card ds-state-card--warning" style="margin-bottom:var(--space-4);">'
+                '<div class="ds-state-card__icon">⏳</div>'
+                '<div class="ds-state-card__body">'
+                '<div class="ds-state-card__title">Waiting for backend</div>'
+                '<div class="ds-state-card__detail">The research service is initializing. Retrying...</div>'
+                '</div></div>',
+                unsafe_allow_html=True,
+            )
             time.sleep(1)
             st.rerun()
             return
@@ -529,7 +539,15 @@ def render_loading_workflow(request_id: str) -> None:
         if status == "failed":
             st.session_state.is_processing = False
             err = status_data.get("error", status_data.get("message", "Unknown error"))
-            st.markdown(alert_markdown(str(err), kind="danger"), unsafe_allow_html=True)
+            st.markdown(
+                '<div class="ds-state-card ds-state-card--error" style="margin-bottom:var(--space-4);">'
+                '<div class="ds-state-card__icon">❌</div>'
+                '<div class="ds-state-card__body">'
+                '<div class="ds-state-card__title">Research Failed</div>'
+                f'<div class="ds-state-card__detail">{safe_html_escape(str(err))}</div>'
+                '</div></div>',
+                unsafe_allow_html=True,
+            )
             st.rerun()
             return
 
