@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from typing import Any
@@ -575,5 +576,14 @@ def quick_action_card(icon: str, title: str, description: str, cta: str) -> str:
 
 
 def safe_html_escape(text: Any) -> str:
+    """
+    Escape HTML special characters for safe insertion into unsafe_allow_html templates.
+
+    Must escape at least: &, <, >.
+    We also escape quotes to prevent breaking attributes in HTML templates.
+    """
+    import html
+
     s = "" if text is None else str(text)
-    return s.replace("&", "&amp;").replace("<", "<").replace(">", ">")
+    # html.escape escapes &, <, >
+    return html.escape(s, quote=True)
