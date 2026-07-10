@@ -37,20 +37,31 @@ def render_progress(
         show_steps: Show step progress bar
         show_spinner: Show spinner for in-progress
     """
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.markdown(f"## Research {status.replace('_', ' ').title()}")
-    with col2:
-        if status == "in_progress" and show_spinner:
-            st.spinner("Processing…")
+    is_running = status in ("pending", "in_progress")
 
-    if message:
-        st.markdown(alert_markdown(message, kind="info"), unsafe_allow_html=True)
+    st.markdown(
+        '<div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4);">'
+        '<div style="width:36px;height:36px;border-radius:var(--radius-md);background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:1rem;">🔄</div>'
+        '<div><div style="font-size:var(--font-size-xl);font-weight:var(--font-weight-semibold);letter-spacing:-0.02em;">Generating Research</div>'
+        '<div style="font-size:var(--font-size-sm);color:var(--muted);">Running multi-agent analysis pipeline</div></div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+    if is_running and show_spinner:
+        st.markdown(
+            '<div class="ds-state-card ds-state-card--info" style="margin-bottom:var(--space-5);">'
+            '<div class="ds-state-card__icon">⏳</div>'
+            '<div class="ds-state-card__body">'
+            f'<div class="ds-state-card__title">Processing</div>'
+            f'<div class="ds-state-card__detail" style="font-size:var(--font-size-sm);">{message or "Research in progress..."}</div>'
+            '</div></div>',
+            unsafe_allow_html=True,
+        )
 
     if show_steps:
         _render_step_progress(current_step)
 
-    # Keep existing progress bar for compatibility, but align with stepper.
     step_index = _get_step_index(current_step)
     progress = (step_index + 1) / len(RESEARCH_STEPS)
     st.progress(min(progress, 1.0))
