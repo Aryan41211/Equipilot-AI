@@ -179,7 +179,7 @@ def render_structured_sections(sections: list[dict[str, Any]], expandable: bool 
         card_html = _report_section_card(icon=icon, title=title, content=body, badge=badge)
 
         if expandable and title != "Disclaimer":
-            with st.expander(title, expanded=True if i == 0 else False):
+            with st.expander(title, expanded=i == 0):
                 st.markdown(card_html, unsafe_allow_html=True)
         else:
             st.markdown(card_html, unsafe_allow_html=True)
@@ -282,6 +282,5 @@ def render_report_card(
     )
 
     req_id = report.get("request_id", "")
-    if isinstance(req_id, str) and req_id and on_click:
-        if st.button("View Report", key=f"view_{req_id}", use_container_width=True, type="secondary"):
-            on_click(req_id)
+    if isinstance(req_id, str) and req_id and on_click and st.button("View Report", key=f"view_{req_id}", use_container_width=True, type="secondary"):
+        on_click(req_id)
