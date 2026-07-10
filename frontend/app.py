@@ -28,6 +28,45 @@ from frontend.components.design_system_ui import inject_global_styles, title_bra
 API_BASE_URL = os.environ.get("EQUIPILOT_API_URL", "").rstrip("/")
 API_HEALTH_URL = os.environ.get("EQUIPILOT_HEALTH_URL", "").rstrip("/")
 
+
+def build_backend_url(path: str, *, request_id: str | None = None) -> str:
+    """
+    Canonical backend URL builder for all frontend API calls.
+
+    Handles EQUIPILOT_API_URL with or without '/api/v1' suffix.
+    Avoids:
+      - '/api/v1/api/v1'
+      - missing '/api/v1'
+      - manual string replacements spread across the codebase.
+
+    This is intentionally a thin URL normalizer only (no business logic).
+    """
+    base = (API_BASE_URL or "").rstrip("/")
+    if not base:
+        return ""
+
+    normalized_base = base
+    # If base already contains '/api/v1' (anywhere at the end), keep it.
+    if "/api/v1" in normalized_base:
+        # Prevent duplicate '/api/v1' when callers pass '/api/v1/..' style paths.
+        normalized_base = normalized_base.split("/api/v1", 1)[0] + "/api/v1"
+
+    # Normalize path input.
+    p = (path or "").lstrip("/")
+    if request_id is not None:
+        # Caller expects .../{request_id}
+        # Ensure request_id is safe as a path segment (no schema changes).
+        rid = str(request_id).strip().strip("/")
+        p = f"{p}/{rid}"
+
+    # If base doesn't include '/api/v1', ensure we add it exactly once.
+    if "/api/v1" not in normalized_base:
+        # Only add prefix when building non-empty API paths.
+        normalized_base = normalized_base + "/api/v1"
+
+    # Avoid double slashes.
+    return f"{normalized_base}/{p}"
+
 T = TypeVar("T")
 
 
@@ -157,6 +196,7 @@ def check_backend_connection() -> None:
             st.session_state.backend_connected = False
         else:
             try:
+                # Preserve behavior: if EQUIPILOT_HEALTH_URL is explicitly provided, use it as-is.
                 resp = requests.get(API_HEALTH_URL, timeout=3)
                 st.session_state.backend_connected = (resp.status_code == 200)
             except requests.exceptions.RequestException:
@@ -769,24 +809,17 @@ def submit_research(
         # If we have a current in-flight request, also avoid submitting again for same fingerprint.
         st.session_state.last_submit_fingerprint = fingerprint
 
-        # Backend routes are under settings.api_prefix (default: /api/v1).
-        # API_BASE_URL may or may not already include that prefix.
-        candidate_posts = [
-            f"{API_BASE_URL}/research",
-            f"{API_BASE_URL}/api/v1/research",
-        ]
-
+        url = build_backend_url("research")
         last_exc: Exception | None = None
         last_response: requests.Response | None = None
 
-        for url in candidate_posts:
-            try:
-                response = requests.post(url, json=payload, timeout=30)
-                last_response = response
-                if response.status_code == 200:
-                    return response.json()
-            except Exception as e:
-                last_exc = e
+        try:
+            response = requests.post(url, json=payload, timeout=30)
+            last_response = response
+            if response.status_code == 200:
+                return response.json()
+        except Exception as e:
+            last_exc = e
 
         if last_response is not None:
             st.error(f"API Error: {last_response.status_code} - {last_response.text}")
@@ -802,7 +835,7 @@ def check_status(request_id: str) -> dict[str, Any] | None:
     """Check research status (thin client)."""
 
     def _impl() -> dict[str, Any] | None:
-        url = f"{API_BASE_URL}/api/v1/research/{request_id}"
+        url = build_backend_url("research", request_id=request_id)
 
         last_response: requests.Response | None = None
         last_exc: Exception | None = None

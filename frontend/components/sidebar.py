@@ -166,7 +166,11 @@ def render_system_status():
 
         import requests
 
-        health_url = f"{API_BASE_URL.replace('/api/v1', '')}/health"
+        # Use the canonical URL builder from the main frontend entrypoint.
+        # Lazy import avoids circular import at module import time.
+        from frontend.app import build_backend_url  # type: ignore
+
+        health_url = build_backend_url("health")
         response = requests.get(health_url, timeout=5)
         if response.status_code == 200:
             health = response.json()
@@ -185,7 +189,13 @@ def render_system_status():
     except Exception:
         st.error("🔴 Unreachable")
         if API_BASE_URL:
-            st.caption(f"Checked: {API_BASE_URL.replace('/api/v1', '')}/health")
+            try:
+                from frontend.app import build_backend_url  # type: ignore
+
+                st.caption(f"Checked: {build_backend_url('health')}")
+            except Exception:
+                # Fallback to avoid UI breakage; preserves prior “Checked:” intent.
+                st.caption("Checked: /health")
 
 
 def render_recent_reports():
