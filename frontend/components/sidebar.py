@@ -1,3 +1,4 @@
+
 # EquiPilot AI - Sidebar Component
 # Navigation, recent reports, and system status
 
@@ -7,6 +8,8 @@ from datetime import datetime
 from typing import Any
 
 import streamlit as st
+
+from frontend.components.research_form_helpers import looks_like_ticker
 
 from frontend.components.design_system_ui import (
     section_header,
@@ -69,8 +72,7 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
         # Backend accepts tickers; when user enters a name, entity resolution
         # can map it. We pass tickers only when it looks like a ticker.
         normalized = company_or_ticker_val.strip().upper()
-        looks_like_ticker = normalized.replace(".", "", 1).isalnum() and len(normalized) <= 12
-        tickers = [normalized] if looks_like_ticker else None
+        tickers = [normalized] if looks_like_ticker(company_or_ticker_val) else None
 
         form_data = {
             "company_or_ticker": company_or_ticker_val,
