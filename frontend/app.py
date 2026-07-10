@@ -244,104 +244,123 @@ def render_disclaimer_bar():
     )
 
 
+def _suggestion_card(icon: str, ticker: str, title: str, desc: str, query: str, analysis_type: str = "Full Research") -> str:
+    """Interactive suggestion card that pre-fills sidebar form on click."""
+    return f"""
+    <div class="ds-suggestion" onclick="
+      var inp = window.parent.document.querySelector('[data-testid=\\'stTextInput\\'] input');
+      if(inp){{ var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; nativeInputValueSetter.call(inp, '{ticker}'); inp.dispatchEvent(new Event('input', {{ bubbles:true }})); }}
+    " style="cursor:pointer;">
+      <div class="ds-suggestion__icon">{icon}</div>
+      <div class="ds-suggestion__title">{ticker} — {title}</div>
+      <div class="ds-suggestion__desc">{desc}</div>
+    </div>
+    """
+
+
 def render_empty_dashboard():
     """Render premium empty dashboard with guidance and quick actions."""
     from frontend.components.design_system_ui import (
         alert_markdown,
-        section_header,
         quick_action_card,
     )
 
     # === Hero Section ===
     st.markdown(
-        '<div style="margin-bottom:var(--space-6);">'
-        '<div style="font-size:var(--font-size-3xl);font-weight:var(--font-weight-semibold);letter-spacing:-0.03em;line-height:1.25;color:var(--text);">AI Research Dashboard</div>'
-        '<div style="font-size:var(--font-size-base);color:var(--muted);margin-top:4px;">Enterprise-grade equity research powered by multi-agent orchestration.</div>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
-
-    # === Primary CTA Card ===
-    st.markdown(
-        '<div style="'
-        'background:linear-gradient(135deg,var(--primary) 0%,var(--primary-hover) 100%);'
-        'border-radius:var(--radius-xl);padding:var(--space-8);'
-        'margin:0 0 var(--space-6) 0;position:relative;overflow:hidden;'
-        '">'
-        '<div style="position:absolute;top:-50%;right:-20%;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,0.05);"></div>'
-        '<div style="position:absolute;bottom:-30%;left:-10%;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.03);"></div>'
-        '<div style="font-size:var(--font-size-xl);font-weight:var(--font-weight-semibold);color:white;margin-bottom:var(--space-2);letter-spacing:-0.02em;position:relative;z-index:1;">Start Your First Analysis</div>'
-        '<div style="font-size:var(--font-size-sm);color:rgba(255,255,255,0.85);line-height:1.5;margin-bottom:var(--space-4);position:relative;z-index:1;max-width:80%;">'
-        "Enter a company name or ticker and your research question in the sidebar to generate a comprehensive AI-powered equity report."
+        '<div class="ds-hero">'
+        '<div class="ds-hero__title">Equity Research,<br>Reimagined with AI</div>'
+        '<div class="ds-hero__subtitle">'
+        "Enterprise-grade equity research powered by multi-agent orchestration. "
+        "Analyze market data, news, sentiment, and fundamentals — all in one place."
+        '</div>'
+        '<div class="ds-hero__stats">'
+        '<div class="ds-hero-stat"><span class="ds-hero-stat__value">📈</span> Real-time Market Data</div>'
+        '<div class="ds-hero-stat"><span class="ds-hero-stat__value">📰</span> News &amp; Sentiment</div>'
+        '<div class="ds-hero-stat"><span class="ds-hero-stat__value">🧠</span> AI-Powered Analysis</div>'
         '</div>'
         '</div>',
         unsafe_allow_html=True,
     )
 
-    # === Tip ===
-    st.markdown(alert_markdown(
-        'Tip: Try queries like "What are AAPL\'s key growth drivers?" or "Analyze TSLA\'s competitive risks"',
-        kind="info",
-    ), unsafe_allow_html=True)
-
-    st.markdown(f'<hr style="margin:var(--space-8) 0 !important;" />', unsafe_allow_html=True)
-
-    # === Quick Start Examples ===
+    # === Onboarding CTA ===
     st.markdown(
-        '<div style="margin-bottom:var(--space-5);">'
-        '<div style="font-size:var(--font-size-lg);font-weight:var(--font-weight-semibold);letter-spacing:-0.02em;">Quick Start Examples</div>'
-        '<div style="font-size:var(--font-size-sm);color:var(--muted);margin-top:2px;">Click any example to pre-fill the sidebar form</div>'
+        '<div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-xl);padding:var(--space-6) var(--space-8);margin-bottom:var(--space-8);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-4);">'
+        '<div><div style="font-size:var(--font-size-lg);font-weight:var(--font-weight-semibold);letter-spacing:-0.02em;">Get started in seconds</div>'
+        '<div style="font-size:var(--font-size-sm);color:var(--muted);margin-top:2px;">Enter a ticker and question in the sidebar, or pick an example below.</div></div>'
         '</div>',
         unsafe_allow_html=True,
     )
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
+    # === Quick Start Examples (Interactive Suggestion Cards) ===
+    st.markdown(
+        '<div style="margin-bottom:var(--space-5);">'
+        '<div style="font-size:var(--font-size-lg);font-weight:var(--font-weight-semibold);letter-spacing:-0.02em;">Quick Start Examples</div>'
+        '<div style="font-size:var(--font-size-sm);color:var(--muted);margin-top:2px;">Click any example to pre-fill the sidebar and begin analysis</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
         st.markdown(
-            '<div style="border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-4);background:var(--panel);">',
+            '<div class="ds-suggestion">'
+            '<div class="ds-suggestion__icon">📊</div>'
+            '<div class="ds-suggestion__title">AAPL — Market Snapshot</div>'
+            '<div class="ds-suggestion__desc">Fundamentals, valuation metrics, and competitive positioning in the tech sector.</div>'
+            '</div>',
             unsafe_allow_html=True,
         )
-        if st.button("AAPL Market Snapshot", key="ex_aapl", use_container_width=True):
+        if st.button("Run AAPL Analysis", key="ex_aapl", use_container_width=True, type="secondary"):
             st.session_state["company_ticker_input"] = "AAPL"
-            st.session_state["query_input"] = "Provide a comprehensive market overview with key metrics and valuation"
+            st.session_state["query_input"] = "Provide a comprehensive market overview with key metrics, valuation, and competitive positioning"
             st.session_state["analysis_type"] = "Full Research"
             st.rerun()
-        st.caption("Fundamentals + market data + news")
-        st.markdown('</div>', unsafe_allow_html=True)
 
-    with col2:
+    with c2:
         st.markdown(
-            '<div style="border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-4);background:var(--panel);">',
+            '<div class="ds-suggestion">'
+            '<div class="ds-suggestion__icon">📰</div>'
+            '<div class="ds-suggestion__title">TSLA — News Catalysts</div>'
+            '<div class="ds-suggestion__desc">Latest news headlines, sentiment analysis, and market-moving catalyst identification.</div>'
+            '</div>',
             unsafe_allow_html=True,
         )
-        if st.button("TSLA News Catalysts", key="ex_tsla", use_container_width=True):
+        if st.button("Run TSLA Analysis", key="ex_tsla", use_container_width=True, type="secondary"):
             st.session_state["company_ticker_input"] = "TSLA"
-            st.session_state["query_input"] = "What are the latest news catalysts and sentiment drivers?"
+            st.session_state["query_input"] = "What are the latest news catalysts, sentiment drivers, and market-moving events?"
             st.session_state["analysis_type"] = "News"
             st.rerun()
-        st.caption("News-focused analysis with sentiment")
-        st.markdown('</div>', unsafe_allow_html=True)
 
-    with col3:
+    with c3:
         st.markdown(
-            '<div style="border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-4);background:var(--panel);">',
+            '<div class="ds-suggestion">'
+            '<div class="ds-suggestion__icon">⚠️</div>'
+            '<div class="ds-suggestion__title">MSFT — Risk Assessment</div>'
+            '<div class="ds-suggestion__desc">Key investment risks, competitive threats, and regulatory challenges facing Microsoft.</div>'
+            '</div>',
             unsafe_allow_html=True,
         )
-        if st.button("MSFT Investment Risks", key="ex_msft", use_container_width=True):
+        if st.button("Run MSFT Analysis", key="ex_msft", use_container_width=True, type="secondary"):
             st.session_state["company_ticker_input"] = "MSFT"
-            st.session_state["query_input"] = "Identify key investment risks and competitive threats"
+            st.session_state["query_input"] = "Identify key investment risks, competitive threats, and challenges to growth"
             st.session_state["analysis_type"] = "Full Research"
             st.rerun()
-        st.caption("Risk-focused comprehensive analysis")
-        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown(f'<hr style="margin:var(--space-8) 0 !important;" />', unsafe_allow_html=True)
+
+    # === Tip ===
+    st.markdown(alert_markdown(
+        '💡 Pro tip: Be specific in your queries. Instead of "Analyze AAPL", try "What are AAPL\'s key growth drivers and margin trends?"',
+        kind="info",
+    ), unsafe_allow_html=True)
 
     st.markdown(f'<hr style="margin:var(--space-8) 0 !important;" />', unsafe_allow_html=True)
 
     # === What You Get ===
     st.markdown(
         '<div style="margin-bottom:var(--space-5);">'
-        '<div style="font-size:var(--font-size-lg);font-weight:var(--font-weight-semibold);letter-spacing:-0.02em;">What You Get</div>'
-        '<div style="font-size:var(--font-size-sm);color:var(--muted);margin-top:2px;">Each analysis delivers structured, actionable insights</div>'
+        '<div style="font-size:var(--font-size-lg);font-weight:var(--font-weight-semibold);letter-spacing:-0.02em;">Powered By</div>'
+        '<div style="font-size:var(--font-size-sm);color:var(--muted);margin-top:2px;">Each analysis is generated through a multi-agent research pipeline</div>'
         '</div>',
         unsafe_allow_html=True,
     )
@@ -350,23 +369,23 @@ def render_empty_dashboard():
     with col1:
         st.markdown(quick_action_card(
             icon="📈",
-            title="Market Data",
-            description="Real-time price, volume, fundamentals, and valuation metrics",
-            cta="Powered by yfinance",
+            title="Market Intelligence",
+            description="Real-time price data, fundamentals, valuation ratios, and technical indicators from yfinance.",
+            cta="Live market data",
         ), unsafe_allow_html=True)
     with col2:
         st.markdown(quick_action_card(
             icon="📰",
             title="News & Sentiment",
-            description="Latest headlines, sentiment scoring, and catalyst identification",
+            description="Aggregated headlines, entity-level sentiment scoring, and catalyst detection across major sources.",
             cta="News API integration",
         ), unsafe_allow_html=True)
     with col3:
         st.markdown(quick_action_card(
             icon="🤖",
             title="AI Synthesis",
-            description="Structured report: executive summary, risks, opportunities, citations",
-            cta="LangGraph orchestration",
+            description="Structured reports with executive summaries, risk analysis, and cited sources via LangGraph orchestration.",
+            cta="GPT-4o powered",
         ), unsafe_allow_html=True)
 
 

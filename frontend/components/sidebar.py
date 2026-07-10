@@ -55,26 +55,29 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
 
     with st.form("analysis_form"):
         company_or_ticker = st.text_input(
-            "Company / Ticker",
-            placeholder="e.g., AAPL or Apple Inc.",
+            "Company or Ticker *",
+            placeholder="e.g., AAPL, MSFT, or Apple Inc.",
             key="company_ticker_input",
+            help="Enter a stock ticker (e.g., AAPL) or company name for entity resolution.",
         )
 
         query = st.text_area(
-            "Query",
-            placeholder="What do you want to research?",
-            height=100,
+            "Research Question *",
+            placeholder='e.g., "What are the key growth drivers and margin trends?"',
+            height=90,
             key="query_input",
+            help="Describe what you want to research. Be specific for better results.",
         )
 
         analysis_type = st.selectbox(
-            "Analysis Type",
+            "Analysis Scope",
             options=["Full Research", "Fundamentals", "News", "Sentiment"],
             index=0,
             key="analysis_type",
+            help="Full Research combines all data sources. Narrower scopes focus on specific areas.",
         )
 
-        submitted = st.form_submit_button("Analyze", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("Run Analysis", type="primary", use_container_width=True)
 
     if submitted:
         company_or_ticker_val = (company_or_ticker or "").strip()
