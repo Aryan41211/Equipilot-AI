@@ -418,7 +418,16 @@ def handle_sidebar_submit(form_data: dict[str, Any]) -> None:
         if not request_data:
             return
 
-        st.success(f"Research started! Request ID: {request_data.get('request_id', 'N/A')[:12]}...")
+        req_id = request_data.get('request_id', 'N/A')[:12]
+        st.markdown(
+            f'<div class="ds-state-card ds-state-card--success" style="margin-bottom:var(--space-4);">'
+            f'<div class="ds-state-card__icon">🚀</div>'
+            f'<div class="ds-state-card__body">'
+            f'<div class="ds-state-card__title">Research Started</div>'
+            f'<div class="ds-state-card__detail">Request ID: {req_id}... — The analysis pipeline is now running.</div>'
+            f'</div></div>',
+            unsafe_allow_html=True,
+        )
 
         # New workflow: reset polling guards for this request
         st.session_state.poll_count = 0
