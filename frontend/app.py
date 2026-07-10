@@ -126,7 +126,7 @@ def run_safely(
 def main():
     initialize_session_state()
     st.set_page_config(
-        page_title="EquiPilot AI - Equity Research Assistant",
+        page_title="EquiPilot AI — Equity Research Assistant",
         page_icon="📊",
         layout="wide",
         initial_sidebar_state="expanded",
@@ -178,12 +178,23 @@ def initialize_session_state():
 
 
 def render_header():
+    """Premium header with title, subtitle, and connection status."""
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.title("📊 EquiPilot AI")
-        st.caption("Agentic Equity Research Assistant")
+        st.markdown(
+            '<div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">'
+            '<div style="width:40px;height:40px;border-radius:var(--radius-lg);background:linear-gradient(135deg,var(--primary),var(--primary-hover));display:flex;align-items:center;justify-content:center;color:white;font-weight:var(--font-weight-bold);font-size:var(--font-size-sm);flex-shrink:0;">EP</div>'
+            '<div><div style="font-size:var(--font-size-2xl);font-weight:var(--font-weight-semibold);letter-spacing:-0.03em;line-height:1.2;color:var(--text);">EquiPilot AI</div>'
+            '<div style="font-size:var(--font-size-sm);color:var(--muted);margin-top:1px;">Agentic Equity Research Assistant</div></div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
     with col2:
-        st.caption(f"Last updated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}")
+        st.markdown(
+            f'<div style="text-align:right;font-size:var(--font-size-xs);color:var(--muted);">'
+            f'{datetime.utcnow().strftime("%b %d, %Y — %H:%M")} UTC</div>',
+            unsafe_allow_html=True,
+        )
         check_backend_connection()
 
 
@@ -203,9 +214,19 @@ def check_backend_connection() -> None:
                 st.session_state.backend_connected = False
 
     if st.session_state.backend_connected is True:
-        st.markdown("🟢 **API Connected**")
+        st.markdown(
+            '<div style="display:flex;align-items:center;justify-content:flex-end;gap:4px;font-size:var(--font-size-xs);color:var(--success);">'
+            '<span style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block;"></span>'
+            "API Connected</div>",
+            unsafe_allow_html=True,
+        )
     else:
-        st.markdown("🔴 **API Disconnected**")
+        st.markdown(
+            '<div style="display:flex;align-items:center;justify-content:flex-end;gap:4px;font-size:var(--font-size-xs);color:var(--danger);">'
+            '<span style="width:6px;height:6px;border-radius:50%;background:var(--danger);display:inline-block;"></span>'
+            "API Disconnected</div>",
+            unsafe_allow_html=True,
+        )
         if API_BASE_URL:
             st.caption(f"URL: {API_BASE_URL}")
         else:
@@ -215,80 +236,115 @@ def check_backend_connection() -> None:
 def render_disclaimer_bar():
     """Compact disclaimer bar at top of main content."""
     st.markdown(
-        f"""<div style="padding: 0.5rem 0.75rem; border-radius: var(--radius-md); background: var(--error-bg); border: 1px solid var(--border); margin-bottom: 1rem; font-size: var(--font-size-sm); color: var(--muted);">
-        <span style="color: var(--danger); font-weight: var(--font-weight-semibold);">⚠️ Disclaimer:</span> EquiPilot AI is an informational equity research assistant. Not investment advice.
+        f"""<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius-md);background:var(--warning-light);border:1px solid var(--border);margin-bottom:var(--space-5);font-size:var(--font-size-xs);color:var(--muted);line-height:1.4;">
+        <span style="font-size:14px;flex-shrink:0;">⚠️</span>
+        <span>EquiPilot AI is an <strong>informational equity research assistant</strong>. Not investment advice. Always do your own due diligence.</span>
         </div>""",
         unsafe_allow_html=True,
     )
 
 
 def render_empty_dashboard():
-    """Render empty dashboard with guidance and quick actions."""
+    """Render premium empty dashboard with guidance and quick actions."""
     from frontend.components.design_system_ui import (
         alert_markdown,
         section_header,
         quick_action_card,
     )
 
-    st.markdown(section_header("AI Research Dashboard", "Enterprise-grade equity research platform."), unsafe_allow_html=True)
+    # === Hero Section ===
+    st.markdown(
+        '<div style="margin-bottom:var(--space-6);">'
+        '<div style="font-size:var(--font-size-3xl);font-weight:var(--font-weight-semibold);letter-spacing:-0.03em;line-height:1.25;color:var(--text);">AI Research Dashboard</div>'
+        '<div style="font-size:var(--font-size-base);color:var(--muted);margin-top:4px;">Enterprise-grade equity research powered by multi-agent orchestration.</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
-    # Primary CTA Card
-    st.markdown(f"""
-    <div style="
-        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        margin: 1rem 0 1.5rem 0;
-    ">
-        <div style="font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); color: white; margin-bottom: 0.5rem;">
-            🚀 Start Your First Analysis
-        </div>
-        <div style="font-size: var(--font-size-sm); color: rgba(255,255,255,0.9); margin-bottom: 1rem;">
-            Enter a company name or ticker and your research question in the sidebar to generate a comprehensive AI-powered equity report.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # === Primary CTA Card ===
+    st.markdown(
+        '<div style="'
+        'background:linear-gradient(135deg,var(--primary) 0%,var(--primary-hover) 100%);'
+        'border-radius:var(--radius-xl);padding:var(--space-8);'
+        'margin:0 0 var(--space-6) 0;position:relative;overflow:hidden;'
+        '">'
+        '<div style="position:absolute;top:-50%;right:-20%;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,0.05);"></div>'
+        '<div style="position:absolute;bottom:-30%;left:-10%;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.03);"></div>'
+        '<div style="font-size:var(--font-size-xl);font-weight:var(--font-weight-semibold);color:white;margin-bottom:var(--space-2);letter-spacing:-0.02em;position:relative;z-index:1;">Start Your First Analysis</div>'
+        '<div style="font-size:var(--font-size-sm);color:rgba(255,255,255,0.85);line-height:1.5;margin-bottom:var(--space-4);position:relative;z-index:1;max-width:80%;">'
+        "Enter a company name or ticker and your research question in the sidebar to generate a comprehensive AI-powered equity report."
+        '</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
+    # === Tip ===
     st.markdown(alert_markdown(
-        "💡 Tip: Try queries like \"What are AAPL's key growth drivers?\" or \"Analyze TSLA's competitive risks\"",
+        'Tip: Try queries like "What are AAPL\'s key growth drivers?" or "Analyze TSLA\'s competitive risks"',
         kind="info",
     ), unsafe_allow_html=True)
 
-    st.divider()
+    st.markdown(f'<hr style="margin:var(--space-8) 0 !important;" />', unsafe_allow_html=True)
 
-    # Example queries with direct sidebar pre-fill buttons
-    st.markdown(section_header("Quick Start Examples", "Click any example to pre-fill the sidebar form"), unsafe_allow_html=True)
+    # === Quick Start Examples ===
+    st.markdown(
+        '<div style="margin-bottom:var(--space-5);">'
+        '<div style="font-size:var(--font-size-lg);font-weight:var(--font-weight-semibold);letter-spacing:-0.02em;">Quick Start Examples</div>'
+        '<div style="font-size:var(--font-size-sm);color:var(--muted);margin-top:2px;">Click any example to pre-fill the sidebar form</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("📈 AAPL Market Snapshot", key="ex_aapl", use_container_width=True):
+        st.markdown(
+            '<div style="border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-4);background:var(--panel);">',
+            unsafe_allow_html=True,
+        )
+        if st.button("AAPL Market Snapshot", key="ex_aapl", use_container_width=True):
             st.session_state["company_ticker_input"] = "AAPL"
             st.session_state["query_input"] = "Provide a comprehensive market overview with key metrics and valuation"
             st.session_state["analysis_type"] = "Full Research"
             st.rerun()
-        st.caption("Full fundamentals + market data + news")
+        st.caption("Fundamentals + market data + news")
+        st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
-        if st.button("📰 TSLA News Catalysts", key="ex_tsla", use_container_width=True):
+        st.markdown(
+            '<div style="border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-4);background:var(--panel);">',
+            unsafe_allow_html=True,
+        )
+        if st.button("TSLA News Catalysts", key="ex_tsla", use_container_width=True):
             st.session_state["company_ticker_input"] = "TSLA"
             st.session_state["query_input"] = "What are the latest news catalysts and sentiment drivers?"
             st.session_state["analysis_type"] = "News"
             st.rerun()
         st.caption("News-focused analysis with sentiment")
+        st.markdown('</div>', unsafe_allow_html=True)
 
     with col3:
-        if st.button("📊 MSFT Investment Risks", key="ex_msft", use_container_width=True):
+        st.markdown(
+            '<div style="border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-4);background:var(--panel);">',
+            unsafe_allow_html=True,
+        )
+        if st.button("MSFT Investment Risks", key="ex_msft", use_container_width=True):
             st.session_state["company_ticker_input"] = "MSFT"
             st.session_state["query_input"] = "Identify key investment risks and competitive threats"
             st.session_state["analysis_type"] = "Full Research"
             st.rerun()
         st.caption("Risk-focused comprehensive analysis")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    st.divider()
+    st.markdown(f'<hr style="margin:var(--space-8) 0 !important;" />', unsafe_allow_html=True)
 
-    # Feature cards below examples
-    st.markdown(section_header("What You Get", "Each analysis delivers"), unsafe_allow_html=True)
+    # === What You Get ===
+    st.markdown(
+        '<div style="margin-bottom:var(--space-5);">'
+        '<div style="font-size:var(--font-size-lg);font-weight:var(--font-weight-semibold);letter-spacing:-0.02em;">What You Get</div>'
+        '<div style="font-size:var(--font-size-sm);color:var(--muted);margin-top:2px;">Each analysis delivers structured, actionable insights</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -296,7 +352,7 @@ def render_empty_dashboard():
             icon="📈",
             title="Market Data",
             description="Real-time price, volume, fundamentals, and valuation metrics",
-            cta="Live data from yfinance",
+            cta="Powered by yfinance",
         ), unsafe_allow_html=True)
     with col2:
         st.markdown(quick_action_card(
