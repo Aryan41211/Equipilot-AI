@@ -941,6 +941,71 @@ select:focus-visible{
   margin-top: var(--space-1);
 }
 
+/* === Step Progress Indicators === */
+.ds-step{
+  text-align: center;
+  position: relative;
+}
+.ds-step__icon{
+  width: 32px;
+  height: 32px;
+  margin: 0 auto var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--border);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  transition: var(--transition);
+}
+.ds-step--done .ds-step__icon{
+  background: var(--success);
+  color: white;
+  box-shadow: 0 2px 8px rgba(5,150,105,0.3);
+}
+.ds-step--active .ds-step__icon{
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 0 0 4px var(--focus-ring);
+  animation: stepPulse 2s ease-in-out infinite;
+}
+@keyframes stepPulse{
+  0%,100%{ box-shadow: 0 0 0 4px var(--focus-ring); }
+  50%{ box-shadow: 0 0 0 8px var(--focus-ring); }
+}
+.ds-step__title{
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.ds-step__sub{
+  font-size: var(--font-size-2xs);
+  color: var(--muted);
+  display: none;
+}
+@media (min-width: 768px){
+  .ds-step__sub{
+    display: block;
+  }
+}
+
+/* === Phase Stagger Animations === */
+.ds-phase-stagger{
+  animation: slideUp 0.3s ease-out forwards;
+  opacity: 0;
+}
+.ds-phase-stagger:nth-child(1){ animation-delay: 0.00s; }
+.ds-phase-stagger:nth-child(2){ animation-delay: 0.05s; }
+.ds-phase-stagger:nth-child(3){ animation-delay: 0.10s; }
+.ds-phase-stagger:nth-child(4){ animation-delay: 0.15s; }
+.ds-phase-stagger:nth-child(5){ animation-delay: 0.20s; }
+.ds-phase-stagger:nth-child(6){ animation-delay: 0.25s; }
+.ds-phase-stagger:nth-child(7){ animation-delay: 0.30s; }
+.ds-phase-stagger:nth-child(8){ animation-delay: 0.35s; }
+
 /* === Animations & Micro-interactions === */
 @keyframes slideUp{
   from{ opacity: 0; transform: translateY(12px); }

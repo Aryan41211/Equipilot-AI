@@ -787,10 +787,6 @@ def render_execution_trace_explicit(report: dict[str, Any]) -> None:
 def _render_timing_report_from_metadata(execution_metadata: dict[str, Any]) -> None:
     """
     Render a stage timing report from execution metadata.
-
-    Contract:
-    - Does not mutate API responses
-    - Uses only execution_metadata.nodes/tools/traces when present
     """
     nodes = execution_metadata.get("nodes", {}) or {}
     tools = execution_metadata.get("tools", {}) or {}
@@ -813,79 +809,72 @@ def _render_timing_report_from_metadata(execution_metadata: dict[str, Any]) -> N
                 total += d
         return total
 
-    # Node timing (best-effort)
     router_ms = _sum_node_like(["router"])
     research_ms = _sum_node_like(["research"])
     merge_ms = _sum_node_like(["merge_results"])
 
-    # Tool timing (best-effort)
     def _tool_ms(tool_name: str) -> float:
         t = tools.get(tool_name) or {}
         d = _duration_ms(t.get("duration_ms"))
         if d is not None:
             return d
-        # fallback: some implementations may store timings via started_at/finished_at only
         return 0.0
 
     market_ms = _tool_ms("market_data_tool")
     news_ms = _tool_ms("news_tool")
     sentiment_ms = _tool_ms("sentiment_tool")
 
-    # Trace timing (best-effort) — if traces contain duration_ms per node_name
     trace_total = 0.0
     for tr in traces:
         dur = _duration_ms(tr.get("duration_ms"))
         trace_total += dur or 0.0
 
-    st.markdown("### Timing Report")
-    st.caption("Best-effort timings from backend execution metadata (per node/tool).")
+    st.markdown(
+        '<div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3);">'
+        '<span style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-sm);">⏱️ Timing Report</span>'
+        '<span style="font-size:var(--font-size-xs);color:var(--muted);">Stage durations from execution metadata</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
-    # Show a compact timing table
-    col1, col2 = st.columns([2, 1])
-    with col1:
+    rows = [
+        ("Router / Entity Resolution", router_ms, "🔍"),
+        ("Market Data Retrieval", market_ms, "📈"),
+        ("News Collection", news_ms, "📰"),
+        ("Sentiment Analysis", sentiment_ms, "🧾"),
+        ("LLM Research", research_ms, "🧠"),
+        ("Merge Results", merge_ms, "🔗"),
+    ]
+
+    # Sort by duration descending for better scanning
+    rows_sorted = sorted(rows, key=lambda r: r[1], reverse=True)
+    max_ms = max((r[1] for r in rows_sorted), default=1)
+
+    for stage, ms, icon in rows_sorted:
+        pct = (ms / max_ms * 100) if max_ms > 0 else 0
+        bar_color = "var(--primary)" if ms > 0 else "var(--border)"
         st.markdown(
-            """
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-top: .5rem;">
-              <div><b>Stage</b></div><div><b>Duration (ms)</b></div>
-            """,
+            f'<div style="margin-bottom:var(--space-2);">'
+            f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">'
+            f'<span style="font-size:var(--font-size-xs);color:var(--text);">{icon} {stage}</span>'
+            f'<span style="font-size:var(--font-size-xs);font-weight:var(--font-weight-medium);color:var(--text);font-variant-numeric:tabular-nums;">{ms:.1f} ms</span>'
+            f'</div>'
+            f'<div style="height:4px;background:var(--border);border-radius:var(--radius-full);overflow:hidden;">'
+            f'<div style="height:100%;width:{pct:.0f}%;background:{bar_color};border-radius:var(--radius-full);transition:width 0.5s ease;"></div>'
+            f'</div>'
+            f'</div>',
             unsafe_allow_html=True,
         )
 
-        rows = [
-            ("Router / Entity Resolution", router_ms),
-            ("Market Data Retrieval", market_ms),
-            ("News Collection", news_ms),
-            ("Sentiment Analysis", sentiment_ms),
-            ("LLM Research", research_ms),
-            ("Merge Results", merge_ms),
-        ]
-
-        for stage, ms in rows:
-            st.markdown(
-                f"""
-                <div style="display: contents;">
-                  <div style="opacity: .95;">{stage}</div>
-                  <div style="text-align:right; font-variant-numeric: tabular-nums;">{ms:.2f}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with col2:
-        st.markdown("**Trace Total (sum of traces)**")
-        st.write(f"{trace_total:.2f} ms")
-
-        total_backend_ms = execution_metadata.get("execution_time_ms")
-        if total_backend_ms is not None:
-            try:
-                st.markdown("**Execution Total (execution_time_ms)**")
-                st.write(f"{float(total_backend_ms):.2f} ms")
-            except Exception:
-                pass
-
-    # Tools missing a duration_ms field may show as 0; keep report non-blocking.
+    total_backend_ms = execution_metadata.get("execution_time_ms")
+    if total_backend_ms is not None or trace_total > 0:
+        st.markdown(
+            f'<div style="display:flex;gap:var(--space-6);margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--border);font-size:var(--font-size-xs);color:var(--muted);">'
+            + (f'<span>Total: <strong>{float(total_backend_ms):.1f} ms</strong></span>' if total_backend_ms is not None else "")
+            + (f'<span>Traces: <strong>{trace_total:.1f} ms</strong></span>' if trace_total > 0 else "")
+            + f'</div>',
+            unsafe_allow_html=True,
+        )
 
     st.divider()
 
@@ -895,47 +884,46 @@ def render_execution_trace_explicit_partial(status_data: dict[str, Any]) -> None
         fields = _extract_execution_metadata_fields(status_data)
 
         execution_metadata = status_data.get("execution_metadata", {}) or {}
-        with st.expander("🔍 Timing Report (Live)", expanded=False):
+        with st.expander("⏱️ Timing Report (Live)", expanded=False):
             _render_timing_report_from_metadata(execution_metadata)
 
         with st.expander("🔍 Execution Trace (Live)", expanded=False):
-            st.markdown("**Detected Intent**")
-            st.write(fields["detected_intent"] or "Not available")
-
-            st.markdown("**Resolved Entity**")
-            st.write(fields["resolved_entity"] or "Not available")
-
-            st.markdown("**Selected Tools**")
-            st.write(
-                ", ".join([str(x) for x in (fields["selected_tools"] or [])])
-                if fields["selected_tools"]
-                else "Not available"
+            st.markdown(
+                '<div class="ds-timeline">',
+                unsafe_allow_html=True,
             )
 
-            st.markdown("**Skipped Tools**")
-            st.write(
-                ", ".join([str(x) for x in (fields["skipped_tools"] or [])])
-                if fields["skipped_tools"]
-                else "Not available"
-            )
+            items = [
+                ("🧠", "Detected Intent", fields["detected_intent"] or "Not available", "done" if fields["detected_intent"] else "default"),
+                ("🏢", "Resolved Entity", fields["resolved_entity"] or "Not available", "done" if fields["resolved_entity"] else "default"),
+            ]
 
-            st.markdown("**Execution Status**")
-            st.write(str(fields["execution_status"]).title())
+            tools = fields.get("selected_tools", [])
+            if tools:
+                items.append(("🛠️", "Selected Tools", ", ".join(str(x) for x in tools), "done"))
 
-            st.markdown("**Execution Time**")
+            skipped = fields.get("skipped_tools", [])
+            if skipped:
+                items.append(("⏭️", "Skipped Tools", ", ".join(str(x) for x in skipped), "default"))
+
+            status = fields.get("execution_status", "unknown")
+            status_state = "done" if status in ("completed", "success") else ("error" if status in ("failed", "error") else "active")
+            items.append(("📊", "Execution Status", str(status).title(), status_state))
+
             ms = fields.get("execution_time_ms")
-            if ms is None:
-                st.write("Not available")
-            else:
-                st.write(f"{float(ms)/1000:.2f}s")
+            time_display = f"{float(ms)/1000:.2f}s" if ms is not None else "Not available"
+            items.append(("⏱️", "Execution Time", time_display, "done" if ms else "default"))
 
-            st.markdown("**Errors**")
-            errs = fields["errors"]
+            errs = fields.get("errors", [])
             if errs:
-                for e in errs:
-                    st.error(str(e))
+                items.append(("❌", "Errors", "; ".join(str(e) for e in errs), "error"))
             else:
-                st.write("No errors")
+                items.append(("✅", "Errors", "No errors", "done"))
+
+            for icon, label, value, state in items:
+                st.markdown(_trace_timeline_item(icon, label, value, state), unsafe_allow_html=True)
+
+            st.markdown("</div>", unsafe_allow_html=True)
 
     error_ph = st.empty()
     return run_safely(lambda: _impl(), "execution trace", fallback=None, error_placeholder=error_ph)  # type: ignore[return-value]
@@ -1006,9 +994,26 @@ def submit_research(
             last_exc = e
 
         if last_response is not None:
-            st.error(f"API Error: {last_response.status_code} - {last_response.text}")
+            st.markdown(
+                f'<div class="ds-state-card ds-state-card--error ds-animate-slide-up" style="margin-bottom:var(--space-4);">'
+                f'<div class="ds-state-card__icon">❌</div>'
+                f'<div class="ds-state-card__body">'
+                f'<div class="ds-state-card__title">API Error ({last_response.status_code})</div>'
+                f'<div class="ds-state-card__detail">{safe_html_escape(last_response.text[:500])}</div>'
+                f'</div></div>',
+                unsafe_allow_html=True,
+            )
         else:
-            st.error(f"API Error: {last_exc!s}" if last_exc else "API Error")
+            err_msg = f"{last_exc!s}" if last_exc else "API Error"
+            st.markdown(
+                f'<div class="ds-state-card ds-state-card--error ds-animate-slide-up" style="margin-bottom:var(--space-4);">'
+                f'<div class="ds-state-card__icon">❌</div>'
+                f'<div class="ds-state-card__body">'
+                f'<div class="ds-state-card__title">API Error</div>'
+                f'<div class="ds-state-card__detail">{safe_html_escape(err_msg)}</div>'
+                f'</div></div>',
+                unsafe_allow_html=True,
+            )
         return None
 
     error_ph = st.empty()
@@ -1033,9 +1038,26 @@ def check_status(request_id: str) -> dict[str, Any] | None:
             last_exc = e
 
         if last_response is not None:
-            st.error(f"API Error: {last_response.status_code} - {last_response.text}")
+            st.markdown(
+                f'<div class="ds-state-card ds-state-card--error ds-animate-slide-up" style="margin-bottom:var(--space-4);">'
+                f'<div class="ds-state-card__icon">❌</div>'
+                f'<div class="ds-state-card__body">'
+                f'<div class="ds-state-card__title">Status API Error ({last_response.status_code})</div>'
+                f'<div class="ds-state-card__detail">{safe_html_escape(last_response.text[:500])}</div>'
+                f'</div></div>',
+                unsafe_allow_html=True,
+            )
         else:
-            st.error(f"API Error: {last_exc!s}" if last_exc else "API Error")
+            err_msg = f"{last_exc!s}" if last_exc else "Status API Error"
+            st.markdown(
+                f'<div class="ds-state-card ds-state-card--error ds-animate-slide-up" style="margin-bottom:var(--space-4);">'
+                f'<div class="ds-state-card__icon">❌</div>'
+                f'<div class="ds-state-card__body">'
+                f'<div class="ds-state-card__title">Status API Error</div>'
+                f'<div class="ds-state-card__detail">{safe_html_escape(err_msg)}</div>'
+                f'</div></div>',
+                unsafe_allow_html=True,
+            )
 
         return None
 
