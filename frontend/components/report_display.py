@@ -146,7 +146,7 @@ def render_structured_sections(sections: list[dict[str, Any]], expandable: bool 
         elif "opportun" in (title or "").lower():
             badge = "Opportunities"
 
-        body = f"<div style='white-space: pre-wrap;'>{content}</div>"
+        body = f"<div style='white-space: pre-wrap;'>{safe_html_escape(content)}</div>"
         card_html = _premium_card(icon=icon, title=title, content=body, badge=badge)
 
         if expandable and title != "Disclaimer":
