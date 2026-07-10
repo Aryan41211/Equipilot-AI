@@ -1,13 +1,143 @@
-# EquiPilot AI
+# EquiPilot AI 📈
 
-> **AI-Powered Equity Research Agent** — An agentic research system that gathers, analyzes, and synthesizes market data, financial news, and sentiment into comprehensive equity research reports.
+Agentic equity research — built with **FastAPI**, **LangGraph**, and a **Streamlit** frontend.
 
-[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688.svg)](https://fastapi.tiangolo.com)
-[![LangGraph](https://img.shields.io/badge/LangGraph-0.2-1C3C3C.svg)](https://langchain-ai.github.io/langgraph/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.39-FF4B4B.svg)](https://streamlit.io)
-[![CI](https://github.com/Aryan41211/equipilot-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/Aryan41211/equipilot-ai/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+> **Informational only.** EquiPilot AI is designed for education and research context. It does **not** execute trades, does **not** provide investment advice, and does **not** generate trading signals.
+
+---
+
+## Project Overview
+
+EquiPilot AI exists to make equity research workflows more **reproducible**, **auditable**, and **easy to review**.
+
+It orchestrates market data retrieval, news summarization, and structured LLM synthesis into consistent, frontend-renderable research reports.
+
+### Key highlights
+- Graph-orchestrated research pipeline (**LangGraph**)
+- Production-ready API with health/readiness/metrics (**FastAPI**)
+- Consistent, UI-friendly report rendering (**Streamlit**)
+- Rate limiting, security headers, and structured logging
+
+---
+
+## Features
+
+- Submit a research request using a **ticker/company name** plus a **natural language query**
+- Poll for workflow progress and results via **request ID**
+- Render structured reports with **executive summary**, section cards, and **citations** (when available)
+- Provide backend health & readiness probes for orchestration
+
+---
+
+## Architecture (high level)
+
+```mermaid
+flowchart LR
+  U[User] --> S[Streamlit Frontend]
+  S -->|POST /api/v1/research| A[FastAPI Backend]
+  A -->|LangGraph Orchestration| G[Research Workflow Graph]
+  G --> M[Market Data Tools]
+  G --> N[News Tools]
+  G --> L[LLM Synthesis]
+  A -->|GET /api/v1/research/{id}| S
+  S --> R[Report Rendering]
+```
+
+*The diagram is intentionally high-level and omits implementation details.*
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | FastAPI, Pydantic |
+| Orchestration | LangGraph |
+| Frontend | Streamlit |
+| AI/ML | OpenAI (GPT-4o / GPT-4o-mini) |
+| Deployment | Docker, Nginx |
+| Observability | Structured logging + metrics |
+
+---
+
+## Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Environment Variables
+
+Only variable names are shown here—configure using your deployment environment.
+
+```env
+OPENAI_API_KEY=
+NEWS_API_KEY=
+SECRET_KEY=
+
+EQUIPILOT_API_URL=
+EQUIPILOT_HEALTH_URL=
+
+CORS_ORIGINS=
+ENVIRONMENT=
+```
+
+---
+
+## API Overview (public endpoints)
+
+- `GET /health`
+- `GET /ready`
+- `GET /version`
+- `GET /metrics`
+- `POST /api/v1/research`
+- `GET /api/v1/research/{request_id}`
+- `GET /api/v1/research/{request_id}/status`
+
+---
+
+## Project Structure
+
+```text
+backend/
+frontend/
+frontend/components/
+backend/prompts/
+backend/services/
+backend/graphs/
+backend/tools/
+
+docs/
+tests/
+```
+
+---
+
+## Deployment
+
+This repository supports production-style deployment via Docker multi-stage builds and Nginx.
+
+---
+
+## Roadmap
+
+- Improve report rendering ergonomics
+- Expand tool coverage for additional data sources
+- Add more integration tests and e2e coverage
+
+---
+
+## Contributing
+
+Contributions are welcome.
+
+---
+
+## License
+
+MIT
 
 ---
 

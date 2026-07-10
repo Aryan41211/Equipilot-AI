@@ -76,7 +76,7 @@ def _format_content(text: str) -> str:
 
 def render_report(
     report: dict[str, Any] | None,
-    show_metadata: bool = True,
+    _show_metadata: bool = True,
     show_citations: bool = True,
     expandable: bool = True,
 ):
