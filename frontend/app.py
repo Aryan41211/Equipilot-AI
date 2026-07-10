@@ -721,43 +721,67 @@ def _extract_execution_metadata_fields(report: dict[str, Any]) -> dict[str, Any]
     }
 
 
+def _trace_timeline_item(icon: str, label: str, value: str, state: str = "default") -> str:
+    """Render a single timeline item for the execution trace."""
+    state_class = ""
+    if state == "active":
+        state_class = " ds-timeline__item--active"
+    elif state == "done":
+        state_class = " ds-timeline__item--done"
+    elif state == "error":
+        state_class = " ds-timeline__item--error"
+
+    return f"""
+    <div class="ds-timeline__item{state_class}">
+      <div class="ds-timeline__dot">{icon}</div>
+      <div class="ds-timeline__content">
+        <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-sm);">{safe_html_escape(label)}</div>
+        <div style="font-size:var(--font-size-xs);color:var(--muted);margin-top:2px;">{safe_html_escape(str(value))}</div>
+      </div>
+    </div>
+    """
+
+
 def render_execution_trace_explicit(report: dict[str, Any]) -> None:
     fields = _extract_execution_metadata_fields(report)
 
-    with st.expander("🔍 Execution Trace", expanded=True):
-        c1, c2 = st.columns(2)
+    with st.expander("🔍 Execution Trace", expanded=False):
+        st.markdown(
+            '<div class="ds-timeline">',
+            unsafe_allow_html=True,
+        )
 
-        with c1:
-            st.markdown("**Detected Intent**")
-            st.write(fields["detected_intent"] or "Not available")
+        items = [
+            ("🧠", "Detected Intent", fields["detected_intent"] or "Not available", "done" if fields["detected_intent"] else "default"),
+            ("🏢", "Resolved Entity", fields["resolved_entity"] or "Not available", "done" if fields["resolved_entity"] else "default"),
+        ]
 
-            st.markdown("**Resolved Entity**")
-            st.write(fields["resolved_entity"] or "Not available")
+        tools = fields.get("selected_tools", [])
+        if tools:
+            items.append(("🛠️", "Selected Tools", ", ".join(tools), "done"))
 
-            st.markdown("**Execution Status**")
-            st.write(str(fields["execution_status"]).title())
+        skipped = fields.get("skipped_tools", [])
+        if skipped:
+            items.append(("⏭️", "Skipped Tools", ", ".join(skipped), "default"))
 
-        with c2:
-            st.markdown("**Selected Tools**")
-            st.write(", ".join(fields["selected_tools"]) if fields["selected_tools"] else "Not available")
+        status = fields.get("execution_status", "unknown")
+        status_state = "done" if status in ("completed", "success") else ("error" if status in ("failed", "error") else "active")
+        items.append(("📊", "Execution Status", str(status).title(), status_state))
 
-            st.markdown("**Skipped Tools**")
-            st.write(", ".join(fields["skipped_tools"]) if fields["skipped_tools"] else "Not available")
+        ms = fields.get("execution_time_ms")
+        time_display = f"{float(ms)/1000:.2f}s" if ms is not None else "Not available"
+        items.append(("⏱️", "Execution Time", time_display, "done" if ms else "default"))
 
-            st.markdown("**Execution Time**")
-            ms = fields.get("execution_time_ms")
-            if ms is None:
-                st.write("Not available")
-            else:
-                st.write(f"{float(ms)/1000:.2f}s")
-
-        st.markdown("**Errors**")
-        errs = fields["errors"]
+        errs = fields.get("errors", [])
         if errs:
-            for e in errs:
-                st.error(str(e))
+            items.append(("❌", "Errors", "; ".join(str(e) for e in errs), "error"))
         else:
-            st.write("No errors")
+            items.append(("✅", "Errors", "No errors", "done"))
+
+        for icon, label, value, state in items:
+            st.markdown(_trace_timeline_item(icon, label, value, state), unsafe_allow_html=True)
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
 
 def _render_timing_report_from_metadata(execution_metadata: dict[str, Any]) -> None:

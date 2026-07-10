@@ -1,0 +1,115 @@
+# -----------------------------
+# Python
+# -----------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+virtualenv/
+
+# Python tooling caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# -----------------------------
+# Streamlit / frontend caches
+# -----------------------------
+.streamlit/
+
+# -----------------------------
+# Logs
+# -----------------------------
+*.log
+logs/
+log/
+
+# -----------------------------
+# Build / dist artifacts
+# -----------------------------
+build/
+dist/
+site/
+*.egg-info/
+*.whl
+
+# -----------------------------
+# Node (if present in repo later)
+# -----------------------------
+node_modules/
+
+# -----------------------------
+# OS generated files
+# -----------------------------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# -----------------------------
+# IDE files
+# -----------------------------
+.vscode/
+.idea/
+
+# -----------------------------
+# Editor temp files
+# -----------------------------
+*.swp
+*.swo
+*.tmp
+
+# -----------------------------
+# Environment / secrets
+# -----------------------------
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Common secrets dirs/files (avoid committing by mistake)
+secrets/
+secret/
+credentials/
+*.pem
+*.key
+*.crt
+*.p12
+
+# -----------------------------
+# Local/test artifacts
+# -----------------------------
+coverage.xml
+pytest-report.xml
+*.sqlite3
+*.db
+
+# -----------------------------
+# Reports / generated outputs
+# -----------------------------
+reports/
+report/
+generated/
+output/
+outputs/
+
+# -----------------------------
+# Docker / compose overrides
+# -----------------------------
+docker-compose.override.yml
+
+# -----------------------------
+# Misc
+# -----------------------------
+*.bak
+*.orig
