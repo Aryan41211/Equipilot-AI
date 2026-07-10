@@ -137,7 +137,7 @@ class TestReportDisplay:
         with patch.object(st, 'success'), patch.object(st, 'expander'):
             with patch.object(st, 'subheader'):
                 with patch.object(st, 'markdown'):
-                    render_report(report, show_metadata=False)
+                    render_report(report)
 
     def test_render_synthesized_report_with_all_sections(self):
         """Render synthesized report with all LLM sections."""
