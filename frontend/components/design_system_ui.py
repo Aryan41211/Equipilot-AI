@@ -870,7 +870,191 @@ select:focus-visible{
   padding: var(--space-4);
 }
 
-/* Dark Mode — Vercel-inspired dark */
+/* === Timeline === */
+.ds-timeline{
+  position: relative;
+  padding-left: var(--space-8);
+}
+.ds-timeline::before{
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--border);
+  border-radius: var(--radius-full);
+}
+.ds-timeline__item{
+  position: relative;
+  padding-bottom: var(--space-5);
+}
+.ds-timeline__item:last-child{
+  padding-bottom: 0;
+}
+.ds-timeline__dot{
+  position: absolute;
+  left: calc(-1 * var(--space-8) + 6px);
+  top: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: var(--panel);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  z-index: 1;
+  transition: var(--transition);
+}
+.ds-timeline__item--active .ds-timeline__dot{
+  border-color: var(--primary);
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 0 0 4px var(--focus-ring);
+}
+.ds-timeline__item--done .ds-timeline__dot{
+  border-color: var(--success);
+  background: var(--success);
+  color: white;
+}
+.ds-timeline__item--error .ds-timeline__dot{
+  border-color: var(--danger);
+  background: var(--danger);
+  color: white;
+}
+.ds-timeline__content{
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  transition: var(--transition);
+}
+.ds-timeline__item--active .ds-timeline__content{
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+.ds-timeline__time{
+  font-size: var(--font-size-xs);
+  color: var(--muted);
+  margin-top: var(--space-1);
+}
+
+/* === Animations & Micro-interactions === */
+@keyframes slideUp{
+  from{ opacity: 0; transform: translateY(12px); }
+  to{ opacity: 1; transform: translateY(0); }
+}
+@keyframes slideDown{
+  from{ opacity: 0; transform: translateY(-8px); }
+  to{ opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn{
+  from{ opacity: 0; transform: scale(0.95); }
+  to{ opacity: 1; transform: scale(1); }
+}
+@keyframes spin{
+  to{ transform: rotate(360deg); }
+}
+@keyframes progressPulse{
+  0%{ opacity: 0.6; }
+  50%{ opacity: 1; }
+  100%{ opacity: 0.6; }
+}
+.ds-animate-slide-up{
+  animation: slideUp 0.3s ease-out forwards;
+}
+.ds-animate-slide-down{
+  animation: slideDown 0.25s ease-out forwards;
+}
+.ds-animate-scale-in{
+  animation: scaleIn 0.2s ease-out forwards;
+}
+.ds-animate-spin{
+  animation: spin 1s linear infinite;
+}
+.ds-animate-pulse{
+  animation: progressPulse 1.5s ease-in-out infinite;
+}
+.stApp [data-testid="stExpander"] .content{
+  animation: slideDown 0.2s ease-out;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 1200px){
+  .block-container{
+    max-width: 100%;
+    padding: var(--space-6) var(--space-4) !important;
+  }
+}
+@media (max-width: 992px){
+  .ds-hero__title{
+    font-size: var(--font-size-3xl);
+  }
+  .ds-hero__stats{
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+}
+@media (max-width: 768px){
+  .block-container{
+    padding: var(--space-4) var(--space-3) !important;
+  }
+  [data-testid="stSidebar"] > div:first-child{
+    padding: var(--space-4) var(--space-3) !important;
+  }
+  .ds-kpi{
+    padding: var(--space-3);
+  }
+  .ds-kpi__value{
+    font-size: var(--font-size-xl);
+  }
+  .ds-card{
+    border-radius: var(--radius-lg);
+  }
+}
+@media (max-width: 576px){
+  .block-container{
+    padding: var(--space-3) var(--space-2) !important;
+  }
+  h1{ font-size: var(--font-size-2xl); }
+  h2{ font-size: var(--font-size-xl); }
+  h3{ font-size: var(--font-size-lg); }
+}
+
+/* Accessibility: prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Accessibility: high contrast */
+@media (prefers-contrast: high){
+  :root{
+    --border: #94a3b8;
+    --border-dark: #64748b;
+    --text: #000000;
+    --muted: #334155;
+  }
+  .ds-state-card--error{
+    border-width: 2px;
+  }
+  .ds-state-card--success{
+    border-width: 2px;
+  }
+}
+
+/* Accessibility: focus within for cards */
+.ds-suggestion:focus-within{
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+/* === Dark Mode — Vercel-inspired dark === */
 @media (prefers-color-scheme: dark){
   :root{
     --bg: #0a0a0f;
