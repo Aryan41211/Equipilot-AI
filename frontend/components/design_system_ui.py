@@ -670,6 +670,172 @@ select:focus-visible{
   color: var(--text);
 }
 
+/* === KPI / Metric Card === */
+.ds-kpi{
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-xs);
+  transition: var(--transition);
+}
+.ds-kpi:hover{
+  box-shadow: var(--shadow);
+  border-color: var(--border-dark);
+}
+.ds-kpi__label{
+  font-size: var(--font-size-xs);
+  color: var(--muted);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: var(--space-1);
+  line-height: var(--leading-normal);
+}
+.ds-kpi__value{
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text);
+  line-height: var(--leading-snug);
+  letter-spacing: -0.02em;
+}
+.ds-kpi__sublabel{
+  font-size: var(--font-size-xs);
+  color: var(--muted);
+  margin-top: var(--space-1);
+  line-height: var(--leading-normal);
+}
+
+/* === Interactive Suggestion Card === */
+.ds-suggestion{
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  background: var(--panel);
+  transition: var(--transition-slow);
+  cursor: default;
+  position: relative;
+}
+.ds-suggestion:hover{
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+  transform: translateY(-1px);
+}
+.ds-suggestion__icon{
+  font-size: 1.25rem;
+  margin-bottom: var(--space-2);
+}
+.ds-suggestion__title{
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--text);
+  margin-bottom: var(--space-1);
+}
+.ds-suggestion__desc{
+  font-size: var(--font-size-xs);
+  color: var(--muted);
+  line-height: var(--leading-normal);
+}
+
+/* === Error / Warning / Success Cards === */
+.ds-state-card{
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  line-height: var(--leading-normal);
+}
+.ds-state-card--error{
+  border: 1px solid var(--danger);
+  background: var(--danger-light);
+  border-left: 4px solid var(--danger);
+}
+.ds-state-card--success{
+  border: 1px solid var(--success);
+  background: var(--success-light);
+  border-left: 4px solid var(--success);
+}
+.ds-state-card--warning{
+  border: 1px solid var(--warning);
+  background: var(--warning-light);
+  border-left: 4px solid var(--warning);
+}
+.ds-state-card--info{
+  border: 1px solid var(--info);
+  background: var(--info-light);
+  border-left: 4px solid var(--info);
+}
+.ds-state-card__icon{
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ds-state-card__body{
+  font-size: var(--font-size-sm);
+  color: var(--text);
+}
+.ds-state-card__title{
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-1);
+}
+.ds-state-card__detail{
+  font-size: var(--font-size-xs);
+  color: var(--muted);
+  margin-top: var(--space-1);
+}
+
+/* === Completion Badge === */
+.ds-completion-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--success-light);
+  border: 1px solid rgba(5,150,105,0.2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--success);
+}
+
+/* === Hero Section === */
+.ds-hero{
+  margin-bottom: var(--space-8);
+}
+.ds-hero__title{
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--text);
+  margin-bottom: var(--space-2);
+}
+.ds-hero__subtitle{
+  font-size: var(--font-size-base);
+  color: var(--muted);
+  line-height: var(--leading-relaxed);
+  max-width: 640px;
+}
+.ds-hero__stats{
+  display: flex;
+  gap: var(--space-6);
+  margin-top: var(--space-4);
+  flex-wrap: wrap;
+}
+.ds-hero-stat{
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--muted);
+}
+.ds-hero-stat__value{
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+  font-size: var(--font-size-base);
+}
+
 /* === Section Header === */
 .ds-section-header{
   margin: var(--space-1) 0 var(--space-3) 0;
