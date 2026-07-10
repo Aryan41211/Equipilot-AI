@@ -6,9 +6,10 @@ import logging
 import os
 import sys
 import time
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, TypeVar, cast
+from typing import Any, TypeVar
 
 import requests
 import streamlit as st
@@ -19,10 +20,10 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
+from frontend.components.design_system_ui import inject_global_styles, safe_html_escape
 from frontend.components.progress_tracker import render_progress
 from frontend.components.report_display import render_report
 from frontend.components.sidebar import render_sidebar
-from frontend.components.design_system_ui import inject_global_styles, safe_html_escape, title_brand
 
 # API configuration — configurable via environment variable for production deployment
 API_BASE_URL = os.environ.get("EQUIPILOT_API_URL", "").rstrip("/")
@@ -236,7 +237,7 @@ def check_backend_connection() -> None:
 def render_disclaimer_bar():
     """Compact disclaimer bar at top of main content."""
     st.markdown(
-        f"""<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius-md);background:var(--warning-light);border:1px solid var(--border);margin-bottom:var(--space-5);font-size:var(--font-size-xs);color:var(--muted);line-height:1.4;">
+        """<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius-md);background:var(--warning-light);border:1px solid var(--border);margin-bottom:var(--space-5);font-size:var(--font-size-xs);color:var(--muted);line-height:1.4;">
         <span style="font-size:14px;flex-shrink:0;">⚠️</span>
         <span>EquiPilot AI is an <strong>informational equity research assistant</strong>. Not investment advice. Always do your own due diligence.</span>
         </div>""",
@@ -244,7 +245,7 @@ def render_disclaimer_bar():
     )
 
 
-def _suggestion_card(icon: str, ticker: str, title: str, desc: str, query: str, analysis_type: str = "Full Research") -> str:
+def _suggestion_card(icon: str, ticker: str, title: str, desc: str, _query: str = "", _analysis_type: str = "Full Research") -> str:
     """Interactive suggestion card that pre-fills sidebar form on click."""
     return f"""
     <div class="ds-suggestion" onclick="
@@ -346,7 +347,7 @@ def render_empty_dashboard():
             st.session_state["analysis_type"] = "Full Research"
             st.rerun()
 
-    st.markdown(f'<hr style="margin:var(--space-8) 0 !important;" />', unsafe_allow_html=True)
+    st.markdown('<hr style="margin:var(--space-8) 0 !important;" />', unsafe_allow_html=True)
 
     # === Tip ===
     st.markdown(alert_markdown(
@@ -354,7 +355,7 @@ def render_empty_dashboard():
         kind="info",
     ), unsafe_allow_html=True)
 
-    st.markdown(f'<hr style="margin:var(--space-8) 0 !important;" />', unsafe_allow_html=True)
+    st.markdown('<hr style="margin:var(--space-8) 0 !important;" />', unsafe_allow_html=True)
 
     # === What You Get ===
     st.markdown(
@@ -483,7 +484,7 @@ def render_loading_workflow(request_id: str) -> None:
     """
 
     def _impl() -> None:
-        from frontend.components.design_system_ui import alert_markdown, safe_html_escape
+        from frontend.components.design_system_ui import safe_html_escape
 
         # Polling guards (avoid infinite reruns)
         max_polls = 60  # ~2 minutes at 2s interval
@@ -650,7 +651,7 @@ def render_dashboard_sections(report: dict[str, Any]) -> None:
                 unsafe_allow_html=True,
             )
 
-    st.markdown(f'<hr style="margin:var(--space-6) 0 !important;" />', unsafe_allow_html=True)
+    st.markdown('<hr style="margin:var(--space-6) 0 !important;" />', unsafe_allow_html=True)
 
     # === AI Research Report ===
     st.markdown(
@@ -663,7 +664,7 @@ def render_dashboard_sections(report: dict[str, Any]) -> None:
     )
     render_report(report, show_metadata=False, show_citations=True, expandable=False)
 
-    st.markdown(f'<hr style="margin:var(--space-8) 0 !important;" />', unsafe_allow_html=True)
+    st.markdown('<hr style="margin:var(--space-8) 0 !important;" />', unsafe_allow_html=True)
 
     # === Market Data ===
     market_data = report.get("market_data") or report.get("market_data_summary")
@@ -869,10 +870,10 @@ def _render_timing_report_from_metadata(execution_metadata: dict[str, Any]) -> N
     total_backend_ms = execution_metadata.get("execution_time_ms")
     if total_backend_ms is not None or trace_total > 0:
         st.markdown(
-            f'<div style="display:flex;gap:var(--space-6);margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--border);font-size:var(--font-size-xs);color:var(--muted);">'
+            '<div style="display:flex;gap:var(--space-6);margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--border);font-size:var(--font-size-xs);color:var(--muted);">'
             + (f'<span>Total: <strong>{float(total_backend_ms):.1f} ms</strong></span>' if total_backend_ms is not None else "")
             + (f'<span>Traces: <strong>{trace_total:.1f} ms</strong></span>' if trace_total > 0 else "")
-            + f'</div>',
+            + '</div>',
             unsafe_allow_html=True,
         )
 

@@ -186,7 +186,7 @@ class TestProgressTracker:
         """Get step index returns correct position."""
         from frontend.components.progress_tracker import RESEARCH_STEPS, _get_step_index
 
-        for i, (step_id, _, _) in enumerate(RESEARCH_STEPS):
+        for i, (step_id, _, _, _) in enumerate(RESEARCH_STEPS):
             assert _get_step_index(step_id) == i
 
     def test_get_step_index_returns_minus_one_for_unknown(self):

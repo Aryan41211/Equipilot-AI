@@ -2,11 +2,12 @@
 # EquiPilot AI - Report Display Component
 # Premium enterprise report rendering
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import streamlit as st
 
-from frontend.components.design_system_ui import section_header, status_badge, safe_html_escape
+from frontend.components.design_system_ui import safe_html_escape, status_badge
 
 
 def _report_section_card(icon: str, title: str, content: str, badge: str | None = None) -> str:
@@ -249,12 +250,12 @@ def _render_citation(citation: dict[str, Any], index: int):
         f'<div style="display:flex;gap:var(--space-4);font-size:var(--font-size-xs);color:var(--muted);margin-bottom:var(--space-2);flex-wrap:wrap;">'
         f'<span>📰 {safe_html_escape(source)}</span>'
         + (f'<span>📅 {safe_html_escape(date)}</span>' if date else "")
-        + f'</div>'
+        + '</div>'
         + (f'<div style="font-size:var(--font-size-xs);color:var(--muted);line-height:var(--leading-normal);margin-bottom:var(--space-2);">"{safe_html_escape(snippet[:200])}"{"..." if len(snippet) > 200 else ""}</div>'
            if snippet else "")
         + (f'<a href="{safe_html_escape(url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:var(--primary);font-weight:var(--font-weight-medium);">🔗 View Source →</a>'
            if url else "")
-        + f'</div>',
+        + '</div>',
         unsafe_allow_html=True,
     )
 

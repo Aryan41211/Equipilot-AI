@@ -1,7 +1,8 @@
 # EquiPilot AI - Query Form Component
 # Reusable research query input form
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 import streamlit as st
 

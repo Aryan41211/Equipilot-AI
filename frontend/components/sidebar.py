@@ -9,13 +9,10 @@ from typing import Any
 
 import streamlit as st
 
-from frontend.components.research_form_helpers import looks_like_ticker
-
 from frontend.components.design_system_ui import (
-    section_header,
     title_brand,
-    status_badge,
 )
+from frontend.components.research_form_helpers import looks_like_ticker
 
 API_BASE_URL = os.environ.get("EQUIPILOT_API_URL", "").rstrip("/")
 
@@ -48,7 +45,7 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
     """Render sidebar with analysis inputs, system status, and recent reports."""
     st.markdown(title_brand(), unsafe_allow_html=True)
 
-    st.markdown(f'<hr style="margin:1rem 0 !important;" />', unsafe_allow_html=True)
+    st.markdown('<hr style="margin:1rem 0 !important;" />', unsafe_allow_html=True)
 
     # --- Research (primary CTA) ---
     st.markdown(_sidebar_section(_SECTION_ICONS["research"], "Research", "Configure and run analysis"), unsafe_allow_html=True)
@@ -114,7 +111,7 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
         else:
             st.session_state["_last_analysis_form_data"] = form_data
 
-    st.markdown(f'<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
+    st.markdown('<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
 
     # --- Quick Actions ---
     st.markdown(_sidebar_section(_SECTION_ICONS["quick"], "Quick Actions", "One-click research"), unsafe_allow_html=True)
@@ -153,19 +150,19 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
                     "max_report_length": st.session_state.get("max_report_length", 5000),
                 }
 
-    st.markdown(f'<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
+    st.markdown('<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
 
     # --- System Status ---
     st.markdown(_sidebar_section(_SECTION_ICONS["status"], "System Status", "Backend health & integrations"), unsafe_allow_html=True)
     render_system_status()
 
-    st.markdown(f'<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
+    st.markdown('<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
 
     # --- Recent Reports ---
     st.markdown(_sidebar_section(_SECTION_ICONS["history"], "Recent Reports", "Session research history"), unsafe_allow_html=True)
     render_recent_reports()
 
-    st.markdown(f'<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
+    st.markdown('<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
 
     # --- About ---
     st.markdown(_sidebar_section(_SECTION_ICONS["about"], "About"), unsafe_allow_html=True)

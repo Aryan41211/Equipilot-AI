@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 
 def coerce_max_report_length(
     value: int | float | str | None,
@@ -39,7 +37,7 @@ def coerce_max_report_length(
     return ivalue
 
 
-def parse_tickers_csv(value: str | None, *, upper: bool = True) -> Optional[list[str]]:
+def parse_tickers_csv(value: str | None, *, upper: bool = True) -> list[str] | None:
     """
     Parse comma-separated tickers into list[str] or None.
 

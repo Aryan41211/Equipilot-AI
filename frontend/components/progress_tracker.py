@@ -4,7 +4,6 @@
 
 import time
 from collections.abc import Callable
-from datetime import datetime
 from typing import Any
 
 import streamlit as st
@@ -114,7 +113,7 @@ def render_progress(
     st.progress(min(progress, 1.0))
 
 
-def _render_timeline_progress(current_step: str, step_index: int):
+def _render_timeline_progress(_current_step: str, step_index: int):
     """Render animated step progress as a visual timeline."""
     st.markdown(
         '<div style="font-weight:var(--font-weight-medium);font-size:var(--font-size-xs);color:var(--muted);'
