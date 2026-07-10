@@ -123,7 +123,7 @@ def _render_timeline_progress(_current_step: str, step_index: int):
     )
 
     cols = st.columns(len(RESEARCH_STEPS))
-    for i, (step_id, step_name, icon, desc) in enumerate(RESEARCH_STEPS):
+    for i, (_step_id, step_name, icon, desc) in enumerate(RESEARCH_STEPS):
         with cols[i]:
             state_class = "ds-step"
             display_icon = icon

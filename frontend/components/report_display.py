@@ -62,7 +62,6 @@ def _format_content(text: str) -> str:
                 f'<span>{safe_html_escape(line.lstrip("•-* ").strip())}</span></div>'
             )
         elif line.startswith("#"):
-            level = len(line.split(" ")[0])
             heading = line.lstrip("# ").strip()
             paragraphs.append(
                 f'<div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-base);'
