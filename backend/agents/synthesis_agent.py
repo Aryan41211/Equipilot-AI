@@ -74,7 +74,7 @@ class SynthesisAgent:
 
         schema = SynthesizedReport.model_json_schema()
 
-        json_data = await self._call_llm_with_retry(prompt, schema)
+        json_data = await self._call_llm_with_retry(prompt, schema, max_length)
 
         try:
             synthesized = SynthesizedReport.model_validate(json_data)
@@ -98,11 +98,23 @@ class SynthesisAgent:
         wait=wait_exponential(multiplier=1, min=2, max=10),
         retry=retry_if_exception_type((SynthesisProviderError, SynthesisTimeoutError)),
     )
-    async def _call_llm_with_retry(self, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
-        """Call the LLM with retry logic for transient failures."""
+    async def _call_llm_with_retry(
+        self,
+        prompt: str,
+        schema: dict[str, Any],
+        max_length: int = 5000,
+    ) -> dict[str, Any]:
+        """Call the LLM with retry logic for transient failures.
+
+        Args:
+            prompt: User prompt built by ``build_report_prompt``.
+            schema: JSON schema the LLM must conform to.
+            max_length: Report length budget, applied to the system prompt so it
+                agrees with the same budget stated in the user prompt.
+        """
         try:
             return await self.llm.structured_completion(
-                system_prompt=REPORT_SYSTEM_PROMPT.format(max_length=5000)
+                system_prompt=REPORT_SYSTEM_PROMPT.format(max_length=max_length)
                 + STRUCTURED_OUTPUT_INSTRUCTIONS,
                 user_prompt=prompt,
                 schema=schema,

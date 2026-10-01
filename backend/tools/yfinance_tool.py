@@ -33,23 +33,19 @@ class YFinanceTool:
         Returns:
             Dictionary with market data for each ticker
         """
-        # include_fundamentals / include_technicals are accepted for tool-schema
-        # compatibility; market_service.get_market_data returns both sections
-        # when available, so the flags are recorded but not acted upon.
-        logger.info(
-            "Tool: get_market_data",
-            tickers=self,
-            period=period,
-            include_fundamentals=include_fundamentals,
-            include_technicals=include_technicals,
-        )
+        logger.info("Tool: get_market_data", tickers=self, period=period)
 
         try:
             data = await market_service.get_market_data(self, period)
 
-            # Convert to serializable format
+            # Convert to serializable format. The include_* flags gate which
+            # sections are emitted, mirroring MarketAgent.fetch. We null the
+            # serialized values rather than mutating the MarketData objects,
+            # because those may be served from the shared yfinance cache.
             result = {}
             for ticker, md in data.items():
+                fundamentals = md.fundamentals if include_fundamentals else None
+                technicals = md.technicals if include_technicals else None
                 result[ticker] = {
                     "ticker": md.ticker,
                     "company_name": md.company_name,
@@ -61,8 +57,8 @@ class YFinanceTool:
                     "previous_close": md.previous_close,
                     "change": md.change,
                     "change_percent": md.change_percent,
-                    "fundamentals": md.fundamentals.model_dump() if md.fundamentals else None,
-                    "technicals": md.technicals.model_dump() if md.technicals else None,
+                    "fundamentals": fundamentals.model_dump() if fundamentals else None,
+                    "technicals": technicals.model_dump() if technicals else None,
                     "data_as_of": md.data_as_of.isoformat() if md.data_as_of else None,
                 }
 

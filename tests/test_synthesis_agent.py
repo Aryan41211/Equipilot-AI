@@ -218,6 +218,31 @@ async def test_retry_behavior():
 
 
 @pytest.mark.asyncio
+async def test_max_length_threads_into_system_and_user_prompt():
+    """Caller's max_length must reach both prompts with the same value."""
+    with patch("backend.agents.synthesis_agent.get_llm_service") as mock_get:
+        mock_llm = AsyncMock()
+        mock_llm.default_model = "gpt-4o"
+        mock_llm.structured_completion = AsyncMock(return_value=_mock_llm_response())
+        mock_get.return_value = mock_llm
+
+        agent = SynthesisAgent()
+        await agent.generate_report(
+            query="Analyze Apple Inc.",
+            tickers=["AAPL"],
+            market_data=_base_market_data(),
+            news_articles=_base_news(),
+            sentiment_analysis=_base_sentiment(),
+            max_length=12000,
+        )
+
+        kwargs = mock_llm.structured_completion.call_args.kwargs
+        assert "Maximum length: 12000 characters" in kwargs["system_prompt"]
+        assert "within approximately 12000 characters" in kwargs["user_prompt"]
+        assert "5000 characters" not in kwargs["system_prompt"]
+
+
+@pytest.mark.asyncio
 async def test_schema_validation():
     with pytest.raises(ValidationError):
         SynthesizedReport(
