@@ -252,9 +252,13 @@ class LLMService:
     async def generate_report(
         self,
         prompt: str,
-        schema: dict[str, Any] | None = None,
+        _schema: dict[str, Any] | None = None,
     ) -> str:
-        """Generate a research report."""
+        """Generate a research report.
+
+        ``_schema`` is accepted for interface compatibility; structured output is
+        enforced by the caller via ``structured_completion`` instead.
+        """
         messages = [
             {"role": "system", "content": self._get_report_system_prompt()},
             {"role": "user", "content": prompt},

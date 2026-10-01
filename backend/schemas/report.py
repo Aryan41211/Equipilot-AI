@@ -2,7 +2,7 @@
 # Pydantic models for research report structures
 
 from datetime import datetime
-from typing import Any
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -20,7 +20,7 @@ class Citation(BaseModel):
     relevance: float = Field(default=1.0, ge=0.0, le=1.0)
 
     class Config:
-        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
+        json_encoders: ClassVar[dict] = {datetime: lambda v: v.isoformat() if v else None}
 
 
 class ReportSection(BaseModel):
@@ -35,7 +35,7 @@ class ReportSection(BaseModel):
     order: int = 0
 
     class Config:
-        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
+        json_encoders: ClassVar[dict] = {datetime: lambda v: v.isoformat() if v else None}
 
 
 class ResearchReport(BaseModel):
@@ -70,7 +70,7 @@ class ResearchReport(BaseModel):
     )
 
     class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+        json_encoders: ClassVar[dict] = {datetime: lambda v: v.isoformat()}
 
 
 class ReportGenerationRequest(BaseModel):

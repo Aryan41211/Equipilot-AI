@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from backend.config import settings
-from backend.core.constants import APP_NAME, APP_VERSION, AppStatus, ExecutionStatus
+from backend.core.constants import APP_NAME, APP_VERSION, AppStatus
 from backend.exceptions.handlers import register_exception_handlers
 from backend.graphs.graph import create_first_graph, create_initial_state
 from backend.middleware.production import (
@@ -93,8 +93,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     import os
 
     raw_cors = os.environ.get("CORS_ORIGINS")
-    if raw_cors is None:
-        raw_cors = os.environ.get("cors_origins")
 
     raw_cors_str = (raw_cors or "").strip() if raw_cors is not None else None
     if raw_cors_str is None or raw_cors_str == "":
@@ -148,6 +146,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Graceful shutdown
     logger.info("Initiating graceful shutdown")
+
+    # Cancel and await any in-flight background research tasks so the event loop
+    # does not report "Task was destroyed but it is pending".
+    import asyncio
+
+    pending = tuple(getattr(app.state, "research_tasks", ()) or ())
+    for pending_task in pending:
+        pending_task.cancel()
+    if pending:
+        await asyncio.gather(*pending, return_exceptions=True)
+        app.state.research_tasks = set()
+
     research_graph = None
     logger.info("Shutdown complete")
 
@@ -518,10 +528,18 @@ def create_app() -> FastAPI:
 
                 logger.exception("Graph execution failed", request_id=rid, error=str(e))
 
-        # Launch background task (FastAPI will keep it running in the same process)
+        # Launch background task (FastAPI will keep it running in the same process).
+        # Hold a strong reference so the task is not garbage-collected mid-flight,
+        # and so lifespan shutdown can cancel and await it.
         import asyncio
 
-        asyncio.create_task(_run_graph())
+        task = asyncio.create_task(_run_graph())
+        research_tasks = getattr(app.state, "research_tasks", None)
+        if research_tasks is None:
+            research_tasks = set()
+            app.state.research_tasks = research_tasks
+        research_tasks.add(task)
+        task.add_done_callback(research_tasks.discard)
 
         return ResearchResponse(
             request_id=rid,

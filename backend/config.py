@@ -297,7 +297,7 @@ class Settings(BaseSettings):
             return []
 
         # Determine environment early for fail-fast behavior.
-        env = (os.environ.get("ENVIRONMENT") or os.environ.get("environment") or "development").lower()
+        env = (os.environ.get("ENVIRONMENT") or "development").lower()
         is_prod = env == "production"
 
         if isinstance(v, list):
@@ -319,7 +319,7 @@ class Settings(BaseSettings):
                     return []
                 except json.JSONDecodeError as e:
                     if is_prod:
-                        raise ValueError(f"CORS_ORIGINS JSON parsing failed: {e!s}")
+                        raise ValueError(f"CORS_ORIGINS JSON parsing failed: {e!s}") from e
                     # Fall through to comma parsing
                     pass
 
@@ -365,7 +365,7 @@ class Settings(BaseSettings):
         # Production/staging => deny-by-default if nothing configured.
         # In production, if raw env var was provided but parsed into empty list,
         # refuse startup (fail-fast).
-        raw = os.environ.get("CORS_ORIGINS") or os.environ.get("cors_origins")
+        raw = os.environ.get("CORS_ORIGINS")
         if environment == "production" and raw is not None:
             raw_str = str(raw).strip()
             if raw_str and not (v or []):

@@ -5,6 +5,7 @@ from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from pydantic import ValidationError
 
 from backend.agents.synthesis_agent import SynthesisAgent
 from backend.exceptions.synthesis_exceptions import (
@@ -215,7 +216,7 @@ async def test_retry_behavior():
 
 @pytest.mark.asyncio
 async def test_schema_validation():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         SynthesizedReport(
             company="Apple Inc.",
             generated_at=datetime.utcnow(),

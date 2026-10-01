@@ -33,7 +33,16 @@ class YFinanceTool:
         Returns:
             Dictionary with market data for each ticker
         """
-        logger.info("Tool: get_market_data", tickers=self)
+        # include_fundamentals / include_technicals are accepted for tool-schema
+        # compatibility; market_service.get_market_data returns both sections
+        # when available, so the flags are recorded but not acted upon.
+        logger.info(
+            "Tool: get_market_data",
+            tickers=self,
+            period=period,
+            include_fundamentals=include_fundamentals,
+            include_technicals=include_technicals,
+        )
 
         try:
             data = await market_service.get_market_data(self, period)

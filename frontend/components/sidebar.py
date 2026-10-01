@@ -23,7 +23,7 @@ _SECTION_ICONS = {
     "model": "🧠",
     "status": "🖥",
     "history": "📋",
-    "about": "ℹ️",
+    "about": "ℹ️",  # noqa: RUF001 - deliberate iconography, not prose
 }
 
 

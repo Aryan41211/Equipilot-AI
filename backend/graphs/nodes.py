@@ -627,7 +627,6 @@ async def parallel_tools_node(state: GraphState) -> GraphState:
 
     market_ok = False
     news_ok = False
-    market_result: dict[str, Any] = {}
     news_result: dict[str, Any] = {}
 
     tasks: dict[str, asyncio.Task[tuple[bool, dict[str, Any], str, str]]] = {}
@@ -639,7 +638,7 @@ async def parallel_tools_node(state: GraphState) -> GraphState:
     if tasks:
         names = list(tasks.keys())
         results = await asyncio.gather(*(tasks[n] for n in names), return_exceptions=True)
-        for name, outcome in zip(names, results):
+        for name, outcome in zip(names, results, strict=False):
             if isinstance(outcome, Exception):
                 ok = False
                 result = {"error": str(outcome), "error_type": "exception"}
@@ -667,7 +666,6 @@ async def parallel_tools_node(state: GraphState) -> GraphState:
 
             if name == "market_data_tool":
                 market_ok = ok
-                market_result = result
                 if ok:
                     state = {**state, "market_data": result}
                 else:

@@ -88,14 +88,15 @@ class EntityResolutionService:
     async def resolve(
         self,
         text: str,
-        ticker: str | None = None,
+        _ticker: str | None = None,
     ) -> EntityResolutionResponse:
         """
         Resolve natural-language financial entity to canonical ticker.
 
         Args:
             text: Input text containing entity name or ticker.
-            ticker: Optional pre-extracted ticker (used as hint).
+            _ticker: Optional pre-extracted ticker, accepted for interface
+                compatibility (resolution is derived from ``text`` alone).
 
         Returns:
             EntityResolutionResponse with resolved entity or error.

@@ -80,7 +80,7 @@ class SynthesisAgent:
             synthesized = SynthesizedReport.model_validate(json_data)
         except Exception as e:
             logger.error("Failed to validate synthesized report", error=str(e))
-            raise SynthesisValidationError(f"Schema validation failed: {e}")
+            raise SynthesisValidationError(f"Schema validation failed: {e}") from e
 
         report = self._synthesized_to_research_report(
             synthesized=synthesized,
@@ -111,8 +111,8 @@ class SynthesisAgent:
         except Exception as e:
             error_str = str(e).lower()
             if "timeout" in error_str or isinstance(e, asyncio.TimeoutError):
-                raise SynthesisTimeoutError(str(e))
-            raise SynthesisProviderError(str(e))
+                raise SynthesisTimeoutError(str(e)) from e
+            raise SynthesisProviderError(str(e)) from e
 
     def _synthesized_to_research_report(
         self,

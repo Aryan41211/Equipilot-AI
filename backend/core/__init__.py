@@ -2,12 +2,6 @@
 # Centralized configuration, logging, constants, and base classes
 
 from backend.core.constants import (
-    AppStatus,
-    DataSource,
-    ErrorType,
-    ExecutionStatus,
-    ResearchIntent,
-    ResearchStep,
     APP_NAME,
     APP_VERSION,
     DEFAULT_CACHE_TTL,
@@ -22,8 +16,13 @@ from backend.core.constants import (
     HTTP_VALIDATION_ERROR,
     VALID_LOG_FORMATS,
     VALID_LOG_LEVELS,
+    AppStatus,
+    DataSource,
+    ErrorType,
+    ExecutionStatus,
+    ResearchIntent,
+    ResearchStep,
 )
-
 from backend.core.exceptions import (
     ConfigurationError,
     EquiPilotError,

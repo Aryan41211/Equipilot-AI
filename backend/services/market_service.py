@@ -228,15 +228,18 @@ class MarketService:
             try:
                 loop = asyncio.get_event_loop()
                 yf_ticker = await loop.run_in_executor(None, yf.Ticker, ticker)
-                info = await loop.run_in_executor(None, lambda: yf_ticker.info)
+                info = await loop.run_in_executor(None, lambda t=yf_ticker: t.info)
                 results[ticker] = self._parse_fundamentals(info)
             except Exception as e:
                 logger.error("Failed to fetch fundamentals", ticker=ticker, error=str(e))
                 results[ticker] = None
         return results
 
-    async def search_tickers(self, query: str) -> list[dict[str, str]]:
-        """Search for tickers matching a query."""
+    async def search_tickers(self, _query: str) -> list[dict[str, str]]:
+        """Search for tickers matching a query.
+
+        ``_query`` is unused until ticker search is implemented.
+        """
         # TODO: Implement ticker search (yfinance doesn't have built-in search)
         # Could use Yahoo Finance search API or maintain a local ticker database
         return []

@@ -54,6 +54,7 @@ SENTIMENT ANALYSIS:
 
 Generate a comprehensive equity research report following the structure and guidelines above.
 Focus on answering the research query with actionable insights.
+Keep the report within approximately {max_length} characters.
 """
 
 
@@ -131,4 +132,5 @@ def build_report_prompt(
         market_data=market_summary,
         news_data=news_summary,
         sentiment_data=sentiment_summary,
+        max_length=max_length,
     )

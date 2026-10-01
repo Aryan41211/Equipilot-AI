@@ -16,10 +16,11 @@ class TestQueryForm:
         with patch.object(st, 'form') as mock_form:
             mock_form.return_value.__enter__ = Mock(return_value=None)
             mock_form.return_value.__exit__ = Mock(return_value=None)
-            with patch.object(st, 'text_area', return_value=""):
-                with patch.object(st, 'form_submit_button', return_value=False):
-                    result = render_query_form()
-                    assert result is None
+            with patch.object(st, 'text_area', return_value=""), patch.object(
+                st, 'form_submit_button', return_value=False
+            ):
+                result = render_query_form()
+                assert result is None
 
     def test_render_query_form_validates_empty_query(self):
         """Form shows error for empty query."""
@@ -28,12 +29,12 @@ class TestQueryForm:
         with patch.object(st, 'form') as mock_form:
             mock_form.return_value.__enter__ = Mock(return_value=None)
             mock_form.return_value.__exit__ = Mock(return_value=None)
-            with patch.object(st, 'text_area', return_value=""):
-                with patch.object(st, 'form_submit_button', return_value=True):
-                    with patch.object(st, 'error') as mock_error:
-                        result = render_query_form()
-                        assert result is None
-                        mock_error.assert_called()
+            with patch.object(st, 'text_area', return_value=""), patch.object(
+                st, 'form_submit_button', return_value=True
+            ), patch.object(st, 'error') as mock_error:
+                result = render_query_form()
+                assert result is None
+                mock_error.assert_called()
 
     def test_render_query_form_parses_tickers_correctly(self):
         """Form parses comma-separated tickers correctly."""
@@ -42,15 +43,17 @@ class TestQueryForm:
         with patch.object(st, 'form') as mock_form:
             mock_form.return_value.__enter__ = Mock(return_value=None)
             mock_form.return_value.__exit__ = Mock(return_value=None)
-            with patch.object(st, 'text_area', return_value="Analyze AAPL"):
-                with patch.object(st, 'text_input', return_value="AAPL, MSFT"):
-                    with patch.object(st, 'form_submit_button', return_value=True):
-                        with patch.object(st, 'checkbox', return_value=True):
-                            with patch.object(st, 'expander'):
-                                with patch.object(st, 'slider', return_value=5000):
-                                    result = render_query_form()
-                                    assert result is not None
-                                    assert result['tickers'] == ['AAPL', 'MSFT']
+            with (
+                patch.object(st, 'text_area', return_value="Analyze AAPL"),
+                patch.object(st, 'text_input', return_value="AAPL, MSFT"),
+                patch.object(st, 'form_submit_button', return_value=True),
+                patch.object(st, 'checkbox', return_value=True),
+                patch.object(st, 'expander'),
+                patch.object(st, 'slider', return_value=5000),
+            ):
+                result = render_query_form()
+                assert result is not None
+                assert result['tickers'] == ['AAPL', 'MSFT']
 
     def test_render_query_form_normalizes_ticker_case(self):
         """Form normalizes ticker symbols to uppercase."""
@@ -59,15 +62,17 @@ class TestQueryForm:
         with patch.object(st, 'form') as mock_form:
             mock_form.return_value.__enter__ = Mock(return_value=None)
             mock_form.return_value.__exit__ = Mock(return_value=None)
-            with patch.object(st, 'text_area', return_value="Analyze Apple"):
-                with patch.object(st, 'text_input', return_value="aapl, msft"):
-                    with patch.object(st, 'form_submit_button', return_value=True):
-                        with patch.object(st, 'checkbox', return_value=True):
-                            with patch.object(st, 'expander'):
-                                with patch.object(st, 'slider', return_value=5000):
-                                    result = render_query_form()
-                                    assert result is not None
-                                    assert result['tickers'] == ['AAPL', 'MSFT']
+            with (
+                patch.object(st, 'text_area', return_value="Analyze Apple"),
+                patch.object(st, 'text_input', return_value="aapl, msft"),
+                patch.object(st, 'form_submit_button', return_value=True),
+                patch.object(st, 'checkbox', return_value=True),
+                patch.object(st, 'expander'),
+                patch.object(st, 'slider', return_value=5000),
+            ):
+                result = render_query_form()
+                assert result is not None
+                assert result['tickers'] == ['AAPL', 'MSFT']
 
     def test_render_quick_stats_displays_metrics(self):
         """Quick stats renders correctly."""
@@ -77,10 +82,12 @@ class TestQueryForm:
         mock_col.__enter__ = Mock(return_value=mock_col)
         mock_col.__exit__ = Mock(return_value=None)
 
-        with patch.object(st, 'columns', return_value=[mock_col, mock_col, mock_col]):
-            with patch.object(st, 'metric') as mock_metric:
-                render_quick_stats(["AAPL"], "completed", 1.5)
-                assert mock_metric.call_count >= 3
+        with (
+            patch.object(st, 'columns', return_value=[mock_col, mock_col, mock_col]),
+            patch.object(st, 'metric') as mock_metric,
+        ):
+            render_quick_stats(["AAPL"], "completed", 1.5)
+            assert mock_metric.call_count >= 3
 
 
 class TestReportDisplay:
@@ -117,10 +124,13 @@ class TestReportDisplay:
             "report": "# Test Report\n\nThis is test content.",
         }
 
-        with patch.object(st, 'success'), patch.object(st, 'markdown') as mock_markdown:
-            with patch.object(st, 'expander'):
-                render_report(report)
-                mock_markdown.assert_called()
+        with (
+            patch.object(st, 'success'),
+            patch.object(st, 'markdown') as mock_markdown,
+            patch.object(st, 'expander'),
+        ):
+            render_report(report)
+            mock_markdown.assert_called()
 
     def test_render_report_shows_structured_sections(self):
         """Report display shows structured sections."""
@@ -134,10 +144,13 @@ class TestReportDisplay:
             ],
         }
 
-        with patch.object(st, 'success'), patch.object(st, 'expander'):
-            with patch.object(st, 'subheader'):
-                with patch.object(st, 'markdown'):
-                    render_report(report)
+        with (
+            patch.object(st, 'success'),
+            patch.object(st, 'expander'),
+            patch.object(st, 'subheader'),
+            patch.object(st, 'markdown'),
+        ):
+            render_report(report)
 
     def test_render_synthesized_report_with_all_sections(self):
         """Render synthesized report with all LLM sections."""
@@ -153,9 +166,12 @@ class TestReportDisplay:
             "disclaimer": "Disclaimer",
         }
 
-        with patch.object(st, 'subheader'), patch.object(st, 'markdown'):
-            with patch.object(st, 'caption'):
-                render_synthesized_report(report)
+        with (
+            patch.object(st, 'subheader'),
+            patch.object(st, 'markdown'),
+            patch.object(st, 'caption'),
+        ):
+            render_synthesized_report(report)
 
     def test_render_report_card_uses_container(self):
         """Report card uses container with border."""
@@ -171,12 +187,14 @@ class TestReportDisplay:
         mock_col.__enter__ = Mock(return_value=mock_col)
         mock_col.__exit__ = Mock(return_value=None)
 
-        with patch.object(st, 'container', return_value=mock_context):
-            with patch.object(st, 'columns', return_value=[mock_col, mock_col]):
-                with patch.object(st, 'markdown'):
-                    with patch.object(st, 'caption'):
-                        with patch.object(st, 'button', return_value=False):
-                            render_report_card(report, on_click=on_click)
+        with (
+            patch.object(st, 'container', return_value=mock_context),
+            patch.object(st, 'columns', return_value=[mock_col, mock_col]),
+            patch.object(st, 'markdown'),
+            patch.object(st, 'caption'),
+            patch.object(st, 'button', return_value=False),
+        ):
+            render_report_card(report, on_click=on_click)
 
 
 class TestProgressTracker:
@@ -220,32 +238,40 @@ class TestSidebar:
         """Sidebar renders navigation header."""
         from frontend.components.sidebar import render_sidebar
 
-        with patch.object(st, 'header'), patch.object(st, 'subheader'):
-            with patch.object(st, 'caption'):
-                with patch.object(st, 'divider'):
-                    with patch.object(st, 'error'):
-                        render_sidebar()
+        with (
+            patch.object(st, 'header'),
+            patch.object(st, 'subheader'),
+            patch.object(st, 'caption'),
+            patch.object(st, 'divider'),
+            patch.object(st, 'error'),
+        ):
+            render_sidebar()
 
     def test_render_recent_reports_empty_state(self):
         """Recent reports shows empty state correctly."""
         from frontend.components.sidebar import render_recent_reports
 
-        with patch.object(st, 'session_state', {"research_history": []}):
-            with patch.object(st, 'caption') as mock_caption:
-                render_recent_reports()
-                mock_caption.assert_called_with("No recent reports")
+        with (
+            patch.object(st, 'session_state', {"research_history": []}),
+            patch.object(st, 'caption') as mock_caption,
+        ):
+            render_recent_reports()
+            mock_caption.assert_called_with("No recent reports")
 
     def test_render_system_status_connected(self):
         """System status shows connected when health check passes."""
         from frontend.components.sidebar import render_system_status
 
-        with patch.object(st, 'success'), patch.object(st, 'caption'):
-            with patch('requests.get') as mock_get:
-                mock_response = Mock()
-                mock_response.status_code = 200
-                mock_response.json.return_value = {"services": {"openai": True, "news_api": True}}
-                mock_get.return_value = mock_response
-                render_system_status()
+        with (
+            patch.object(st, 'success'),
+            patch.object(st, 'caption'),
+            patch('requests.get') as mock_get,
+        ):
+            mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {"services": {"openai": True, "news_api": True}}
+            mock_get.return_value = mock_response
+            render_system_status()
 
 
 class TestMainApp:
@@ -304,6 +330,9 @@ class TestMainApp:
             {"title": "Disclaimer", "content": "Disclaimer", "level": 2},
         ]
 
-        with patch.object(st, 'subheader'), patch.object(st, 'markdown'):
-            with patch.object(st, 'caption'):
-                render_structured_sections(sections)
+        with (
+            patch.object(st, 'subheader'),
+            patch.object(st, 'markdown'),
+            patch.object(st, 'caption'),
+        ):
+            render_structured_sections(sections)

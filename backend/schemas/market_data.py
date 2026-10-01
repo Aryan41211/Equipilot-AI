@@ -2,6 +2,7 @@
 # Pydantic models for market data structures
 
 from datetime import datetime
+from typing import ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -18,7 +19,7 @@ class PriceData(BaseModel):
     volume: int
 
     class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+        json_encoders: ClassVar[dict] = {datetime: lambda v: v.isoformat()}
 
 
 class FundamentalsData(BaseModel):
@@ -61,7 +62,7 @@ class FundamentalsData(BaseModel):
     last_updated: datetime | None = None
 
     class Config:
-        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
+        json_encoders: ClassVar[dict] = {datetime: lambda v: v.isoformat() if v else None}
 
 
 class TechnicalIndicators(BaseModel):
@@ -113,7 +114,7 @@ class MarketData(BaseModel):
     source: str = "yfinance"
 
     class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+        json_encoders: ClassVar[dict] = {datetime: lambda v: v.isoformat()}
 
 
 class MarketDataResponse(BaseModel):
@@ -125,4 +126,4 @@ class MarketDataResponse(BaseModel):
     retrieved_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+        json_encoders: ClassVar[dict] = {datetime: lambda v: v.isoformat()}

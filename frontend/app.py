@@ -2,6 +2,7 @@
 # EquiPilot AI - Streamlit Frontend
 # Production dashboard (thin API client, no business logic in Streamlit)
 
+import contextlib
 import logging
 import os
 import sys
@@ -106,20 +107,16 @@ def run_safely(
     try:
         return fn()
     except Exception as e:
-        try:
+        # Never allow logging failure to break the UI.
+        with contextlib.suppress(Exception):
             _LOGGER.exception("Frontend runtime failure in %s: %s", context, e)
-        except Exception:
-            # Never allow logging failure to break the UI
-            pass
 
         # Inline friendly error near the component that failed.
-        try:
+        with contextlib.suppress(Exception):
             if error_placeholder is not None:
                 error_placeholder.error(f"Something went wrong while {context}. Please try again.")
             else:
                 st.error(f"Something went wrong while {context}. Please try again.")
-        except Exception:
-            pass
 
         return fallback
 

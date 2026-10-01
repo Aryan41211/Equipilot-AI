@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import inspect
-from typing import Any, get_args, get_origin
-
-import pytest
+from typing import Any, get_origin
 
 from backend.schemas.research import ResearchResponse
 
@@ -58,7 +55,7 @@ def test_research_response_has_expected_fields_and_types():
     }
 
     model_fields = ResearchResponse.model_fields
-    missing = sorted([k for k in expected.keys() if k not in model_fields])
+    missing = sorted([k for k in expected if k not in model_fields])
     assert not missing, f"ResearchResponse missing fields required by frontend: {missing}"
 
     # Basic type-compatibility checks:
@@ -70,9 +67,7 @@ def test_research_response_has_expected_fields_and_types():
 
     for field_name in required_non_optional:
         ann = model_fields[field_name].annotation
-        # Pydantic uses Union[..., NoneType] for Optional; we check presence of None in args.
-        origin = get_origin(ann)
-        args = get_args(ann) if origin is not None else ()
+        # Pydantic uses Union[..., NoneType] for Optional; we check presence of None.
         assert (
             "NoneType" not in _normalize_type_str(ann)
         ), f"{field_name} unexpectedly Optional/nullable; annotation={ann!r}"

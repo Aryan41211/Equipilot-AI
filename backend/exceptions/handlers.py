@@ -6,15 +6,15 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.config import settings
-from backend.utils.logger import get_logger
 from backend.core.constants import (
-    ErrorType,
     HTTP_AMBIGUOUS_ENTITY,
     HTTP_ENTITY_NOT_FOUND,
     HTTP_SENTIMENT_TIMEOUT,
     HTTP_SYNTHESIS_TIMEOUT,
     HTTP_VALIDATION_ERROR,
+    ErrorType,
 )
+from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)
 

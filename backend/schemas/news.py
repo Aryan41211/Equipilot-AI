@@ -2,6 +2,7 @@
 # Pydantic models for news article structures
 
 from datetime import datetime
+from typing import ClassVar
 
 from pydantic import BaseModel, Field, HttpUrl
 
@@ -29,7 +30,7 @@ class NewsArticle(BaseModel):
     provider: str = "unknown"
 
     class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+        json_encoders: ClassVar[dict] = {datetime: lambda v: v.isoformat()}
 
 
 class NewsResponse(BaseModel):
@@ -46,7 +47,7 @@ class NewsResponse(BaseModel):
     errors: list[str] = Field(default_factory=list)
 
     class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+        json_encoders: ClassVar[dict] = {datetime: lambda v: v.isoformat()}
 
 
 class NewsSearchParams(BaseModel):
