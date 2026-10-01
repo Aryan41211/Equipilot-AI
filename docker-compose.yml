@@ -1,12 +1,16 @@
-version: "3.9"
-
 services:
   backend:
-    image: equipilot-backend:local
     build:
       context: .
       dockerfile: Dockerfile
       target: production
+    image: equipilot-backend:local
+    env_file:
+      - .env
+    environment:
+      ENVIRONMENT: development
+      BACKEND_RELOAD: "false"
+      PORT: "8000"
     ports:
       - "8000:8000"
     deploy:
@@ -15,48 +19,64 @@ services:
           cpus: "1.0"
           memory: "512M"
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health', timeout=3).raise_for_status()"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health',timeout=3)"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 15s
+    restart: unless-stopped
 
   frontend:
-    image: equipilot-frontend:local
     build:
       context: .
       dockerfile: Dockerfile
       target: frontend
+    image: equipilot-frontend:local
+    environment:
+      FRONTEND_PORT: "8501"
+      HEALTH_CHECK_PORT: "9090"
+      EQUIPILOT_API_URL: "http://backend:8000"
+      EQUIPILOT_HEALTH_URL: "http://backend:8000/health"
     ports:
       - "8501:8501"
+      - "9090:9090"
+    depends_on:
+      backend:
+        condition: service_healthy
     deploy:
       resources:
         limits:
           cpus: "0.5"
           memory: "256M"
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:9090/healthz', timeout=3).raise_for_status()"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9090/healthz',timeout=3)"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 15s
+    restart: unless-stopped
 
   nginx:
-    image: equipilot-nginx:local
     build:
       context: .
       dockerfile: Dockerfile
-      target: production
+      target: nginx
+    image: equipilot-nginx:local
     ports:
       - "80:80"
     depends_on:
-      - frontend
-      - backend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
     deploy:
       resources:
         limits:
           cpus: "0.2"
           memory: "128M"
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost/', timeout=3).raise_for_status()"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
       interval: 30s
       timeout: 5s
       retries: 3
+    restart: unless-stopped

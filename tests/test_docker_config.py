@@ -63,5 +63,7 @@ class TestComposeWiring:
 
     def test_nginx_service_uses_nginx_stage(self):
         content = _read("docker-compose.yml")
-        nginx_block = content.split("nginx:")[-1]
+        # Split on the service key, not the bare string: "image: equipilot-nginx:local"
+        # also contains "nginx:" and appears after this service's build target.
+        nginx_block = content.split("\n  nginx:", 1)[1]
         assert "target: nginx" in nginx_block
