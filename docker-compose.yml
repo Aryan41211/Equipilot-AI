@@ -34,7 +34,6 @@ services:
       target: frontend
     image: equipilot-frontend:local
     environment:
-      FRONTEND_PORT: "8501"
       HEALTH_CHECK_PORT: "9090"
       EQUIPILOT_API_URL: "http://backend:8000"
       EQUIPILOT_HEALTH_URL: "http://backend:8000/health"

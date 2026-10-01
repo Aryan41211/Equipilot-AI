@@ -75,3 +75,24 @@ class TestHealthzServer:
     def test_nginx_has_healthz_route(self):
         content = _read("nginx.conf")
         assert "location = /healthz" in content
+
+
+class TestNginxWebsocket:
+    """Streamlit's client holds a WebSocket to /_stcore/stream; without the upgrade
+    handshake the proxy answers 400 and the UI never connects."""
+
+    def test_websocket_upgrade_map_is_in_http_context(self):
+        content = _read("nginx.conf")
+        map_line = "map $http_upgrade $connection_upgrade {"
+        assert map_line in content, f"nginx.conf must define {map_line!r}"
+        # "map" is only legal in the http context, so it must precede the server block.
+        assert content.index(map_line) < content.index(
+            "server {"
+        ), "the upgrade map must be in the http context, not inside server {}"
+
+    def test_frontend_location_upgrades_websocket(self):
+        content = _read("nginx.conf")
+        frontend_block = content.split("location / {", 1)[1]
+        assert "proxy_http_version 1.1;" in frontend_block
+        assert "proxy_set_header Upgrade $http_upgrade;" in frontend_block
+        assert "proxy_set_header Connection $connection_upgrade;" in frontend_block

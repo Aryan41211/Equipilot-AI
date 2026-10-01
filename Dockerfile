@@ -38,8 +38,7 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 COPY frontend /app/frontend
 COPY .streamlit /app/.streamlit
 
-ENV FRONTEND_PORT=8501 \
-    HEALTH_CHECK_PORT=9090
+ENV HEALTH_CHECK_PORT=9090
 
 RUN useradd -m -u 10001 appuser \
     && mkdir -p /home/appuser/.streamlit \
