@@ -19,6 +19,7 @@ jobs:
   lint:
     name: Lint & Format Check
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -60,6 +61,7 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: lint
 
     env:
@@ -116,4 +118,47 @@ jobs:
           name: test-results
           path: .pytest_cache/
           retention-days: 7
+
+  # ============================================================================
+  # Job 3: Docker Image Build Validation
+  # ============================================================================
+  docker:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [lint, test]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: production
+          push: false
+          tags: equipilot-backend:ci
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: frontend
+          push: false
+          tags: equipilot-frontend:ci
+
+      - name: Build nginx image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: nginx
+          push: false
+          tags: equipilot-nginx:ci
+
+      - name: Validate compose file
+        run: docker compose config --quiet
 
