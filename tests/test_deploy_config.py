@@ -53,3 +53,18 @@ class TestDeployEnvContract:
         """config.toml is force-tracked; the ignore rule would silently drop edits."""
         result = os.popen("git check-ignore -v --no-index .streamlit/config.toml").read()
         assert result.strip() == "", f".streamlit/config.toml must not be gitignored, got: {result}"
+
+
+class TestHealthzServer:
+    def test_healthz_reads_port_from_env(self):
+        import inspect
+
+        from frontend import healthz
+
+        src = inspect.getsource(healthz.main)
+        assert "HEALTH_CHECK_PORT" in src
+        assert "HEALTH_CHECK_HOST" in src
+
+    def test_nginx_has_healthz_route(self):
+        content = _read("nginx.conf")
+        assert "location = /healthz" in content
