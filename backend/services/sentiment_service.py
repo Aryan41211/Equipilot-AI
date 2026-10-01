@@ -109,9 +109,7 @@ class SentimentService:
         Uses LLMService.analyze_sentiment(text, tickers), then maps into our
         SentimentAnalysis schema.
         """
-        text = "\n\n".join(
-            [f"- {a.title or ''}" for a in articles if (a.title or "").strip()]
-        )
+        text = "\n\n".join([f"- {a.title or ''}" for a in articles if (a.title or "").strip()])
 
         try:
             llm_payload = await self.llm.analyze_sentiment(text=text, tickers=tickers)
@@ -175,7 +173,10 @@ class SentimentService:
             if key_themes_raw:
                 # Use themes to build reasoning deterministically.
                 reasoning = "; ".join(
-                    [f"{kt.get('theme','')}={kt.get('sentiment','neutral')}" for kt in key_themes_raw]
+                    [
+                        f"{kt.get('theme','')}={kt.get('sentiment','neutral')}"
+                        for kt in key_themes_raw
+                    ]
                 )
             else:
                 reasoning = "No key themes provided by LLM."

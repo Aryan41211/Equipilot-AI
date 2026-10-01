@@ -67,7 +67,6 @@ async def validate_environment() -> list:
     if not settings.news_api_key:
         logger.info("NEWS_API_KEY not set - news features will use fallback sources")
 
-
     # Validate port availability (basic check)
     if settings.backend_port < 1024 and not settings.is_development:
         errors.append(
@@ -300,9 +299,7 @@ def create_app() -> FastAPI:
         avg_duration = 0
         if metrics["request_duration"]:
             avg_duration = (
-                sum(metrics["request_duration"])
-                / len(metrics["request_duration"])
-                * 1000
+                sum(metrics["request_duration"]) / len(metrics["request_duration"]) * 1000
             )
 
         return {
@@ -331,7 +328,9 @@ def create_app() -> FastAPI:
         import os as _os
         import time as _time
 
-        enable_idempotency = _os.environ.get("ENABLE_IDEMPOTENCY_CHECK", "true").strip().lower() in (
+        enable_idempotency = _os.environ.get(
+            "ENABLE_IDEMPOTENCY_CHECK", "true"
+        ).strip().lower() in (
             "1",
             "true",
             "yes",
@@ -484,7 +483,9 @@ def create_app() -> FastAPI:
                 traces = execution_metadata.get("traces", []) or []
                 total_ms = execution_metadata.get("execution_time_ms")
                 if total_ms is None and traces:
-                    total_ms = sum((t.get("duration_ms", 0) or 0) for t in traces if isinstance(t, dict))
+                    total_ms = sum(
+                        (t.get("duration_ms", 0) or 0) for t in traces if isinstance(t, dict)
+                    )
 
                 per_node = [
                     {
@@ -587,7 +588,11 @@ def create_app() -> FastAPI:
         elif completed and graph_status == "failed":
             r_status = ResearchStatus.FAILED
         else:
-            r_status = ResearchStatus.IN_PROGRESS if graph_status in ("in_progress", "pending", None) else ResearchStatus.IN_PROGRESS
+            r_status = (
+                ResearchStatus.IN_PROGRESS
+                if graph_status in ("in_progress", "pending", None)
+                else ResearchStatus.IN_PROGRESS
+            )
 
         current_step = "router"
         execution_metadata: dict[str, Any] = {}
@@ -612,8 +617,14 @@ def create_app() -> FastAPI:
         if t:
             tickers = [t]
 
-        message = "Research completed." if r_status == ResearchStatus.COMPLETED else (
-            "Research in progress." if r_status == ResearchStatus.IN_PROGRESS else "Research failed."
+        message = (
+            "Research completed."
+            if r_status == ResearchStatus.COMPLETED
+            else (
+                "Research in progress."
+                if r_status == ResearchStatus.IN_PROGRESS
+                else "Research failed."
+            )
         )
 
         return ResearchResponse(

@@ -53,7 +53,9 @@ class RouterAgent:
         classification = await self.llm.classify_query(query, categories)
 
         # Determine required data sources based on category
-        required_sources = self._determine_sources(classification.get("category", "general_question"))
+        required_sources = self._determine_sources(
+            classification.get("category", "general_question")
+        )
 
         return {
             "query": query,

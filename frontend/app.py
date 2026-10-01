@@ -1,4 +1,3 @@
-
 # EquiPilot AI - Streamlit Frontend
 # Production dashboard (thin API client, no business logic in Streamlit)
 
@@ -68,6 +67,7 @@ def build_backend_url(path: str, *, request_id: str | None = None) -> str:
 
     # Avoid double slashes.
     return f"{normalized_base}/{p}"
+
 
 T = TypeVar("T")
 
@@ -184,7 +184,7 @@ def render_header():
             '<div style="width:40px;height:40px;border-radius:var(--radius-lg);background:linear-gradient(135deg,var(--primary),var(--primary-hover));display:flex;align-items:center;justify-content:center;color:white;font-weight:var(--font-weight-bold);font-size:var(--font-size-sm);flex-shrink:0;">EP</div>'
             '<div><div style="font-size:var(--font-size-2xl);font-weight:var(--font-weight-semibold);letter-spacing:-0.03em;line-height:1.2;color:var(--text);">EquiPilot AI</div>'
             '<div style="font-size:var(--font-size-sm);color:var(--muted);margin-top:1px;">Agentic Equity Research Assistant</div></div>'
-            '</div>',
+            "</div>",
             unsafe_allow_html=True,
         )
     with col2:
@@ -207,7 +207,7 @@ def check_backend_connection() -> None:
             try:
                 # Preserve behavior: if EQUIPILOT_HEALTH_URL is explicitly provided, use it as-is.
                 resp = requests.get(API_HEALTH_URL, timeout=3)
-                st.session_state.backend_connected = (resp.status_code == 200)
+                st.session_state.backend_connected = resp.status_code == 200
             except requests.exceptions.RequestException:
                 st.session_state.backend_connected = False
 
@@ -242,7 +242,14 @@ def render_disclaimer_bar():
     )
 
 
-def _suggestion_card(icon: str, ticker: str, title: str, desc: str, _query: str = "", _analysis_type: str = "Full Research") -> str:
+def _suggestion_card(
+    icon: str,
+    ticker: str,
+    title: str,
+    desc: str,
+    _query: str = "",
+    _analysis_type: str = "Full Research",
+) -> str:
     """Interactive suggestion card that pre-fills sidebar form on click."""
     return f"""
     <div class="ds-suggestion" onclick="
@@ -270,13 +277,13 @@ def render_empty_dashboard():
         '<div class="ds-hero__subtitle">'
         "Enterprise-grade equity research powered by multi-agent orchestration. "
         "Analyze market data, news, sentiment, and fundamentals — all in one place."
-        '</div>'
+        "</div>"
         '<div class="ds-hero__stats">'
         '<div class="ds-hero-stat"><span class="ds-hero-stat__value">📈</span> Real-time Market Data</div>'
         '<div class="ds-hero-stat"><span class="ds-hero-stat__value">📰</span> News &amp; Sentiment</div>'
         '<div class="ds-hero-stat"><span class="ds-hero-stat__value">🧠</span> AI-Powered Analysis</div>'
-        '</div>'
-        '</div>',
+        "</div>"
+        "</div>",
         unsafe_allow_html=True,
     )
 
@@ -285,7 +292,7 @@ def render_empty_dashboard():
         '<div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-xl);padding:var(--space-6) var(--space-8);margin-bottom:var(--space-8);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-4);">'
         '<div><div style="font-size:var(--font-size-lg);font-weight:var(--font-weight-semibold);letter-spacing:-0.02em;">Get started in seconds</div>'
         '<div style="font-size:var(--font-size-sm);color:var(--muted);margin-top:2px;">Enter a ticker and question in the sidebar, or pick an example below.</div></div>'
-        '</div>',
+        "</div>",
         unsafe_allow_html=True,
     )
 
@@ -294,7 +301,7 @@ def render_empty_dashboard():
         '<div style="margin-bottom:var(--space-5);">'
         '<div style="font-size:var(--font-size-lg);font-weight:var(--font-weight-semibold);letter-spacing:-0.02em;">Quick Start Examples</div>'
         '<div style="font-size:var(--font-size-sm);color:var(--muted);margin-top:2px;">Click any example to pre-fill the sidebar and begin analysis</div>'
-        '</div>',
+        "</div>",
         unsafe_allow_html=True,
     )
 
@@ -305,12 +312,16 @@ def render_empty_dashboard():
             '<div class="ds-suggestion__icon">📊</div>'
             '<div class="ds-suggestion__title">AAPL — Market Snapshot</div>'
             '<div class="ds-suggestion__desc">Fundamentals, valuation metrics, and competitive positioning in the tech sector.</div>'
-            '</div>',
+            "</div>",
             unsafe_allow_html=True,
         )
-        if st.button("Run AAPL Analysis", key="ex_aapl", use_container_width=True, type="secondary"):
+        if st.button(
+            "Run AAPL Analysis", key="ex_aapl", use_container_width=True, type="secondary"
+        ):
             st.session_state["company_ticker_input"] = "AAPL"
-            st.session_state["query_input"] = "Provide a comprehensive market overview with key metrics, valuation, and competitive positioning"
+            st.session_state["query_input"] = (
+                "Provide a comprehensive market overview with key metrics, valuation, and competitive positioning"
+            )
             st.session_state["analysis_type"] = "Full Research"
             st.rerun()
 
@@ -320,12 +331,16 @@ def render_empty_dashboard():
             '<div class="ds-suggestion__icon">📰</div>'
             '<div class="ds-suggestion__title">TSLA — News Catalysts</div>'
             '<div class="ds-suggestion__desc">Latest news headlines, sentiment analysis, and market-moving catalyst identification.</div>'
-            '</div>',
+            "</div>",
             unsafe_allow_html=True,
         )
-        if st.button("Run TSLA Analysis", key="ex_tsla", use_container_width=True, type="secondary"):
+        if st.button(
+            "Run TSLA Analysis", key="ex_tsla", use_container_width=True, type="secondary"
+        ):
             st.session_state["company_ticker_input"] = "TSLA"
-            st.session_state["query_input"] = "What are the latest news catalysts, sentiment drivers, and market-moving events?"
+            st.session_state["query_input"] = (
+                "What are the latest news catalysts, sentiment drivers, and market-moving events?"
+            )
             st.session_state["analysis_type"] = "News"
             st.rerun()
 
@@ -335,22 +350,29 @@ def render_empty_dashboard():
             '<div class="ds-suggestion__icon">⚠️</div>'
             '<div class="ds-suggestion__title">MSFT — Risk Assessment</div>'
             '<div class="ds-suggestion__desc">Key investment risks, competitive threats, and regulatory challenges facing Microsoft.</div>'
-            '</div>',
+            "</div>",
             unsafe_allow_html=True,
         )
-        if st.button("Run MSFT Analysis", key="ex_msft", use_container_width=True, type="secondary"):
+        if st.button(
+            "Run MSFT Analysis", key="ex_msft", use_container_width=True, type="secondary"
+        ):
             st.session_state["company_ticker_input"] = "MSFT"
-            st.session_state["query_input"] = "Identify key investment risks, competitive threats, and challenges to growth"
+            st.session_state["query_input"] = (
+                "Identify key investment risks, competitive threats, and challenges to growth"
+            )
             st.session_state["analysis_type"] = "Full Research"
             st.rerun()
 
     st.markdown('<hr style="margin:var(--space-8) 0 !important;" />', unsafe_allow_html=True)
 
     # === Tip ===
-    st.markdown(alert_markdown(
-        '💡 Pro tip: Be specific in your queries. Instead of "Analyze AAPL", try "What are AAPL\'s key growth drivers and margin trends?"',
-        kind="info",
-    ), unsafe_allow_html=True)
+    st.markdown(
+        alert_markdown(
+            '💡 Pro tip: Be specific in your queries. Instead of "Analyze AAPL", try "What are AAPL\'s key growth drivers and margin trends?"',
+            kind="info",
+        ),
+        unsafe_allow_html=True,
+    )
 
     st.markdown('<hr style="margin:var(--space-8) 0 !important;" />', unsafe_allow_html=True)
 
@@ -359,32 +381,41 @@ def render_empty_dashboard():
         '<div style="margin-bottom:var(--space-5);">'
         '<div style="font-size:var(--font-size-lg);font-weight:var(--font-weight-semibold);letter-spacing:-0.02em;">Powered By</div>'
         '<div style="font-size:var(--font-size-sm);color:var(--muted);margin-top:2px;">Each analysis is generated through a multi-agent research pipeline</div>'
-        '</div>',
+        "</div>",
         unsafe_allow_html=True,
     )
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown(quick_action_card(
-            icon="📈",
-            title="Market Intelligence",
-            description="Real-time price data, fundamentals, valuation ratios, and technical indicators from yfinance.",
-            cta="Live market data",
-        ), unsafe_allow_html=True)
+        st.markdown(
+            quick_action_card(
+                icon="📈",
+                title="Market Intelligence",
+                description="Real-time price data, fundamentals, valuation ratios, and technical indicators from yfinance.",
+                cta="Live market data",
+            ),
+            unsafe_allow_html=True,
+        )
     with col2:
-        st.markdown(quick_action_card(
-            icon="📰",
-            title="News & Sentiment",
-            description="Aggregated headlines, entity-level sentiment scoring, and catalyst detection across major sources.",
-            cta="News API integration",
-        ), unsafe_allow_html=True)
+        st.markdown(
+            quick_action_card(
+                icon="📰",
+                title="News & Sentiment",
+                description="Aggregated headlines, entity-level sentiment scoring, and catalyst detection across major sources.",
+                cta="News API integration",
+            ),
+            unsafe_allow_html=True,
+        )
     with col3:
-        st.markdown(quick_action_card(
-            icon="🤖",
-            title="AI Synthesis",
-            description="Structured reports with executive summaries, risk analysis, and cited sources via LangGraph orchestration.",
-            cta="GPT-4o powered",
-        ), unsafe_allow_html=True)
+        st.markdown(
+            quick_action_card(
+                icon="🤖",
+                title="AI Synthesis",
+                description="Structured reports with executive summaries, risk analysis, and cited sources via LangGraph orchestration.",
+                cta="GPT-4o powered",
+            ),
+            unsafe_allow_html=True,
+        )
 
 
 def handle_sidebar_submit(form_data: dict[str, Any]) -> None:
@@ -416,14 +447,14 @@ def handle_sidebar_submit(form_data: dict[str, Any]) -> None:
         if not request_data:
             return
 
-        req_id = request_data.get('request_id', 'N/A')[:12]
+        req_id = request_data.get("request_id", "N/A")[:12]
         st.markdown(
             f'<div class="ds-state-card ds-state-card--success" style="margin-bottom:var(--space-4);">'
             f'<div class="ds-state-card__icon">🚀</div>'
             f'<div class="ds-state-card__body">'
             f'<div class="ds-state-card__title">Research Started</div>'
             f'<div class="ds-state-card__detail">Request ID: {req_id}... — The analysis pipeline is now running.</div>'
-            f'</div></div>',
+            f"</div></div>",
             unsafe_allow_html=True,
         )
 
@@ -499,7 +530,7 @@ def render_loading_workflow(request_id: str) -> None:
                     '<div class="ds-state-card__body">'
                     '<div class="ds-state-card__title">Research Timeout</div>'
                     '<div class="ds-state-card__detail">The research is taking longer than expected. You can submit a new request or check the backend status.</div>'
-                    '</div></div>',
+                    "</div></div>",
                     unsafe_allow_html=True,
                 )
                 return
@@ -512,7 +543,7 @@ def render_loading_workflow(request_id: str) -> None:
                 '<div class="ds-state-card__body">'
                 '<div class="ds-state-card__title">Waiting for backend</div>'
                 '<div class="ds-state-card__detail">The research service is initializing. Retrying...</div>'
-                '</div></div>',
+                "</div></div>",
                 unsafe_allow_html=True,
             )
             time.sleep(1)
@@ -521,7 +552,9 @@ def render_loading_workflow(request_id: str) -> None:
 
         status = status_data.get("status", "unknown")
         execution_metadata = status_data.get("execution_metadata", {}) or {}
-        current_step = status_data.get("current_step") or execution_metadata.get("current_step") or "router"
+        current_step = (
+            status_data.get("current_step") or execution_metadata.get("current_step") or "router"
+        )
 
         stage_label = map_trace_step_to_stage(current_step)
 
@@ -552,7 +585,7 @@ def render_loading_workflow(request_id: str) -> None:
                 '<div class="ds-state-card__body">'
                 '<div class="ds-state-card__title">Research Failed</div>'
                 f'<div class="ds-state-card__detail">{safe_html_escape(str(err))}</div>'
-                '</div></div>',
+                "</div></div>",
                 unsafe_allow_html=True,
             )
             st.rerun()
@@ -588,7 +621,7 @@ def _data_section_card(title: str, icon: str, data: Any, empty_msg: str) -> None
             f'<div style="width:32px;height:32px;border-radius:var(--radius-md);background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:1rem;">{icon}</div>'
             f'<div><div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-sm);">{title}</div>'
             f'<div style="font-size:var(--font-size-xs);color:var(--muted);">{ "Structured data available" if has_data else "Not available" }</div></div>'
-            f'</div>',
+            f"</div>",
             unsafe_allow_html=True,
         )
         if has_data:
@@ -599,7 +632,7 @@ def _data_section_card(title: str, icon: str, data: Any, empty_msg: str) -> None
                 f'<div style="font-size:var(--font-size-sm);color:var(--muted);padding:var(--space-3);text-align:center;">{empty_msg}</div>',
                 unsafe_allow_html=True,
             )
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_dashboard_sections(report: dict[str, Any]) -> None:
@@ -625,8 +658,8 @@ def render_dashboard_sections(report: dict[str, Any]) -> None:
         '<div style="width:36px;height:36px;border-radius:var(--radius-md);background:linear-gradient(135deg,var(--success),rgba(5,150,105,0.8));display:flex;align-items:center;justify-content:center;color:white;font-weight:var(--font-weight-bold);font-size:1rem;">✓</div>'
         '<div><div style="font-size:var(--font-size-xl);font-weight:var(--font-weight-semibold);letter-spacing:-0.02em;">Research Complete</div>'
         '<div style="font-size:var(--font-size-sm);color:var(--muted);">AI-generated equity research report</div></div>'
-        '</div>'
-        '</div>',
+        "</div>"
+        "</div>",
         unsafe_allow_html=True,
     )
 
@@ -644,7 +677,7 @@ def render_dashboard_sections(report: dict[str, Any]) -> None:
                 f'<div class="ds-kpi">'
                 f'<div class="ds-kpi__label">{label}</div>'
                 f'<div class="ds-kpi__value" style="font-size:var(--font-size-lg);">{value}</div>'
-                f'</div>',
+                f"</div>",
                 unsafe_allow_html=True,
             )
 
@@ -656,7 +689,7 @@ def render_dashboard_sections(report: dict[str, Any]) -> None:
         '<div style="width:32px;height:32px;border-radius:var(--radius-md);background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:1rem;">🧠</div>'
         '<div><div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-base);">AI Research Report</div>'
         '<div style="font-size:var(--font-size-xs);color:var(--muted);">Full analysis generated by multi-agent pipeline</div></div>'
-        '</div>',
+        "</div>",
         unsafe_allow_html=True,
     )
     render_report(report, show_metadata=False, show_citations=True, expandable=False)
@@ -665,23 +698,36 @@ def render_dashboard_sections(report: dict[str, Any]) -> None:
 
     # === Market Data ===
     market_data = report.get("market_data") or report.get("market_data_summary")
-    _data_section_card("Market Data", "📈", market_data, "No market data available for this analysis.")
+    _data_section_card(
+        "Market Data", "📈", market_data, "No market data available for this analysis."
+    )
 
     # === News Headlines ===
     news_data = report.get("news_data") or report.get("news_summary")
-    _data_section_card("News Headlines", "📰", news_data, "No news headlines available for this analysis.")
+    _data_section_card(
+        "News Headlines", "📰", news_data, "No news headlines available for this analysis."
+    )
 
     # === Sentiment Analysis ===
     sentiment_data = report.get("sentiment_data") or report.get("sentiment_summary")
-    _data_section_card("Sentiment Analysis", "🧾", sentiment_data, "No sentiment analysis available for this analysis.")
+    _data_section_card(
+        "Sentiment Analysis",
+        "🧾",
+        sentiment_data,
+        "No sentiment analysis available for this analysis.",
+    )
 
 
 def _extract_execution_metadata_fields(report: dict[str, Any]) -> dict[str, Any]:
     execution_metadata = report.get("execution_metadata", {}) or {}
     traces = execution_metadata.get("traces", []) or []
 
-    detected_intent = execution_metadata.get("detected_intent") or execution_metadata.get("intent") or None
-    resolved_entity = execution_metadata.get("resolved_entity") or execution_metadata.get("entity") or None
+    detected_intent = (
+        execution_metadata.get("detected_intent") or execution_metadata.get("intent") or None
+    )
+    resolved_entity = (
+        execution_metadata.get("resolved_entity") or execution_metadata.get("entity") or None
+    )
 
     selected_tools = execution_metadata.get("selected_tools")
     skipped_tools = execution_metadata.get("skipped_tools")
@@ -691,11 +737,20 @@ def _extract_execution_metadata_fields(report: dict[str, Any]) -> dict[str, Any]
         selected_tools = [t.get("node_name") for t in traces if t.get("success")]
 
     if skipped_tools is None:
-        known_tools = {"router", "entity_resolution_tool", "market_data_tool", "news_tool", "sentiment_tool", "research"}
+        known_tools = {
+            "router",
+            "entity_resolution_tool",
+            "market_data_tool",
+            "news_tool",
+            "sentiment_tool",
+            "research",
+        }
         selected_set = set(selected_tools or [])
         skipped_tools = sorted(list(known_tools - selected_set))
 
-    execution_status = report.get("status") or execution_metadata.get("execution_status") or "unknown"
+    execution_status = (
+        report.get("status") or execution_metadata.get("execution_status") or "unknown"
+    )
 
     total_ms = execution_metadata.get("execution_time_ms")
     if total_ms is None:
@@ -750,8 +805,18 @@ def render_execution_trace_explicit(report: dict[str, Any]) -> None:
         )
 
         items = [
-            ("🧠", "Detected Intent", fields["detected_intent"] or "Not available", "done" if fields["detected_intent"] else "default"),
-            ("🏢", "Resolved Entity", fields["resolved_entity"] or "Not available", "done" if fields["resolved_entity"] else "default"),
+            (
+                "🧠",
+                "Detected Intent",
+                fields["detected_intent"] or "Not available",
+                "done" if fields["detected_intent"] else "default",
+            ),
+            (
+                "🏢",
+                "Resolved Entity",
+                fields["resolved_entity"] or "Not available",
+                "done" if fields["resolved_entity"] else "default",
+            ),
         ]
 
         tools = fields.get("selected_tools", [])
@@ -763,7 +828,11 @@ def render_execution_trace_explicit(report: dict[str, Any]) -> None:
             items.append(("⏭️", "Skipped Tools", ", ".join(skipped), "default"))
 
         status = fields.get("execution_status", "unknown")
-        status_state = "done" if status in ("completed", "success") else ("error" if status in ("failed", "error") else "active")
+        status_state = (
+            "done"
+            if status in ("completed", "success")
+            else ("error" if status in ("failed", "error") else "active")
+        )
         items.append(("📊", "Execution Status", str(status).title(), status_state))
 
         ms = fields.get("execution_time_ms")
@@ -831,7 +900,7 @@ def _render_timing_report_from_metadata(execution_metadata: dict[str, Any]) -> N
         '<div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3);">'
         '<span style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-sm);">⏱️ Timing Report</span>'
         '<span style="font-size:var(--font-size-xs);color:var(--muted);">Stage durations from execution metadata</span>'
-        '</div>',
+        "</div>",
         unsafe_allow_html=True,
     )
 
@@ -856,11 +925,11 @@ def _render_timing_report_from_metadata(execution_metadata: dict[str, Any]) -> N
             f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">'
             f'<span style="font-size:var(--font-size-xs);color:var(--text);">{icon} {stage}</span>'
             f'<span style="font-size:var(--font-size-xs);font-weight:var(--font-weight-medium);color:var(--text);font-variant-numeric:tabular-nums;">{ms:.1f} ms</span>'
-            f'</div>'
+            f"</div>"
             f'<div style="height:4px;background:var(--border);border-radius:var(--radius-full);overflow:hidden;">'
             f'<div style="height:100%;width:{pct:.0f}%;background:{bar_color};border-radius:var(--radius-full);transition:width 0.5s ease;"></div>'
-            f'</div>'
-            f'</div>',
+            f"</div>"
+            f"</div>",
             unsafe_allow_html=True,
         )
 
@@ -868,9 +937,17 @@ def _render_timing_report_from_metadata(execution_metadata: dict[str, Any]) -> N
     if total_backend_ms is not None or trace_total > 0:
         st.markdown(
             '<div style="display:flex;gap:var(--space-6);margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--border);font-size:var(--font-size-xs);color:var(--muted);">'
-            + (f'<span>Total: <strong>{float(total_backend_ms):.1f} ms</strong></span>' if total_backend_ms is not None else "")
-            + (f'<span>Traces: <strong>{trace_total:.1f} ms</strong></span>' if trace_total > 0 else "")
-            + '</div>',
+            + (
+                f"<span>Total: <strong>{float(total_backend_ms):.1f} ms</strong></span>"
+                if total_backend_ms is not None
+                else ""
+            )
+            + (
+                f"<span>Traces: <strong>{trace_total:.1f} ms</strong></span>"
+                if trace_total > 0
+                else ""
+            )
+            + "</div>",
             unsafe_allow_html=True,
         )
 
@@ -892,8 +969,18 @@ def render_execution_trace_explicit_partial(status_data: dict[str, Any]) -> None
             )
 
             items = [
-                ("🧠", "Detected Intent", fields["detected_intent"] or "Not available", "done" if fields["detected_intent"] else "default"),
-                ("🏢", "Resolved Entity", fields["resolved_entity"] or "Not available", "done" if fields["resolved_entity"] else "default"),
+                (
+                    "🧠",
+                    "Detected Intent",
+                    fields["detected_intent"] or "Not available",
+                    "done" if fields["detected_intent"] else "default",
+                ),
+                (
+                    "🏢",
+                    "Resolved Entity",
+                    fields["resolved_entity"] or "Not available",
+                    "done" if fields["resolved_entity"] else "default",
+                ),
             ]
 
             tools = fields.get("selected_tools", [])
@@ -905,7 +992,11 @@ def render_execution_trace_explicit_partial(status_data: dict[str, Any]) -> None
                 items.append(("⏭️", "Skipped Tools", ", ".join(str(x) for x in skipped), "default"))
 
             status = fields.get("execution_status", "unknown")
-            status_state = "done" if status in ("completed", "success") else ("error" if status in ("failed", "error") else "active")
+            status_state = (
+                "done"
+                if status in ("completed", "success")
+                else ("error" if status in ("failed", "error") else "active")
+            )
             items.append(("📊", "Execution Status", str(status).title(), status_state))
 
             ms = fields.get("execution_time_ms")
@@ -972,7 +1063,10 @@ def submit_research(
         )
 
         # If we're already processing the same payload, block duplicate POST.
-        if st.session_state.get("is_processing") and st.session_state.get("last_submit_fingerprint") == fingerprint:
+        if (
+            st.session_state.get("is_processing")
+            and st.session_state.get("last_submit_fingerprint") == fingerprint
+        ):
             st.info("Request is already in progress; skipping duplicate submit.")
             return None
 
@@ -998,7 +1092,7 @@ def submit_research(
                 f'<div class="ds-state-card__body">'
                 f'<div class="ds-state-card__title">API Error ({last_response.status_code})</div>'
                 f'<div class="ds-state-card__detail">{safe_html_escape(last_response.text[:500])}</div>'
-                f'</div></div>',
+                f"</div></div>",
                 unsafe_allow_html=True,
             )
         else:
@@ -1009,7 +1103,7 @@ def submit_research(
                 f'<div class="ds-state-card__body">'
                 f'<div class="ds-state-card__title">API Error</div>'
                 f'<div class="ds-state-card__detail">{safe_html_escape(err_msg)}</div>'
-                f'</div></div>',
+                f"</div></div>",
                 unsafe_allow_html=True,
             )
         return None
@@ -1042,7 +1136,7 @@ def check_status(request_id: str) -> dict[str, Any] | None:
                 f'<div class="ds-state-card__body">'
                 f'<div class="ds-state-card__title">Status API Error ({last_response.status_code})</div>'
                 f'<div class="ds-state-card__detail">{safe_html_escape(last_response.text[:500])}</div>'
-                f'</div></div>',
+                f"</div></div>",
                 unsafe_allow_html=True,
             )
         else:
@@ -1053,7 +1147,7 @@ def check_status(request_id: str) -> dict[str, Any] | None:
                 f'<div class="ds-state-card__body">'
                 f'<div class="ds-state-card__title">Status API Error</div>'
                 f'<div class="ds-state-card__detail">{safe_html_escape(err_msg)}</div>'
-                f'</div></div>',
+                f"</div></div>",
                 unsafe_allow_html=True,
             )
 

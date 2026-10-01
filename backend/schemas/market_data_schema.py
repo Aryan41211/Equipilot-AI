@@ -25,8 +25,7 @@ class MarketDataResponse(BaseModel):
     sector: str | None = Field(default=None, description="Company sector")
     industry: str | None = Field(default=None, description="Company industry")
     data_as_of: datetime = Field(
-        default_factory=lambda: datetime.now(UTC),
-        description="Data timestamp"
+        default_factory=lambda: datetime.now(UTC), description="Data timestamp"
     )
 
     @field_validator("ticker")

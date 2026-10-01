@@ -40,11 +40,15 @@ def render_query_form(
 
         with col1:
             include_news = st.checkbox("Include News", value=True, key=f"{key}_news")
-            include_fundamentals = st.checkbox("Include Fundamentals", value=True, key=f"{key}_fundamentals")
+            include_fundamentals = st.checkbox(
+                "Include Fundamentals", value=True, key=f"{key}_fundamentals"
+            )
 
         with col2:
             include_sentiment = st.checkbox("Include Sentiment", value=True, key=f"{key}_sentiment")
-            include_technicals = st.checkbox("Include Technicals", value=False, key=f"{key}_technicals")
+            include_technicals = st.checkbox(
+                "Include Technicals", value=False, key=f"{key}_technicals"
+            )
 
         ticker_input = st.text_input(
             "Explicit Tickers (optional, comma-separated)",
@@ -63,7 +67,9 @@ def render_query_form(
                 key=f"{key}_max_length",
             )
 
-        submitted = st.form_submit_button("🚀 Start Research", type="primary", use_container_width=True)
+        submitted = st.form_submit_button(
+            "🚀 Start Research", type="primary", use_container_width=True
+        )
 
         if submitted:
             if not query.strip():

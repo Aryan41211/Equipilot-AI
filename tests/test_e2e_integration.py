@@ -24,48 +24,69 @@ class TestFullResearchWorkflow:
         graph = create_first_graph()
         state = create_initial_state("Analyze Apple")
 
-        mock_market = AsyncMock(return_value={"ticker": "AAPL", "price": 195.50, "company_name": "Apple Inc."})
-        mock_news = AsyncMock(return_value={
-            "query": "Apple",
-            "tickers": ["AAPL"],
-            "articles": [{"title": "Apple Q4 Earnings Beat Estimates", "source": "Test"}],
-            "total_results": 1,
-        })
-        mock_sentiment = AsyncMock(return_value={
-            "ok": True,
-            "result": {"overall_sentiment": {"label": "positive", "score": 0.75}},
-            "error": None,
-        })
+        mock_market = AsyncMock(
+            return_value={"ticker": "AAPL", "price": 195.50, "company_name": "Apple Inc."}
+        )
+        mock_news = AsyncMock(
+            return_value={
+                "query": "Apple",
+                "tickers": ["AAPL"],
+                "articles": [{"title": "Apple Q4 Earnings Beat Estimates", "source": "Test"}],
+                "total_results": 1,
+            }
+        )
+        mock_sentiment = AsyncMock(
+            return_value={
+                "ok": True,
+                "result": {"overall_sentiment": {"label": "positive", "score": 0.75}},
+                "error": None,
+            }
+        )
 
-        with patch("backend.graphs.nodes.fetch_market_data", mock_market), \
-             patch("backend.graphs.nodes.fetch_news", mock_news), \
-             patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment):
+        with (
+            patch("backend.graphs.nodes.fetch_market_data", mock_market),
+            patch("backend.graphs.nodes.fetch_news", mock_news),
+            patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment),
+        ):
             result = await graph.ainvoke(state)
 
         # Entity Resolution verification
         # Note: Router extracts uppercase patterns, so "Apple" -> "APPLE"
-        assert result["ticker"] in ("AAPL", "APPLE"), "Entity Resolution failed: ticker not extracted"
+        assert result["ticker"] in (
+            "AAPL",
+            "APPLE",
+        ), "Entity Resolution failed: ticker not extracted"
         assert result["ticker"] is not None, "Entity Resolution failed: ticker is None"
 
         # Routing verification
         assert result["detected_intent"] == "full_research", "Routing failed: intent not detected"
-        assert "market_data_tool" in result["selected_tools"], "Routing failed: market_data_tool not selected"
+        assert (
+            "market_data_tool" in result["selected_tools"]
+        ), "Routing failed: market_data_tool not selected"
         assert "news_tool" in result["selected_tools"], "Routing failed: news_tool not selected"
-        assert "sentiment_tool" in result["selected_tools"], "Routing failed: sentiment_tool not selected"
+        assert (
+            "sentiment_tool" in result["selected_tools"]
+        ), "Routing failed: sentiment_tool not selected"
 
         # Market Data verification
         assert result["market_data"] != {}, "Market Data failed: no data returned"
-        assert result["execution_metadata"]["tools"]["market_data_tool"]["ok"] is True, "Market Data tool marked as failed"
+        assert (
+            result["execution_metadata"]["tools"]["market_data_tool"]["ok"] is True
+        ), "Market Data tool marked as failed"
 
         # News verification
         assert result["news"] != {}, "News failed: no data returned"
         assert "articles" in result["news"], "News failed: no articles in response"
-        assert result["execution_metadata"]["tools"]["news_tool"]["ok"] is True, "News tool marked as failed"
+        assert (
+            result["execution_metadata"]["tools"]["news_tool"]["ok"] is True
+        ), "News tool marked as failed"
 
         # Sentiment verification
         assert result["sentiment"] != {}, "Sentiment failed: no data returned"
         assert result["sentiment"].get("ok") is True, "Sentiment failed: ok flag not True"
-        assert result["execution_metadata"]["tools"]["sentiment_tool"]["ok"] is True, "Sentiment tool marked as failed"
+        assert (
+            result["execution_metadata"]["tools"]["sentiment_tool"]["ok"] is True
+        ), "Sentiment tool marked as failed"
 
         # Research Report verification
         assert result["report"] != "", "Research failed: no report generated"
@@ -82,13 +103,19 @@ class TestFundamentalsWorkflow:
         graph = create_first_graph()
         state = create_initial_state("Show fundamentals of AAPL")
 
-        mock_market = AsyncMock(return_value={"ticker": "AAPL", "pe_ratio": 28.5, "revenue": "383B"})
-        mock_news = AsyncMock(return_value={"query": "", "tickers": [], "articles": [], "total_results": 0})
+        mock_market = AsyncMock(
+            return_value={"ticker": "AAPL", "pe_ratio": 28.5, "revenue": "383B"}
+        )
+        mock_news = AsyncMock(
+            return_value={"query": "", "tickers": [], "articles": [], "total_results": 0}
+        )
         mock_sentiment = AsyncMock(return_value={"ok": True, "result": {}, "error": None})
 
-        with patch("backend.graphs.nodes.fetch_market_data", mock_market), \
-             patch("backend.graphs.nodes.fetch_news", mock_news), \
-             patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment) as sentiment_mock:
+        with (
+            patch("backend.graphs.nodes.fetch_market_data", mock_market),
+            patch("backend.graphs.nodes.fetch_news", mock_news),
+            patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment) as sentiment_mock,
+        ):
             result = await graph.ainvoke(state)
 
         # Market Data verification
@@ -96,8 +123,12 @@ class TestFundamentalsWorkflow:
         assert result["execution_metadata"]["tools"]["market_data_tool"]["ok"] is True
 
         # News and Sentiment should be skipped (not executed)
-        assert "news_tool" not in result["executed_nodes"], "News tool should be skipped for fundamentals"
-        assert "sentiment_tool" not in result["executed_nodes"], "Sentiment tool should be skipped for fundamentals"
+        assert (
+            "news_tool" not in result["executed_nodes"]
+        ), "News tool should be skipped for fundamentals"
+        assert (
+            "sentiment_tool" not in result["executed_nodes"]
+        ), "Sentiment tool should be skipped for fundamentals"
 
         # Sentiment tool should not be called
         sentiment_mock.assert_not_called()
@@ -117,21 +148,27 @@ class TestNewsQueryWorkflow:
         state = create_initial_state("Latest news about AAPL")
 
         mock_market = AsyncMock(return_value={"ticker": "AAPL", "price": 195})
-        mock_news = AsyncMock(return_value={
-            "query": "AAPL",
-            "tickers": ["AAPL"],
-            "articles": [{"title": "Apple News", "source": "Test"}],
-            "total_results": 1,
-        })
-        mock_sentiment = AsyncMock(return_value={
-            "ok": True,
-            "result": {"overall_sentiment": {"label": "neutral"}},
-            "error": None,
-        })
+        mock_news = AsyncMock(
+            return_value={
+                "query": "AAPL",
+                "tickers": ["AAPL"],
+                "articles": [{"title": "Apple News", "source": "Test"}],
+                "total_results": 1,
+            }
+        )
+        mock_sentiment = AsyncMock(
+            return_value={
+                "ok": True,
+                "result": {"overall_sentiment": {"label": "neutral"}},
+                "error": None,
+            }
+        )
 
-        with patch("backend.graphs.nodes.fetch_market_data", mock_market), \
-             patch("backend.graphs.nodes.fetch_news", mock_news), \
-             patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment):
+        with (
+            patch("backend.graphs.nodes.fetch_market_data", mock_market),
+            patch("backend.graphs.nodes.fetch_news", mock_news),
+            patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment),
+        ):
             result = await graph.ainvoke(state)
 
         # News verification
@@ -143,7 +180,9 @@ class TestNewsQueryWorkflow:
         assert result["execution_metadata"]["tools"]["sentiment_tool"]["ok"] is True
 
         # Market Data should be skipped
-        assert "market_data_tool" not in result["executed_nodes"], "Market data should be skipped for news query"
+        assert (
+            "market_data_tool" not in result["executed_nodes"]
+        ), "Market data should be skipped for news query"
 
         # Research should execute
         assert "research" in result["executed_nodes"]
@@ -159,9 +198,11 @@ class TestUnknownCompany:
         graph = create_first_graph()
         state = create_initial_state("What is happening with no ticker here")
 
-        with patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm, \
-             patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn, \
-             patch("backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock) as ss:
+        with (
+            patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm,
+            patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn,
+            patch("backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock) as ss,
+        ):
             result = await graph.ainvoke(state)
 
             mm.assert_not_called()
@@ -170,7 +211,9 @@ class TestUnknownCompany:
 
         assert result["status"] == "failed", "Unknown company should fail"
         assert result["ticker"] is None, "Ticker should be None for unknown company"
-        assert any("Ticker could not be extracted" in e for e in result["errors"]), "Should have ticker extraction error"
+        assert any(
+            "Ticker could not be extracted" in e for e in result["errors"]
+        ), "Should have ticker extraction error"
 
 
 class TestBackendFailure:
@@ -182,29 +225,43 @@ class TestBackendFailure:
         graph = create_first_graph()
         state = create_initial_state("Analyze AAPL")
 
-        mock_market = AsyncMock(return_value={"error": "Network timeout", "error_type": "service_error"})
-        mock_news = AsyncMock(return_value={
-            "query": "AAPL",
-            "tickers": ["AAPL"],
-            "articles": [],
-            "total_results": 0,
-        })
-        mock_sentiment = AsyncMock(return_value={
-            "ok": True,
-            "result": {"overall_sentiment": {"label": "neutral"}},
-            "error": None,
-        })
+        mock_market = AsyncMock(
+            return_value={"error": "Network timeout", "error_type": "service_error"}
+        )
+        mock_news = AsyncMock(
+            return_value={
+                "query": "AAPL",
+                "tickers": ["AAPL"],
+                "articles": [],
+                "total_results": 0,
+            }
+        )
+        mock_sentiment = AsyncMock(
+            return_value={
+                "ok": True,
+                "result": {"overall_sentiment": {"label": "neutral"}},
+                "error": None,
+            }
+        )
 
-        with patch("backend.graphs.nodes.fetch_market_data", mock_market), \
-             patch("backend.graphs.nodes.fetch_news", mock_news), \
-             patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment):
+        with (
+            patch("backend.graphs.nodes.fetch_market_data", mock_market),
+            patch("backend.graphs.nodes.fetch_news", mock_news),
+            patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment),
+        ):
             result = await graph.ainvoke(state)
 
         assert result["market_data"] == {}, "Market data should be empty on failure"
-        assert any("Market Data Tool failed" in e or "Market Data Tool exception" in e for e in result["errors"])
+        assert any(
+            "Market Data Tool failed" in e or "Market Data Tool exception" in e
+            for e in result["errors"]
+        )
         assert result["execution_metadata"]["tools"]["market_data_tool"]["ok"] is False
         # Note: Status is "success" because news data provides alternative data path
-        assert result["status"] in ("success", "failed"), "Overall status should reflect partial failure"
+        assert result["status"] in (
+            "success",
+            "failed",
+        ), "Overall status should reflect partial failure"
         assert result["news"] != {}, "News should still succeed as partial data"
 
     def test_frontend_handles_api_error(self):
@@ -251,17 +308,27 @@ class TestPerformance:
         state = create_initial_state("Analyze AAPL")
 
         mock_market = AsyncMock(return_value={"ticker": "AAPL", "price": 195})
-        mock_news = AsyncMock(return_value={
-            "query": "AAPL",
-            "tickers": ["AAPL"],
-            "articles": [{"title": "Test"}],
-            "total_results": 1,
-        })
-        mock_sentiment = AsyncMock(return_value={"ok": True, "result": {"overall_sentiment": {"label": "neutral"}}, "error": None})
+        mock_news = AsyncMock(
+            return_value={
+                "query": "AAPL",
+                "tickers": ["AAPL"],
+                "articles": [{"title": "Test"}],
+                "total_results": 1,
+            }
+        )
+        mock_sentiment = AsyncMock(
+            return_value={
+                "ok": True,
+                "result": {"overall_sentiment": {"label": "neutral"}},
+                "error": None,
+            }
+        )
 
-        with patch("backend.graphs.nodes.fetch_market_data", mock_market), \
-             patch("backend.graphs.nodes.fetch_news", mock_news), \
-             patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment):
+        with (
+            patch("backend.graphs.nodes.fetch_market_data", mock_market),
+            patch("backend.graphs.nodes.fetch_news", mock_news),
+            patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment),
+        ):
             start = time.time()
             result = await graph.ainvoke(state)
             elapsed = time.time() - start
@@ -274,7 +341,9 @@ class TestPerformance:
         assert len(traces) > 0, "Should have trace entries"
 
         total_traced_ms = sum(t.get("duration_ms", 0) or 0 for t in traces)
-        assert total_traced_ms >= 0 or result.get("execution_duration_ms") is not None, "Timing should be tracked"
+        assert (
+            total_traced_ms >= 0 or result.get("execution_duration_ms") is not None
+        ), "Timing should be tracked"
 
     @pytest.mark.asyncio
     async def test_performance_benchmark(self):
@@ -283,12 +352,22 @@ class TestPerformance:
         state = create_initial_state("Full analysis of MSFT")
 
         mock_market = AsyncMock(return_value={"ticker": "MSFT", "price": 400})
-        mock_news = AsyncMock(return_value={"query": "MSFT", "tickers": ["MSFT"], "articles": [], "total_results": 0})
-        mock_sentiment = AsyncMock(return_value={"ok": True, "result": {"overall_sentiment": {"label": "positive"}}, "error": None})
+        mock_news = AsyncMock(
+            return_value={"query": "MSFT", "tickers": ["MSFT"], "articles": [], "total_results": 0}
+        )
+        mock_sentiment = AsyncMock(
+            return_value={
+                "ok": True,
+                "result": {"overall_sentiment": {"label": "positive"}},
+                "error": None,
+            }
+        )
 
-        with patch("backend.graphs.nodes.fetch_market_data", mock_market), \
-             patch("backend.graphs.nodes.fetch_news", mock_news), \
-             patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment):
+        with (
+            patch("backend.graphs.nodes.fetch_market_data", mock_market),
+            patch("backend.graphs.nodes.fetch_news", mock_news),
+            patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment),
+        ):
             result = await graph.ainvoke(state)
 
         assert result["status"] == "success"
@@ -303,9 +382,11 @@ class TestRegression:
         graph = create_first_graph()
         state = create_initial_state("")
 
-        with patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm, \
-             patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn, \
-             patch("backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock) as ss:
+        with (
+            patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm,
+            patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn,
+            patch("backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock) as ss,
+        ):
             result = await graph.ainvoke(state)
 
             mm.assert_not_called()
@@ -321,12 +402,16 @@ class TestRegression:
         state = create_initial_state("Analyze AAPL")
 
         mock_market = AsyncMock(return_value={"ticker": "AAPL", "price": 195})
-        mock_news = AsyncMock(return_value={"error": "News API down", "error_type": "service_error"})
+        mock_news = AsyncMock(
+            return_value={"error": "News API down", "error_type": "service_error"}
+        )
         mock_sentiment = AsyncMock(return_value={"ok": True, "result": {}, "error": None})
 
-        with patch("backend.graphs.nodes.fetch_market_data", mock_market), \
-             patch("backend.graphs.nodes.fetch_news", mock_news), \
-             patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment):
+        with (
+            patch("backend.graphs.nodes.fetch_market_data", mock_market),
+            patch("backend.graphs.nodes.fetch_news", mock_news),
+            patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment),
+        ):
             result = await graph.ainvoke(state)
 
         assert result["status"] == "success"  # Partial success due to market data
@@ -341,12 +426,16 @@ class TestRegression:
         state = create_initial_state("Analyze NVDA")
 
         mock_market = AsyncMock(return_value={"ticker": "NVDA", "price": 900})
-        mock_news = AsyncMock(return_value={"query": "NVDA", "tickers": ["NVDA"], "articles": [], "total_results": 0})
+        mock_news = AsyncMock(
+            return_value={"query": "NVDA", "tickers": ["NVDA"], "articles": [], "total_results": 0}
+        )
         mock_sentiment = AsyncMock(return_value={"ok": True, "result": {}, "error": None})
 
-        with patch("backend.graphs.nodes.fetch_market_data", mock_market), \
-             patch("backend.graphs.nodes.fetch_news", mock_news), \
-             patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment):
+        with (
+            patch("backend.graphs.nodes.fetch_market_data", mock_market),
+            patch("backend.graphs.nodes.fetch_news", mock_news),
+            patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment),
+        ):
             result = await graph.ainvoke(state)
 
         assert result["selected_tools"] == ["market_data_tool", "news_tool", "sentiment_tool"]
@@ -395,7 +484,11 @@ class TestAPIIntegration:
 
         create_app()
         # The health endpoint is defined in lifespan context, test the response structure
-        response_data = {"status": "healthy", "version": "0.1.0", "services": {"openai": True, "news_api": False}}
+        response_data = {
+            "status": "healthy",
+            "version": "0.1.0",
+            "services": {"openai": True, "news_api": False},
+        }
         assert "status" in response_data
         assert "services" in response_data
 
@@ -410,21 +503,27 @@ class TestSentimentQueryWorkflow:
         state = create_initial_state("What's the market sentiment of TSLA?")
 
         mock_market = AsyncMock(return_value={"ticker": "TSLA", "price": 250})
-        mock_news = AsyncMock(return_value={
-            "query": "TSLA",
-            "tickers": ["TSLA"],
-            "articles": [{"title": "Tesla Market Sentiment", "source": "Test"}],
-            "total_results": 1,
-        })
-        mock_sentiment = AsyncMock(return_value={
-            "ok": True,
-            "result": {"overall_sentiment": {"label": "positive", "score": 0.8}},
-            "error": None,
-        })
+        mock_news = AsyncMock(
+            return_value={
+                "query": "TSLA",
+                "tickers": ["TSLA"],
+                "articles": [{"title": "Tesla Market Sentiment", "source": "Test"}],
+                "total_results": 1,
+            }
+        )
+        mock_sentiment = AsyncMock(
+            return_value={
+                "ok": True,
+                "result": {"overall_sentiment": {"label": "positive", "score": 0.8}},
+                "error": None,
+            }
+        )
 
-        with patch("backend.graphs.nodes.fetch_market_data", mock_market), \
-             patch("backend.graphs.nodes.fetch_news", mock_news), \
-             patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment):
+        with (
+            patch("backend.graphs.nodes.fetch_market_data", mock_market),
+            patch("backend.graphs.nodes.fetch_news", mock_news),
+            patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment),
+        ):
             result = await graph.ainvoke(state)
 
         assert result["news"] != {}, "News should be present"
@@ -433,7 +532,9 @@ class TestSentimentQueryWorkflow:
         assert result["sentiment"] != {}, "Sentiment should be present"
         assert result["execution_metadata"]["tools"]["sentiment_tool"]["ok"] is True
 
-        assert "market_data_tool" not in result["executed_nodes"], "Market data should be skipped for sentiment query"
+        assert (
+            "market_data_tool" not in result["executed_nodes"]
+        ), "Market data should be skipped for sentiment query"
 
         assert "research" in result["executed_nodes"], "Research should execute"
         assert result["report"] != "", "Report should be generated"
@@ -449,26 +550,34 @@ class TestMarketOverviewWorkflow:
         state = create_initial_state("Market overview for NVDA")
 
         mock_market = AsyncMock(return_value={"ticker": "NVDA", "price": 900})
-        mock_news = AsyncMock(return_value={
-            "query": "NVDA",
-            "tickers": ["NVDA"],
-            "articles": [],
-            "total_results": 0,
-        })
+        mock_news = AsyncMock(
+            return_value={
+                "query": "NVDA",
+                "tickers": ["NVDA"],
+                "articles": [],
+                "total_results": 0,
+            }
+        )
         mock_sentiment = AsyncMock(return_value={"ok": True, "result": {}, "error": None})
 
-        with patch("backend.graphs.nodes.fetch_market_data", mock_market), \
-             patch("backend.graphs.nodes.fetch_news", mock_news), \
-             patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment) as sentiment_mock:
+        with (
+            patch("backend.graphs.nodes.fetch_market_data", mock_market),
+            patch("backend.graphs.nodes.fetch_news", mock_news),
+            patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment) as sentiment_mock,
+        ):
             result = await graph.ainvoke(state)
 
         assert result["detected_intent"] == "market_overview"
         assert result["market_data"] == {}
         assert result["news"] != {}
 
-        assert "market_data_tool" not in result["executed_nodes"], "Market data should be skipped for market overview"
+        assert (
+            "market_data_tool" not in result["executed_nodes"]
+        ), "Market data should be skipped for market overview"
         assert "news_tool" in result["executed_nodes"], "News should be executed"
-        assert "sentiment_tool" not in result["executed_nodes"], "Sentiment should be skipped for market overview"
+        assert (
+            "sentiment_tool" not in result["executed_nodes"]
+        ), "Sentiment should be skipped for market overview"
         sentiment_mock.assert_not_called()
 
         assert result["status"] == "success"

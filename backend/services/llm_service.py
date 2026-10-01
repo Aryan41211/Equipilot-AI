@@ -208,7 +208,10 @@ class LLMService:
                     "additionalProperties": {
                         "type": "object",
                         "properties": {
-                            "label": {"type": "string", "enum": ["positive", "negative", "neutral"]},
+                            "label": {
+                                "type": "string",
+                                "enum": ["positive", "negative", "neutral"],
+                            },
                             "score": {"type": "number", "minimum": -1, "maximum": 1},
                             "confidence": {"type": "number", "minimum": 0, "maximum": 1},
                         },
@@ -221,7 +224,10 @@ class LLMService:
                         "type": "object",
                         "properties": {
                             "theme": {"type": "string"},
-                            "sentiment": {"type": "string", "enum": ["positive", "negative", "neutral"]},
+                            "sentiment": {
+                                "type": "string",
+                                "enum": ["positive", "negative", "neutral"],
+                            },
                             "relevance": {"type": "number", "minimum": 0, "maximum": 1},
                         },
                         "required": ["theme", "sentiment", "relevance"],

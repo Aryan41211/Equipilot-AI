@@ -54,10 +54,7 @@ class MarketAgent:
         except Exception as e:
             logger.error("Market data fetch failed", error=str(e))
             # Return empty data for failed tickers
-            return {
-                ticker: MarketData(ticker=ticker, data_as_of=None)
-                for ticker in tickers
-            }
+            return {ticker: MarketData(ticker=ticker, data_as_of=None) for ticker in tickers}
 
     async def fetch_fundamentals(self, tickers: list[str]) -> dict[str, Any]:
         """Fetch only fundamental data."""

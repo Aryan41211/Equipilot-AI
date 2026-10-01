@@ -78,9 +78,7 @@ async def test_sentiment_service_malformed_llm_response_raises_typed_error():
 
     # Missing required "overall" key
     llm_payload = {
-        "ticker_sentiments": {
-            "AAPL": {"label": "positive", "score": 0.5, "confidence": 0.8}
-        },
+        "ticker_sentiments": {"AAPL": {"label": "positive", "score": 0.5, "confidence": 0.8}},
         "key_themes": [],
     }
 
@@ -97,9 +95,7 @@ async def test_sentiment_service_timeout_raises_typed_timeout():
     service = SentimentService(max_retries=0, llm_timeout_seconds=0.01)
 
     with patch.object(service, "llm", autospec=True) as llm_mock:
-        llm_mock.analyze_sentiment = AsyncMock(
-            side_effect=TimeoutError("provider timeout")
-        )
+        llm_mock.analyze_sentiment = AsyncMock(side_effect=TimeoutError("provider timeout"))
 
         articles = [_news_article(title="AAPL news")]
         with pytest.raises(SentimentTimeoutError):
@@ -111,9 +107,7 @@ async def test_sentiment_service_provider_error_raises_typed_provider_error():
     service = SentimentService(max_retries=0)
 
     with patch.object(service, "llm", autospec=True) as llm_mock:
-        llm_mock.analyze_sentiment = AsyncMock(
-            side_effect=RuntimeError("network failure")
-        )
+        llm_mock.analyze_sentiment = AsyncMock(side_effect=RuntimeError("network failure"))
 
         articles = [_news_article(title="AAPL news")]
         with pytest.raises(SentimentProviderError):
@@ -155,9 +149,7 @@ async def test_sentiment_service_schema_validation_error_raises_typed_validation
     # confidence out of range to trigger validation error (mapped as malformed/typed by service)
     llm_payload = {
         "overall": {"label": "positive", "score": 0.6, "confidence": 2.0},
-        "ticker_sentiments": {
-            "AAPL": {"label": "positive", "score": 0.5, "confidence": 0.8}
-        },
+        "ticker_sentiments": {"AAPL": {"label": "positive", "score": 0.5, "confidence": 0.8}},
         "key_themes": [],
     }
 

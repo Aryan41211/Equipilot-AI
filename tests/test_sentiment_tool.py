@@ -46,7 +46,9 @@ async def test_sentiment_tool_successful_response_contract():
     # Patch the singleton sentiment_service inside module
     from backend.tools import sentiment_tool as module
 
-    with patch.object(module.sentiment_service, "analyze_articles", new_callable=AsyncMock) as mock_analyze:
+    with patch.object(
+        module.sentiment_service, "analyze_articles", new_callable=AsyncMock
+    ) as mock_analyze:
         mock_analyze.return_value = _sample_sentiment()
 
         resp = await module.SentimentTool().analyze_sentiment.ainvoke(
@@ -84,7 +86,9 @@ async def test_sentiment_tool_exception_mapping_on_malformed_response():
 async def test_sentiment_tool_exception_mapping_on_timeout():
     from backend.tools import sentiment_tool as module
 
-    with patch.object(module.sentiment_service, "analyze_articles", new_callable=AsyncMock) as mock_analyze:
+    with patch.object(
+        module.sentiment_service, "analyze_articles", new_callable=AsyncMock
+    ) as mock_analyze:
         mock_analyze.side_effect = SentimentTimeoutError("timeout")
 
         resp = await module.SentimentTool().analyze_sentiment.ainvoke(
@@ -99,7 +103,9 @@ async def test_sentiment_tool_exception_mapping_on_timeout():
 async def test_sentiment_tool_exception_mapping_on_provider_error():
     from backend.tools import sentiment_tool as module
 
-    with patch.object(module.sentiment_service, "analyze_articles", new_callable=AsyncMock) as mock_analyze:
+    with patch.object(
+        module.sentiment_service, "analyze_articles", new_callable=AsyncMock
+    ) as mock_analyze:
         mock_analyze.side_effect = SentimentProviderError("provider down")
 
         resp = await module.SentimentTool().analyze_sentiment.ainvoke(
@@ -114,7 +120,9 @@ async def test_sentiment_tool_exception_mapping_on_provider_error():
 async def test_sentiment_tool_keeps_contract_on_unexpected_exception():
     from backend.tools import sentiment_tool as module
 
-    with patch.object(module.sentiment_service, "analyze_articles", new_callable=AsyncMock) as mock_analyze:
+    with patch.object(
+        module.sentiment_service, "analyze_articles", new_callable=AsyncMock
+    ) as mock_analyze:
         mock_analyze.side_effect = RuntimeError("unexpected")
 
         resp = await module.SentimentTool().analyze_sentiment.ainvoke(

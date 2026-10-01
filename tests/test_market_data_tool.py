@@ -104,8 +104,10 @@ class TestMarketDataTool:
             industry="Oil & Gas",
         )
 
-        with patch('backend.tools.market_data_tool.market_data_service.get_stock_info',
-                   new_callable=AsyncMock) as mock_get:
+        with patch(
+            "backend.tools.market_data_tool.market_data_service.get_stock_info",
+            new_callable=AsyncMock,
+        ) as mock_get:
             mock_get.return_value = mock_response
 
             result = await MarketDataTool.fetch_market_data("RELIANCE.NS")
@@ -122,8 +124,10 @@ class TestMarketDataTool:
         from backend.services.market_data_service import InvalidTickerError
         from backend.tools.market_data_tool import MarketDataTool
 
-        with patch('backend.tools.market_data_tool.market_data_service.get_stock_info',
-                   new_callable=AsyncMock) as mock_get:
+        with patch(
+            "backend.tools.market_data_tool.market_data_service.get_stock_info",
+            new_callable=AsyncMock,
+        ) as mock_get:
             mock_get.side_effect = InvalidTickerError("Invalid ticker symbol: INVALID.NS")
 
             result = await MarketDataTool.fetch_market_data("INVALID.NS")
@@ -138,9 +142,13 @@ class TestMarketDataTool:
         from backend.services.market_data_service import DataUnavailableError
         from backend.tools.market_data_tool import MarketDataTool
 
-        with patch('backend.tools.market_data_tool.market_data_service.get_stock_info',
-                   new_callable=AsyncMock) as mock_get:
-            mock_get.side_effect = DataUnavailableError("No market data available for ticker: TEST.NS")
+        with patch(
+            "backend.tools.market_data_tool.market_data_service.get_stock_info",
+            new_callable=AsyncMock,
+        ) as mock_get:
+            mock_get.side_effect = DataUnavailableError(
+                "No market data available for ticker: TEST.NS"
+            )
 
             result = await MarketDataTool.fetch_market_data("TEST.NS")
 
@@ -154,8 +162,10 @@ class TestMarketDataTool:
         from backend.services.market_data_service import RateLimitError
         from backend.tools.market_data_tool import MarketDataTool
 
-        with patch('backend.tools.market_data_tool.market_data_service.get_stock_info',
-                   new_callable=AsyncMock) as mock_get:
+        with patch(
+            "backend.tools.market_data_tool.market_data_service.get_stock_info",
+            new_callable=AsyncMock,
+        ) as mock_get:
             mock_get.side_effect = RateLimitError("Yahoo Finance rate limit exceeded for TEST.NS")
 
             result = await MarketDataTool.fetch_market_data("TEST.NS")
@@ -170,8 +180,10 @@ class TestMarketDataTool:
         from backend.services.market_data_service import NetworkError
         from backend.tools.market_data_tool import MarketDataTool
 
-        with patch('backend.tools.market_data_tool.market_data_service.get_stock_info',
-                   new_callable=AsyncMock) as mock_get:
+        with patch(
+            "backend.tools.market_data_tool.market_data_service.get_stock_info",
+            new_callable=AsyncMock,
+        ) as mock_get:
             mock_get.side_effect = NetworkError("Network error fetching TEST.NS: Connection failed")
 
             result = await MarketDataTool.fetch_market_data("TEST.NS")
@@ -186,8 +198,10 @@ class TestMarketDataTool:
         from backend.services.market_data_service import MarketDataServiceError
         from backend.tools.market_data_tool import MarketDataTool
 
-        with patch('backend.tools.market_data_tool.market_data_service.get_stock_info',
-                   new_callable=AsyncMock) as mock_get:
+        with patch(
+            "backend.tools.market_data_tool.market_data_service.get_stock_info",
+            new_callable=AsyncMock,
+        ) as mock_get:
             mock_get.side_effect = MarketDataServiceError("Generic service error")
 
             result = await MarketDataTool.fetch_market_data("TEST.NS")
@@ -201,8 +215,10 @@ class TestMarketDataTool:
         """Test tool handles unexpected errors."""
         from backend.tools.market_data_tool import MarketDataTool
 
-        with patch('backend.tools.market_data_tool.market_data_service.get_stock_info',
-                   new_callable=AsyncMock) as mock_get:
+        with patch(
+            "backend.tools.market_data_tool.market_data_service.get_stock_info",
+            new_callable=AsyncMock,
+        ) as mock_get:
             mock_get.side_effect = RuntimeError("Unexpected runtime error")
 
             result = await MarketDataTool.fetch_market_data("TEST.NS")
@@ -217,8 +233,10 @@ class TestMarketDataTool:
         from backend.services.market_data_service import InvalidTickerError
         from backend.tools.market_data_tool import MarketDataTool
 
-        with patch('backend.tools.market_data_tool.market_data_service.get_stock_info',
-                   new_callable=AsyncMock) as mock_get:
+        with patch(
+            "backend.tools.market_data_tool.market_data_service.get_stock_info",
+            new_callable=AsyncMock,
+        ) as mock_get:
             mock_get.side_effect = InvalidTickerError("Ticker symbol cannot be empty")
 
             result = await MarketDataTool.fetch_market_data("")
@@ -238,8 +256,10 @@ class TestMarketDataTool:
             current_price=1500.0,
         )
 
-        with patch('backend.tools.market_data_tool.market_data_service.get_stock_info',
-                   new_callable=AsyncMock) as mock_get:
+        with patch(
+            "backend.tools.market_data_tool.market_data_service.get_stock_info",
+            new_callable=AsyncMock,
+        ) as mock_get:
             mock_get.return_value = mock_response
 
             result = await fetch_market_data("INFY.NS")
@@ -257,8 +277,10 @@ class TestMarketDataTool:
             company_name="Test Company",
         )
 
-        with patch('backend.tools.market_data_tool.market_data_service.get_stock_info',
-                   new_callable=AsyncMock) as mock_get:
+        with patch(
+            "backend.tools.market_data_tool.market_data_service.get_stock_info",
+            new_callable=AsyncMock,
+        ) as mock_get:
             mock_get.return_value = mock_response
 
             result = await MarketDataTool.fetch_market_data("TEST.NS")

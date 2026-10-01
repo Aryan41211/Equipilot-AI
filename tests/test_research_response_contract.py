@@ -37,17 +37,14 @@ def test_research_response_has_expected_fields_and_types():
         "execution_metadata": object,  # Optional[dict]
         "error": object,  # Optional[str]
         "message": object,  # Optional[str]
-
         # frontend report rendering fields
         "report": object,  # Optional[str]
         "sections": object,  # Optional[list[dict]]
         "citations": object,  # Optional[list[dict]]
-
         # frontend dashboard summary fallbacks (summary naming)
         "market_data_summary": object,  # Optional[dict]
         "news_summary": object,  # Optional[dict]
         "sentiment_summary": object,  # Optional[dict]
-
         # metadata/timing fields used for display
         "created_at": object,
         "completed_at": object,
@@ -68,8 +65,8 @@ def test_research_response_has_expected_fields_and_types():
     for field_name in required_non_optional:
         ann = model_fields[field_name].annotation
         # Pydantic uses Union[..., NoneType] for Optional; we check presence of None.
-        assert (
-            "NoneType" not in _normalize_type_str(ann)
+        assert "NoneType" not in _normalize_type_str(
+            ann
         ), f"{field_name} unexpectedly Optional/nullable; annotation={ann!r}"
 
     for field_name in optional_fields:
@@ -78,7 +75,5 @@ def test_research_response_has_expected_fields_and_types():
         # Ensure field is Optional-like (Union includes NoneType or annotation contains None).
         ann_str = _normalize_type_str(ann)
         assert (
-            ("None" in ann_str)
-            or (origin is Any)
-            or ("Optional" in ann_str)
+            ("None" in ann_str) or (origin is Any) or ("Optional" in ann_str)
         ), f"{field_name} expected to be Optional/nullable; annotation={ann!r}"

@@ -102,7 +102,8 @@ class SynthesisAgent:
         """Call the LLM with retry logic for transient failures."""
         try:
             return await self.llm.structured_completion(
-                system_prompt=REPORT_SYSTEM_PROMPT.format(max_length=5000) + STRUCTURED_OUTPUT_INSTRUCTIONS,
+                system_prompt=REPORT_SYSTEM_PROMPT.format(max_length=5000)
+                + STRUCTURED_OUTPUT_INSTRUCTIONS,
                 user_prompt=prompt,
                 schema=schema,
                 model=self.llm.default_model,
@@ -157,14 +158,22 @@ class SynthesisAgent:
                 id="key_observations",
                 title="Key Observations",
                 level=1,
-                content="\n".join(f"- {obs}" for obs in synthesized.key_observations) if synthesized.key_observations else "None.",
+                content=(
+                    "\n".join(f"- {obs}" for obs in synthesized.key_observations)
+                    if synthesized.key_observations
+                    else "None."
+                ),
                 order=5,
             ),
             ReportSection(
                 id="risks",
                 title="Risk Factors",
                 level=1,
-                content="\n".join(f"- {risk}" for risk in synthesized.risks) if synthesized.risks else "None identified.",
+                content=(
+                    "\n".join(f"- {risk}" for risk in synthesized.risks)
+                    if synthesized.risks
+                    else "None identified."
+                ),
                 order=6,
             ),
         ]
@@ -203,7 +212,11 @@ class SynthesisAgent:
             )
 
         total_citations = len(news_articles) + len(tickers) + len(sentiment_sources)
-        unique_sources = len(set(a.source for a in news_articles)) + (1 if sentiment_analysis else 0) + (1 if market_data else 0)
+        unique_sources = (
+            len(set(a.source for a in news_articles))
+            + (1 if sentiment_analysis else 0)
+            + (1 if market_data else 0)
+        )
 
         return ResearchReport(
             request_id="",

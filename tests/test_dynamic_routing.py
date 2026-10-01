@@ -40,10 +40,10 @@ async def test_fundamentals_query_routes_to_market_data_only():
     state = create_initial_state("Fundamental analysis of TCS")
 
     mocks = _make_successful_mocks()
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]
-    ), patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]), patch(
-        "backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]),
+        patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]),
+        patch("backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]),
     ):
         result = await graph.ainvoke(state)
 
@@ -70,10 +70,10 @@ async def test_news_query_routes_to_news_and_sentiment():
     state = create_initial_state("Latest news about AAPL")
 
     mocks = _make_successful_mocks()
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]
-    ), patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]), patch(
-        "backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]),
+        patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]),
+        patch("backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]),
     ):
         result = await graph.ainvoke(state)
 
@@ -98,10 +98,10 @@ async def test_full_research_query_routes_to_all_tools():
     state = create_initial_state("Full analysis of MSFT")
 
     mocks = _make_successful_mocks()
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]
-    ), patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]), patch(
-        "backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]),
+        patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]),
+        patch("backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]),
     ):
         result = await graph.ainvoke(state)
 
@@ -126,11 +126,11 @@ async def test_empty_query_fails():
     graph = create_first_graph()
     state = create_initial_state("")
 
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
-    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn, patch(
-        "backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock
-    ) as ss:
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm,
+        patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn,
+        patch("backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock) as ss,
+    ):
         result = await graph.ainvoke(state)
 
         mm.assert_not_called()
@@ -147,11 +147,11 @@ async def test_invalid_query_no_ticker_fails():
     graph = create_first_graph()
     state = create_initial_state("What is happening? No explicit ticker here")
 
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
-    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn, patch(
-        "backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock
-    ) as ss:
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm,
+        patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn,
+        patch("backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock) as ss,
+    ):
         result = await graph.ainvoke(state)
 
         mm.assert_not_called()
@@ -207,11 +207,13 @@ async def test_sentiment_tool_skipped_when_news_has_no_articles():
         "total_results": 0,
     }
 
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]
-    ), patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]), patch(
-        "backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]
-    ) as sentiment_mock:
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]),
+        patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]),
+        patch(
+            "backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]
+        ) as sentiment_mock,
+    ):
         result = await graph.ainvoke(state)
 
     assert result["status"] == "success"
@@ -225,10 +227,10 @@ async def test_sentiment_query_routes_to_news_and_sentiment():
     state = create_initial_state("Market sentiment of AMZN")
 
     mocks = _make_successful_mocks()
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]
-    ), patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]), patch(
-        "backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]),
+        patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]),
+        patch("backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]),
     ):
         result = await graph.ainvoke(state)
 
@@ -254,10 +256,10 @@ async def test_market_overview_routes_to_news_only():
     state = create_initial_state("Market overview")
 
     mocks = _make_successful_mocks()
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]
-    ), patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]), patch(
-        "backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]),
+        patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]),
+        patch("backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]),
     ):
         result = await graph.ainvoke(state)
 
@@ -272,11 +274,13 @@ async def test_market_overview_with_ticker_routes_to_news_only():
     state = create_initial_state("How is the market today for AAPL")
 
     mocks = _make_successful_mocks()
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]
-    ), patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]), patch(
-        "backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]
-    ) as sentiment_mock:
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]),
+        patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]),
+        patch(
+            "backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]
+        ) as sentiment_mock,
+    ):
         result = await graph.ainvoke(state)
 
     assert result["status"] == "success"
@@ -312,11 +316,11 @@ async def test_missing_ticker_on_fundamentals_fails():
     graph = create_first_graph()
     state = create_initial_state("Show fundamentals")
 
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
-    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn, patch(
-        "backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock
-    ) as ss:
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm,
+        patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn,
+        patch("backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock) as ss,
+    ):
         result = await graph.ainvoke(state)
 
         mm.assert_not_called()
@@ -334,10 +338,10 @@ async def test_unknown_intent_defaults_to_full_research():
     state = create_initial_state("Tell me about GOOGL")
 
     mocks = _make_successful_mocks()
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]
-    ), patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]), patch(
-        "backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]),
+        patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]),
+        patch("backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]),
     ):
         result = await graph.ainvoke(state)
 
@@ -383,10 +387,10 @@ async def test_conditional_edge_fundamentals_skips_news_and_sentiment():
     async_fetch_news = mocks["fetch_news"]
     async_analyze_sentiment = mocks["analyze_sentiment"]
 
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", async_fetch_market
-    ), patch("backend.graphs.nodes.fetch_news", async_fetch_news), patch(
-        "backend.graphs.nodes.analyze_sentiment", async_analyze_sentiment
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", async_fetch_market),
+        patch("backend.graphs.nodes.fetch_news", async_fetch_news),
+        patch("backend.graphs.nodes.analyze_sentiment", async_analyze_sentiment),
     ):
         result = await graph.ainvoke(state)
 
@@ -405,10 +409,10 @@ async def test_conditional_edge_news_skips_market_data():
     async_fetch_market = mocks["fetch_market_data"]
     async_fetch_news = mocks["fetch_news"]
 
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", async_fetch_market
-    ), patch("backend.graphs.nodes.fetch_news", async_fetch_news), patch(
-        "backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", async_fetch_market),
+        patch("backend.graphs.nodes.fetch_news", async_fetch_news),
+        patch("backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]),
     ):
         result = await graph.ainvoke(state)
 
@@ -427,10 +431,10 @@ async def test_tool_skipping_validation_sentiment():
     async_fetch_news = mocks["fetch_news"]
     async_analyze_sentiment = mocks["analyze_sentiment"]
 
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", async_fetch_market
-    ), patch("backend.graphs.nodes.fetch_news", async_fetch_news), patch(
-        "backend.graphs.nodes.analyze_sentiment", async_analyze_sentiment
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", async_fetch_market),
+        patch("backend.graphs.nodes.fetch_news", async_fetch_news),
+        patch("backend.graphs.nodes.analyze_sentiment", async_analyze_sentiment),
     ):
         result = await graph.ainvoke(state)
 
@@ -449,10 +453,10 @@ async def test_tool_skipping_validation_market_overview():
     async_fetch_market = mocks["fetch_market_data"]
     async_analyze_sentiment = mocks["analyze_sentiment"]
 
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", async_fetch_market
-    ), patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]), patch(
-        "backend.graphs.nodes.analyze_sentiment", async_analyze_sentiment
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", async_fetch_market),
+        patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]),
+        patch("backend.graphs.nodes.analyze_sentiment", async_analyze_sentiment),
     ):
         result = await graph.ainvoke(state)
 
@@ -470,10 +474,10 @@ async def test_tool_skipping_validation_full_research():
 
     mocks = _make_successful_mocks()
 
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]
-    ), patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]), patch(
-        "backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", mocks["fetch_market_data"]),
+        patch("backend.graphs.nodes.fetch_news", mocks["fetch_news"]),
+        patch("backend.graphs.nodes.analyze_sentiment", mocks["analyze_sentiment"]),
     ):
         result = await graph.ainvoke(state)
 

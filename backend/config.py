@@ -325,7 +325,9 @@ class Settings(BaseSettings):
 
             # If it contains brackets but is not a valid JSON array, treat as malformed in prod.
             if is_prod and ("[" in raw or "]" in raw):
-                raise ValueError("CORS_ORIGINS appears malformed (brackets present but not valid JSON array)")
+                raise ValueError(
+                    "CORS_ORIGINS appears malformed (brackets present but not valid JSON array)"
+                )
 
             # Try comma-separated
             if "," in raw:
@@ -370,6 +372,7 @@ class Settings(BaseSettings):
             raw_str = str(raw).strip()
             if raw_str and not (v or []):
                 import logging
+
                 logging.getLogger(__name__).error(
                     "CORS_ORIGINS parsing produced empty allow-list in production",
                     extra={"raw": raw_str},
@@ -378,6 +381,7 @@ class Settings(BaseSettings):
 
         if not v:
             import logging
+
             logging.getLogger(__name__).warning(
                 "CORS_ORIGINS not configured for production; CORS will be deny-by-default."
             )

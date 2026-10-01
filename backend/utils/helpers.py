@@ -59,7 +59,7 @@ def truncate_text(text: str, max_length: int = 200, suffix: str = "...") -> str:
     """Truncate text to max length."""
     if len(text) <= max_length:
         return text
-    return text[:max_length - len(suffix)] + suffix
+    return text[: max_length - len(suffix)] + suffix
 
 
 def parse_ticker_input(text: str) -> list:

@@ -456,7 +456,9 @@ async def market_data_tool_node(state: GraphState) -> GraphState:
         state = _append_error(state, f"Market Data Tool failed: {result.get('error')}")
         state = {**state, "market_data": {}, "executed_nodes": executed_nodes}
 
-    return _record_node_finish(state, "market_data_tool", ok=ok, error=None if ok else result.get("error"))
+    return _record_node_finish(
+        state, "market_data_tool", ok=ok, error=None if ok else result.get("error")
+    )
 
 
 async def news_tool_node(state: GraphState) -> GraphState:
@@ -600,7 +602,12 @@ async def parallel_tools_node(state: GraphState) -> GraphState:
         if tool_name in selected_tools and tool_name not in executed_nodes:
             executed_nodes.append(tool_name)
 
-    state = {**state, "market_data": state.get("market_data") or {}, "news": state.get("news") or {}, "sentiment": state.get("sentiment") or {}}
+    state = {
+        **state,
+        "market_data": state.get("market_data") or {},
+        "news": state.get("news") or {},
+        "sentiment": state.get("sentiment") or {},
+    }
 
     async def _run_market() -> tuple[bool, dict[str, Any], str, str]:
         started_at = _get_timestamp()
@@ -724,7 +731,9 @@ async def parallel_tools_node(state: GraphState) -> GraphState:
             sentiment_finished_at = _get_timestamp()
 
             sentiment_ok = (
-                bool(sentiment_result.get("ok")) if "ok" in sentiment_result else ("error" not in sentiment_result)
+                bool(sentiment_result.get("ok"))
+                if "ok" in sentiment_result
+                else ("error" not in sentiment_result)
             )
             sentiment_error = sentiment_result.get("error")
             if isinstance(sentiment_error, dict):

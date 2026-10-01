@@ -18,11 +18,11 @@ async def test_market_and_news_success():
     graph = create_first_graph()
     state = create_initial_state(_base_query_with_ticker("TCS"))
 
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
-    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn, patch(
-        "backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock
-    ) as ss:
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm,
+        patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn,
+        patch("backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock) as ss,
+    ):
         mm.return_value = {"ticker": "TCS", "price": 123}
         nn.return_value = {
             "query": "",
@@ -30,7 +30,11 @@ async def test_market_and_news_success():
             "articles": [],
             "total_results": 0,
         }
-        ss.return_value = {"ok": True, "result": {"overall_sentiment": {"label": "neutral"}}, "error": None}
+        ss.return_value = {
+            "ok": True,
+            "result": {"overall_sentiment": {"label": "neutral"}},
+            "error": None,
+        }
 
         result = await graph.ainvoke(state)
 
@@ -65,14 +69,18 @@ async def test_market_success_news_fails():
     graph = create_first_graph()
     state = create_initial_state(_base_query_with_ticker("TCS"))
 
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
-    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn, patch(
-        "backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock
-    ) as ss:
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm,
+        patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn,
+        patch("backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock) as ss,
+    ):
         mm.return_value = {"ticker": "TCS", "price": 123}
         nn.return_value = {"error": "news failed", "error_type": "service_error"}
-        ss.return_value = {"ok": True, "result": {"overall_sentiment": {"label": "neutral"}}, "error": None}
+        ss.return_value = {
+            "ok": True,
+            "result": {"overall_sentiment": {"label": "neutral"}},
+            "error": None,
+        }
 
         result = await graph.ainvoke(state)
 
@@ -80,9 +88,7 @@ async def test_market_success_news_fails():
     assert result["ticker"] == "TCS"
     assert result["market_data"]
     assert result["news"] == {}
-    assert any(
-        "News Tool failed" in e or "News Tool exception" in e for e in result["errors"]
-    )
+    assert any("News Tool failed" in e or "News Tool exception" in e for e in result["errors"])
 
     em = result["execution_metadata"]
     assert em["nodes"]["market_data_tool"]["ok"] is True
@@ -101,11 +107,11 @@ async def test_market_fails_news_success():
     graph = create_first_graph()
     state = create_initial_state(_base_query_with_ticker("TCS"))
 
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
-    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn, patch(
-        "backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock
-    ) as ss:
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm,
+        patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn,
+        patch("backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock) as ss,
+    ):
         mm.return_value = {"error": "market failed", "error_type": "service_error"}
         nn.return_value = {
             "query": "",
@@ -113,7 +119,11 @@ async def test_market_fails_news_success():
             "articles": [],
             "total_results": 0,
         }
-        ss.return_value = {"ok": True, "result": {"overall_sentiment": {"label": "neutral"}}, "error": None}
+        ss.return_value = {
+            "ok": True,
+            "result": {"overall_sentiment": {"label": "neutral"}},
+            "error": None,
+        }
 
         result = await graph.ainvoke(state)
 
@@ -143,14 +153,18 @@ async def test_both_fail():
     graph = create_first_graph()
     state = create_initial_state(_base_query_with_ticker("TCS"))
 
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
-    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn, patch(
-        "backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock
-    ) as ss:
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm,
+        patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn,
+        patch("backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock) as ss,
+    ):
         mm.return_value = {"error": "market failed", "error_type": "service_error"}
         nn.return_value = {"error": "news failed", "error_type": "service_error"}
-        ss.return_value = {"ok": True, "result": {"overall_sentiment": {"label": "neutral"}}, "error": None}
+        ss.return_value = {
+            "ok": True,
+            "result": {"overall_sentiment": {"label": "neutral"}},
+            "error": None,
+        }
 
         result = await graph.ainvoke(state)
 
@@ -177,11 +191,11 @@ async def test_router_fails_to_extract_ticker():
     graph = create_first_graph()
     state = create_initial_state("What is happening? No explicit ticker here")
 
-    with patch(
-        "backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock
-    ) as mm, patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn, patch(
-        "backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock
-    ) as ss:
+    with (
+        patch("backend.graphs.nodes.fetch_market_data", new_callable=AsyncMock) as mm,
+        patch("backend.graphs.nodes.fetch_news", new_callable=AsyncMock) as nn,
+        patch("backend.graphs.nodes.analyze_sentiment", new_callable=AsyncMock) as ss,
+    ):
         result = await graph.ainvoke(state)
 
         mm.assert_not_called()

@@ -1,4 +1,3 @@
-
 # EquiPilot AI - Sidebar Component
 # Navigation, research inputs, system status, and history
 
@@ -29,7 +28,11 @@ _SECTION_ICONS = {
 
 def _sidebar_section(icon: str, title: str, subtitle: str | None = None) -> str:
     """Compact sidebar section header with icon."""
-    subtitle_html = f'<div style="font-size:var(--font-size-xs);color:var(--muted);margin-top:1px;line-height:1.3;">{subtitle}</div>' if subtitle else ""
+    subtitle_html = (
+        f'<div style="font-size:var(--font-size-xs);color:var(--muted);margin-top:1px;line-height:1.3;">{subtitle}</div>'
+        if subtitle
+        else ""
+    )
     return f"""
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
       <span style="font-size:14px;width:20px;flex-shrink:0;">{icon}</span>
@@ -48,7 +51,10 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
     st.markdown('<hr style="margin:1rem 0 !important;" />', unsafe_allow_html=True)
 
     # --- Research (primary CTA) ---
-    st.markdown(_sidebar_section(_SECTION_ICONS["research"], "Research", "Configure and run analysis"), unsafe_allow_html=True)
+    st.markdown(
+        _sidebar_section(_SECTION_ICONS["research"], "Research", "Configure and run analysis"),
+        unsafe_allow_html=True,
+    )
 
     with st.form("analysis_form"):
         company_or_ticker = st.text_input(
@@ -114,7 +120,10 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
     st.markdown('<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
 
     # --- Quick Actions ---
-    st.markdown(_sidebar_section(_SECTION_ICONS["quick"], "Quick Actions", "One-click research"), unsafe_allow_html=True)
+    st.markdown(
+        _sidebar_section(_SECTION_ICONS["quick"], "Quick Actions", "One-click research"),
+        unsafe_allow_html=True,
+    )
     quick_examples = [
         ("AAPL", "📊", "Market snapshot with fundamentals, news, and valuation"),
         ("MSFT", "📰", "Recent news, sentiment, and competitive positioning"),
@@ -153,13 +162,21 @@ def render_sidebar(on_analyze: Callable[[dict[str, Any]], None] | None = None):
     st.markdown('<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
 
     # --- System Status ---
-    st.markdown(_sidebar_section(_SECTION_ICONS["status"], "System Status", "Backend health & integrations"), unsafe_allow_html=True)
+    st.markdown(
+        _sidebar_section(
+            _SECTION_ICONS["status"], "System Status", "Backend health & integrations"
+        ),
+        unsafe_allow_html=True,
+    )
     render_system_status()
 
     st.markdown('<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
 
     # --- Recent Reports ---
-    st.markdown(_sidebar_section(_SECTION_ICONS["history"], "Recent Reports", "Session research history"), unsafe_allow_html=True)
+    st.markdown(
+        _sidebar_section(_SECTION_ICONS["history"], "Recent Reports", "Session research history"),
+        unsafe_allow_html=True,
+    )
     render_recent_reports()
 
     st.markdown('<hr style="margin:1.25rem 0 !important;" />', unsafe_allow_html=True)
@@ -206,21 +223,13 @@ def render_system_status():
             services = health.get("services", {})
             svc_status = []
             if services.get("openai"):
-                svc_status.append(
-                    '<span style="color:var(--success)">●</span> OpenAI'
-                )
+                svc_status.append('<span style="color:var(--success)">●</span> OpenAI')
             else:
-                svc_status.append(
-                    '<span style="color:var(--muted)">○</span> OpenAI'
-                )
+                svc_status.append('<span style="color:var(--muted)">○</span> OpenAI')
             if services.get("news_api"):
-                svc_status.append(
-                    '<span style="color:var(--success)">●</span> News'
-                )
+                svc_status.append('<span style="color:var(--success)">●</span> News')
             else:
-                svc_status.append(
-                    '<span style="color:var(--muted)">○</span> News'
-                )
+                svc_status.append('<span style="color:var(--muted)">○</span> News')
 
             st.markdown(
                 f'<div style="display:flex;gap:12px;margin-top:4px;font-size:var(--font-size-xs);">{ "".join(svc_status) }</div>',

@@ -22,6 +22,7 @@ from backend.schemas.sentiment import SentimentAnalysis, SentimentScore
 
 def _base_market_data() -> dict[str, MarketData]:
     from backend.schemas.market_data import FundamentalsData
+
     return {
         "AAPL": MarketData(
             ticker="AAPL",
@@ -55,7 +56,9 @@ def _base_sentiment() -> SentimentAnalysis:
         confidence=0.7,
         reasoning="earnings beat expectations",
         headline_sentiments=[],
-        processing_metadata=SentimentAnalysis.model_fields["processing_metadata"].annotation(article_count=1),
+        processing_metadata=SentimentAnalysis.model_fields["processing_metadata"].annotation(
+            article_count=1
+        ),
     )
 
 

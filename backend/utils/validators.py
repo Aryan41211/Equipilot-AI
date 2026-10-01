@@ -5,7 +5,7 @@ import re
 from datetime import datetime
 
 # Common ticker pattern (1-5 uppercase letters, optionally with . or - for special classes)
-TICKER_PATTERN = re.compile(r'^[A-Z]{1,5}(?:\.[A-Z]{1,2})?$')
+TICKER_PATTERN = re.compile(r"^[A-Z]{1,5}(?:\.[A-Z]{1,2})?$")
 
 
 def validate_ticker(ticker: str) -> bool:
@@ -46,7 +46,9 @@ def validate_date_range(
     return True, None
 
 
-def validate_query(query: str, min_length: int = 10, max_length: int = 2000) -> tuple[bool, str | None]:
+def validate_query(
+    query: str, min_length: int = 10, max_length: int = 2000
+) -> tuple[bool, str | None]:
     """Validate research query."""
     if not query or not query.strip():
         return False, "Query cannot be empty"
@@ -64,8 +66,8 @@ def validate_query(query: str, min_length: int = 10, max_length: int = 2000) -> 
 def sanitize_filename(name: str) -> str:
     """Sanitize a string for use as filename."""
     # Remove invalid characters
-    name = re.sub(r'[<>:"/\\|?*]', '', name)
+    name = re.sub(r'[<>:"/\\|?*]', "", name)
     # Replace spaces with underscores
-    name = name.replace(' ', '_')
+    name = name.replace(" ", "_")
     # Limit length
     return name[:100]

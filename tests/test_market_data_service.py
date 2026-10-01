@@ -15,9 +15,12 @@ class TestMarketDataService:
         """Test that the service module can be imported."""
         try:
             import importlib.util
+
             spec = importlib.util.spec_from_file_location(
                 "test_market_data_service",
-                os.path.join(os.path.dirname(__file__), "..", "backend", "services", "market_data_service.py")
+                os.path.join(
+                    os.path.dirname(__file__), "..", "backend", "services", "market_data_service.py"
+                ),
             )
             assert spec is not None
         except Exception as e:
@@ -160,7 +163,7 @@ class TestMarketDataServiceLogic:
         service = MarketDataService()
 
         # Mock the internal fetch to return a valid response
-        with patch.object(service, '_fetch_yfinance_data') as mock_fetch:
+        with patch.object(service, "_fetch_yfinance_data") as mock_fetch:
             mock_fetch.return_value = MarketDataResponse(
                 ticker="INFY.NS",
                 company_name="Infosys Limited",
@@ -207,7 +210,7 @@ class TestMarketDataServiceLogic:
         service._cache["TCS.NS"] = cached_response
 
         # Mock the internal fetch
-        with patch.object(service, '_fetch_yfinance_data') as mock_fetch:
+        with patch.object(service, "_fetch_yfinance_data") as mock_fetch:
             mock_fetch.return_value = MarketDataResponse(
                 ticker="TCS.NS",
                 company_name="New Name",
@@ -245,7 +248,7 @@ class TestMarketDataServiceYFinanceIntegration:
             "industry": "Oil & Gas",
         }
 
-        with patch('backend.services.market_data_service.yf.Ticker', return_value=mock_ticker):
+        with patch("backend.services.market_data_service.yf.Ticker", return_value=mock_ticker):
             result = service._fetch_yfinance_data("RELIANCE.NS")
 
             assert result.ticker == "RELIANCE.NS"
@@ -262,7 +265,7 @@ class TestMarketDataServiceYFinanceIntegration:
         mock_ticker.info = {}
 
         with (
-            patch('backend.services.market_data_service.yf.Ticker', return_value=mock_ticker),
+            patch("backend.services.market_data_service.yf.Ticker", return_value=mock_ticker),
             pytest.raises(mds_module.InvalidTickerError, match="Invalid ticker symbol"),
         ):
             service._fetch_yfinance_data("INVALID.NS")
@@ -275,7 +278,7 @@ class TestMarketDataServiceYFinanceIntegration:
         mock_ticker.info = {"symbol": "TEST.NS"}
 
         with (
-            patch('backend.services.market_data_service.yf.Ticker', return_value=mock_ticker),
+            patch("backend.services.market_data_service.yf.Ticker", return_value=mock_ticker),
             pytest.raises(mds_module.DataUnavailableError, match="No market data available"),
         ):
             service._fetch_yfinance_data("TEST.NS")
@@ -290,7 +293,7 @@ class TestMarketDataServiceYFinanceIntegration:
             "regularMarketPrice": 1500.0,
         }
 
-        with patch('backend.services.market_data_service.yf.Ticker', return_value=mock_ticker):
+        with patch("backend.services.market_data_service.yf.Ticker", return_value=mock_ticker):
             result = service._fetch_yfinance_data("TEST.NS")
 
             assert result.current_price == 1500.0
@@ -300,12 +303,12 @@ class TestMarketDataServiceYFinanceIntegration:
 
         service = mds_module.MarketDataService()
         mock_ticker = MagicMock()
-        type(mock_ticker).info = property(lambda _self: (_ for _ in ()).throw(
-            json.JSONDecodeError("Expecting value", "", 0)
-        ))
+        type(mock_ticker).info = property(
+            lambda _self: (_ for _ in ()).throw(json.JSONDecodeError("Expecting value", "", 0))
+        )
 
         with (
-            patch('backend.services.market_data_service.yf.Ticker', return_value=mock_ticker),
+            patch("backend.services.market_data_service.yf.Ticker", return_value=mock_ticker),
             pytest.raises(mds_module.RateLimitError, match="rate limit"),
         ):
             service._fetch_yfinance_data("TEST.NS")
@@ -315,12 +318,12 @@ class TestMarketDataServiceYFinanceIntegration:
 
         service = mds_module.MarketDataService()
         mock_ticker = MagicMock()
-        type(mock_ticker).info = property(lambda _self: (_ for _ in ()).throw(
-            TimeoutError("Connection timed out")
-        ))
+        type(mock_ticker).info = property(
+            lambda _self: (_ for _ in ()).throw(TimeoutError("Connection timed out"))
+        )
 
         with (
-            patch('backend.services.market_data_service.yf.Ticker', return_value=mock_ticker),
+            patch("backend.services.market_data_service.yf.Ticker", return_value=mock_ticker),
             pytest.raises(mds_module.NetworkError, match="Network error fetching"),
         ):
             service._fetch_yfinance_data("TEST.NS")
@@ -336,7 +339,7 @@ class TestMarketDataServiceYFinanceIntegration:
             "currentPrice": 100.0,
         }
 
-        with patch('backend.services.market_data_service.yf.Ticker', return_value=mock_ticker):
+        with patch("backend.services.market_data_service.yf.Ticker", return_value=mock_ticker):
             result = service._fetch_yfinance_data("TEST.NS")
 
             assert result.ticker == "TEST.NS"

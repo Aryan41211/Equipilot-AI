@@ -15,26 +15,31 @@ logger = get_logger(__name__)
 
 class MarketDataServiceError(Exception):
     """Base exception for market data service errors."""
+
     pass
 
 
 class InvalidTickerError(MarketDataServiceError):
     """Raised when ticker symbol is invalid or not found."""
+
     pass
 
 
 class NetworkError(MarketDataServiceError):
     """Raised when network request fails."""
+
     pass
 
 
 class DataUnavailableError(MarketDataServiceError):
     """Raised when Yahoo Finance is unavailable or returns no data."""
+
     pass
 
 
 class RateLimitError(NetworkError):
     """Raised when Yahoo Finance rate limit is exceeded."""
+
     pass
 
 
@@ -130,7 +135,9 @@ class MarketDataService:
                 raise RateLimitError(f"Yahoo Finance rate limit exceeded for {ticker}") from e
             # Empty response (position 0) often indicates rate limiting
             if "char 0" in str(e) or "column 1" in str(e):
-                raise RateLimitError(f"Yahoo Finance rate limit exceeded for {ticker} (empty response)") from e
+                raise RateLimitError(
+                    f"Yahoo Finance rate limit exceeded for {ticker} (empty response)"
+                ) from e
             raise DataUnavailableError(
                 f"Yahoo Finance returned invalid response for {ticker}: {e!s}"
             ) from e
@@ -147,13 +154,13 @@ class MarketDataService:
             raise InvalidTickerError(f"Invalid ticker symbol or no data found: {ticker}")
 
         # Check if we have at least some meaningful data
-        has_price = info.get("currentPrice") is not None or info.get("regularMarketPrice") is not None
+        has_price = (
+            info.get("currentPrice") is not None or info.get("regularMarketPrice") is not None
+        )
         has_name = info.get("longName") is not None or info.get("shortName") is not None
 
         if not has_price and not has_name:
-            raise DataUnavailableError(
-                f"No market data available for ticker: {ticker}"
-            )
+            raise DataUnavailableError(f"No market data available for ticker: {ticker}")
 
         # Use currentPrice or regularMarketPrice as fallback
         current_price = info.get("currentPrice") or info.get("regularMarketPrice")

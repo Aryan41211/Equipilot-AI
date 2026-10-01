@@ -129,9 +129,7 @@ class EntityResolutionService:
         unique_matches = list({m[0]: m for m in matches}.values())
 
         if len(unique_matches) == 0:
-            raise EntityNotFoundError(
-                format_error_detail(message="Entity not found", entity=text)
-            )
+            raise EntityNotFoundError(format_error_detail(message="Entity not found", entity=text))
 
         if len(unique_matches) > 1:
             raise AmbiguousEntityError(
@@ -180,7 +178,7 @@ class EntityResolutionService:
             "aliases": aliases or [],
             "type": entity_type,
         }
-        for alias in (aliases or []):
+        for alias in aliases or []:
             self._alias_index[alias.lower()] = ticker
 
 

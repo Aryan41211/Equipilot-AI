@@ -124,9 +124,7 @@ async def starlette_http_exception_handler(
     )
 
 
-async def validation_exception_handler(
-    request: Request, exc: Exception
-) -> JSONResponse:
+async def validation_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle request validation errors (Pydantic, etc.)."""
     request_id = get_request_id(request)
     logger.warning(

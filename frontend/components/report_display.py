@@ -1,4 +1,3 @@
-
 # EquiPilot AI - Report Display Component
 # Premium enterprise report rendering
 
@@ -90,7 +89,7 @@ def render_report(
             '<div class="ds-state-card__body">'
             '<div class="ds-state-card__title">No Report Available</div>'
             '<div class="ds-state-card__detail">The report data could not be loaded. Submit a new research request to generate a report.</div>'
-            '</div></div>',
+            "</div></div>",
             unsafe_allow_html=True,
         )
         return
@@ -117,7 +116,7 @@ def render_report(
             '<div class="ds-state-card__body">'
             '<div class="ds-state-card__title">Report Format Not Recognized</div>'
             '<div class="ds-state-card__detail">The report data is in an unexpected format. Try viewing the raw data below.</div>'
-            '</div></div>',
+            "</div></div>",
             unsafe_allow_html=True,
         )
 
@@ -126,7 +125,7 @@ def render_report(
             '<div style="display:flex;align-items:center;gap:var(--space-2);margin:var(--space-5) 0 var(--space-3);">'
             '<div style="width:24px;height:24px;border-radius:var(--radius-sm);background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:0.75rem;">🔗</div>'
             '<span style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-sm);">Sources &amp; Citations</span>'
-            '<span class="ds-badge">{}</span>'.format(len(report["citations"])) + ' cited</div>',
+            '<span class="ds-badge">{}</span>'.format(len(report["citations"])) + " cited</div>",
             unsafe_allow_html=True,
         )
         for i, cite in enumerate(report["citations"]):
@@ -213,7 +212,7 @@ def render_synthesized_report(report: dict[str, Any]):
                 items.append(
                     f'<div style="display:flex;gap:0.5rem;padding:0.25rem 0;align-items:flex-start;">'
                     f'<span style="color:var(--primary);flex-shrink:0;font-size:0.75rem;margin-top:0.25rem;">▸</span>'
-                    f'<span>{safe_html_escape(str(item))}</span></div>'
+                    f"<span>{safe_html_escape(str(item))}</span></div>"
                 )
             content = "".join(items)
         else:
@@ -242,19 +241,25 @@ def _render_citation(citation: dict[str, Any], index: int):
         f'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:var(--space-3);margin-bottom:var(--space-2);">'
         f'<div style="flex:1;min-width:0;">'
         f'<div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-sm);color:var(--text);">'
-        f'{index + 1}. {safe_html_escape(title)}</div>'
-        f'</div>'
+        f"{index + 1}. {safe_html_escape(title)}</div>"
+        f"</div>"
         f'<span class="ds-badge" style="flex-shrink:0;">{safe_html_escape(cite_type)}</span>'
-        f'</div>'
+        f"</div>"
         f'<div style="display:flex;gap:var(--space-4);font-size:var(--font-size-xs);color:var(--muted);margin-bottom:var(--space-2);flex-wrap:wrap;">'
-        f'<span>📰 {safe_html_escape(source)}</span>'
-        + (f'<span>📅 {safe_html_escape(date)}</span>' if date else "")
-        + '</div>'
-        + (f'<div style="font-size:var(--font-size-xs);color:var(--muted);line-height:var(--leading-normal);margin-bottom:var(--space-2);">"{safe_html_escape(snippet[:200])}"{"..." if len(snippet) > 200 else ""}</div>'
-           if snippet else "")
-        + (f'<a href="{safe_html_escape(url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:var(--primary);font-weight:var(--font-weight-medium);">🔗 View Source →</a>'
-           if url else "")
-        + '</div>',
+        f"<span>📰 {safe_html_escape(source)}</span>"
+        + (f"<span>📅 {safe_html_escape(date)}</span>" if date else "")
+        + "</div>"
+        + (
+            f'<div style="font-size:var(--font-size-xs);color:var(--muted);line-height:var(--leading-normal);margin-bottom:var(--space-2);">"{safe_html_escape(snippet[:200])}"{"..." if len(snippet) > 200 else ""}</div>'
+            if snippet
+            else ""
+        )
+        + (
+            f'<a href="{safe_html_escape(url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:var(--primary);font-weight:var(--font-weight-medium);">🔗 View Source →</a>'
+            if url
+            else ""
+        )
+        + "</div>",
         unsafe_allow_html=True,
     )
 
@@ -274,13 +279,20 @@ def render_report_card(
         f'<div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-sm);color:var(--text);margin-bottom:2px;">{safe_html_escape(query)}</div>'
         f'<div style="display:flex;gap:var(--space-3);font-size:var(--font-size-xs);color:var(--muted);">'
         f'<span>📊 {", ".join(tickers) if tickers else "No tickers"}</span>'
-        f'<span>{status_badge(status)}</span>'
-        f'</div>'
-        f'</div>'
-        f'</div>',
+        f"<span>{status_badge(status)}</span>"
+        f"</div>"
+        f"</div>"
+        f"</div>",
         unsafe_allow_html=True,
     )
 
     req_id = report.get("request_id", "")
-    if isinstance(req_id, str) and req_id and on_click and st.button("View Report", key=f"view_{req_id}", use_container_width=True, type="secondary"):
+    if (
+        isinstance(req_id, str)
+        and req_id
+        and on_click
+        and st.button(
+            "View Report", key=f"view_{req_id}", use_container_width=True, type="secondary"
+        )
+    ):
         on_click(req_id)

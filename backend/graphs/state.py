@@ -8,6 +8,7 @@ def _get_timestamp() -> str:
 
 class ExecutionTrace(TypedDict):
     """Structured execution trace for a single node."""
+
     node_name: str
     start_time: str
     end_time: str | None

@@ -28,7 +28,9 @@ class ValidationError(EquiPilotError):
     """Base class for validation errors."""
 
 
-def format_error_detail(*, message: str, entity: str | None = None, provider: str | None = None) -> str:
+def format_error_detail(
+    *, message: str, entity: str | None = None, provider: str | None = None
+) -> str:
     """Create consistent error detail strings.
 
     Args:

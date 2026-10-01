@@ -30,6 +30,7 @@ def app():
 def client(app):
     """Create test client."""
     from fastapi.testclient import TestClient
+
     return TestClient(app)
 
 
@@ -185,6 +186,7 @@ class TestExceptionHandlers:
         )
         data = response.body
         import json
+
         parsed = json.loads(data)
         assert parsed["detail"] == "Bad request"
         assert parsed["request_id"] == "test-id"

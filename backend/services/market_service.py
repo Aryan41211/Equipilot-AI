@@ -108,9 +108,7 @@ class MarketService:
         # Calculate change
         if market_data.current_price and market_data.previous_close:
             market_data.change = market_data.current_price - market_data.previous_close
-            market_data.change_percent = (
-                market_data.change / market_data.previous_close
-            ) * 100
+            market_data.change_percent = (market_data.change / market_data.previous_close) * 100
 
         # Cache result
         if settings.enable_caching:

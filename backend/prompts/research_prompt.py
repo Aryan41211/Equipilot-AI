@@ -1,4 +1,3 @@
-
 from backend.schemas.market_data import MarketData
 from backend.schemas.news import NewsArticle
 from backend.schemas.sentiment import SentimentAnalysis
@@ -89,7 +88,9 @@ def build_news_summary(news_articles: list[NewsArticle]) -> str:
 
     lines: list[str] = []
     for article in news_articles[:10]:
-        lines.append(f"\n- **{article.title}** ({article.source}, {article.published_at.strftime('%Y-%m-%d')})")
+        lines.append(
+            f"\n- **{article.title}** ({article.source}, {article.published_at.strftime('%Y-%m-%d')})"
+        )
         if article.description:
             lines.append(f"  {article.description[:200]}...")
 
@@ -103,7 +104,9 @@ def build_sentiment_summary(sentiment_analysis: SentimentAnalysis | None) -> str
 
     lines: list[str] = []
     sent = sentiment_analysis.overall_sentiment
-    lines.append(f"\nOverall Sentiment: {sent.label} (score: {sent.score:.2f}, confidence: {sent.confidence:.2f})")
+    lines.append(
+        f"\nOverall Sentiment: {sent.label} (score: {sent.score:.2f}, confidence: {sent.confidence:.2f})"
+    )
     lines.append(f"Reasoning: {sentiment_analysis.reasoning}")
 
     for hs in sentiment_analysis.headline_sentiments[:5]:

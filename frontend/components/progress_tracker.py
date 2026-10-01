@@ -1,4 +1,3 @@
-
 # EquiPilot AI - Progress Tracker Component
 # Animated research timeline with stage indicators
 
@@ -67,8 +66,8 @@ def render_progress(
         '<div style="width:36px;height:36px;border-radius:var(--radius-md);background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:1rem;animation:spin 2s linear infinite;">🔄</div>'
         '<div><div style="font-size:var(--font-size-xl);font-weight:var(--font-weight-semibold);letter-spacing:-0.02em;">Generating Research</div>'
         '<div style="font-size:var(--font-size-sm);color:var(--muted);">Running multi-agent analysis pipeline</div></div>'
-        '</div>'
-        '</div>',
+        "</div>"
+        "</div>",
         unsafe_allow_html=True,
     )
 
@@ -86,13 +85,13 @@ def render_progress(
             f'<div style="flex:1;">'
             f'<div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-base);">{safe_html_escape(stage_name)}</div>'
             f'<div style="font-size:var(--font-size-sm);color:var(--muted);">{safe_html_escape(stage_desc)}</div>'
-            f'</div>'
+            f"</div>"
             f'<div style="font-size:var(--font-size-sm);font-weight:var(--font-weight-semibold);color:var(--primary);">{pct:.0f}%</div>'
-            f'</div>'
+            f"</div>"
             f'<div style="height:4px;background:var(--border);border-radius:var(--radius-full);overflow:hidden;">'
             f'<div style="height:100%;width:{pct:.0f}%;background:linear-gradient(90deg,var(--primary),var(--primary-hover));border-radius:var(--radius-full);transition:width 0.5s ease;"></div>'
-            f'</div>'
-            f'</div>',
+            f"</div>"
+            f"</div>",
             unsafe_allow_html=True,
         )
 
@@ -102,7 +101,7 @@ def render_progress(
             f'<div class="ds-state-card__icon ds-animate-spin" style="display:inline-block;">⏳</div>'
             f'<div class="ds-state-card__body">'
             f'<div class="ds-state-card__detail" style="font-size:var(--font-size-sm);color:var(--text);">{safe_html_escape(message)}</div>'
-            f'</div></div>',
+            f"</div></div>",
             unsafe_allow_html=True,
         )
 
@@ -118,7 +117,7 @@ def _render_timeline_progress(_current_step: str, step_index: int):
     st.markdown(
         '<div style="font-weight:var(--font-weight-medium);font-size:var(--font-size-xs);color:var(--muted);'
         'text-transform:uppercase;letter-spacing:0.04em;margin-bottom:var(--space-3);margin-top:var(--space-4);">'
-        'Research Pipeline</div>',
+        "Research Pipeline</div>",
         unsafe_allow_html=True,
     )
 
@@ -141,7 +140,7 @@ def _render_timeline_progress(_current_step: str, step_index: int):
                 f'<div class="ds-step__icon" aria-label="step {step_name}">{display_icon}</div>'
                 f'<div class="ds-step__title">{step_name}</div>'
                 f'<div class="ds-step__sub">{desc}</div>'
-                f'</div>',
+                f"</div>",
                 unsafe_allow_html=True,
             )
 
@@ -190,7 +189,7 @@ def render_polling_progress(
                         f'<div class="ds-state-card__body">'
                         f'<div class="ds-state-card__title">Research Failed</div>'
                         f'<div class="ds-state-card__detail">{safe_html_escape(str(error))}</div>'
-                        f'</div></div>',
+                        f"</div></div>",
                         unsafe_allow_html=True,
                     )
                 if on_error:
@@ -205,7 +204,7 @@ def render_polling_progress(
                     '<div class="ds-state-card__body">'
                     '<div class="ds-state-card__title">Waiting for Status</div>'
                     '<div class="ds-state-card__detail">Connecting to research service...</div>'
-                    '</div></div>',
+                    "</div></div>",
                     unsafe_allow_html=True,
                 )
 
@@ -217,7 +216,7 @@ def render_polling_progress(
         '<div class="ds-state-card__body">'
         '<div class="ds-state-card__title">Research Taking Longer Than Expected</div>'
         '<div class="ds-state-card__detail">The analysis is still running. You can check back later or submit a new request.</div>'
-        '</div></div>',
+        "</div></div>",
         unsafe_allow_html=True,
     )
     return None

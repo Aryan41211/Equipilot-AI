@@ -35,6 +35,7 @@ class SentimentAgent:
 
         if not articles:
             from backend.schemas.sentiment import SentimentScore
+
             neutral = SentimentScore(label="neutral", score=0.0, confidence=0.0)
             return SentimentAnalysis(
                 overall_sentiment=neutral,

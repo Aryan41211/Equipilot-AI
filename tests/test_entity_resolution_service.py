@@ -107,7 +107,9 @@ class TestEntityResolutionServiceExtensions:
 
     def test_add_entity_nasdaq(self):
         service = EntityResolutionService()
-        service.add_entity("META", "Meta Platforms", exchange="NASDAQ", aliases=["meta", "facebook"])
+        service.add_entity(
+            "META", "Meta Platforms", exchange="NASDAQ", aliases=["meta", "facebook"]
+        )
         result = asyncio_run(service.resolve("facebook"))
         assert result.ticker == "META"
 
@@ -121,4 +123,5 @@ class TestEntityResolutionServiceExtensions:
 def asyncio_run(coro):
     """Helper to run async code in sync tests."""
     import asyncio
+
     return asyncio.get_event_loop().run_until_complete(coro)

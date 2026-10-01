@@ -34,11 +34,15 @@ class SentimentAnalysis(BaseModel):
     """Structured sentiment result for news headlines."""
 
     overall_sentiment: SentimentScore
-    confidence: float = Field(..., ge=0.0, le=1.0, description="Overall confidence across headlines")
+    confidence: float = Field(
+        ..., ge=0.0, le=1.0, description="Overall confidence across headlines"
+    )
     reasoning: str
 
     headline_sentiments: list[HeadlineSentiment] = Field(default_factory=list)
-    processing_metadata: SentimentProcessingMetadata = Field(default_factory=SentimentProcessingMetadata)
+    processing_metadata: SentimentProcessingMetadata = Field(
+        default_factory=SentimentProcessingMetadata
+    )
 
     analyzed_at: datetime = Field(default_factory=datetime.utcnow)
     model_used: str = "gpt-4o-mini"

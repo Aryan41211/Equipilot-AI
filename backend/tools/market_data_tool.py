@@ -56,7 +56,11 @@ class MarketDataTool:
             return {"error": str(e), "ticker": ticker, "error_type": "service_error"}
         except Exception as e:
             logger.error("Unexpected market data fetch error", ticker=ticker, error=str(e))
-            return {"error": f"Unexpected error: {e!s}", "ticker": ticker, "error_type": "unexpected_error"}
+            return {
+                "error": f"Unexpected error: {e!s}",
+                "ticker": ticker,
+                "error_type": "unexpected_error",
+            }
 
 
 # Convenience function for direct import
