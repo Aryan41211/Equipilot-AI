@@ -2,8 +2,8 @@
 <!-- Provide a short summary of the change and why it’s needed. -->
 
 ## Changes
-- 
-- 
+-
+-
 
 ## Testing
 <!-- Describe what tests you ran. Example: `pytest`, `ruff check`, `black --check`. -->
