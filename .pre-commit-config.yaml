@@ -1,9 +1,3 @@
-# archive/ holds dead code that no longer parses
-# (design_system.py and design_system_clean.py are SyntaxError at HEAD).
-# It is already excluded from the Docker build context, and CI lints only
-# backend/, frontend/, tests/ - so pre-commit is scoped to match CI.
-exclude: '^archive/'
-
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
