@@ -1,6 +1,7 @@
 """Tests that pin the env-var contract for Railway + Streamlit Cloud."""
 
 import os
+import re
 from typing import ClassVar
 
 
@@ -8,6 +9,16 @@ def _read(path: str) -> str:
     assert os.path.exists(path), f"{path} must exist"
     with open(path, encoding="utf-8") as f:
         return f.read()
+
+
+def _assert_var_documented(content: str, var: str) -> None:
+    """Require `VAR=` at the start of a line.
+
+    A bare substring check is worthless here: "PORT=" matches inside "BACKEND_PORT=" and
+    "LOG_FORMAT" matches inside a comment, so the assertion would pass without the var
+    ever being declared.
+    """
+    assert re.search(rf"^{var}=", content, re.MULTILINE), f".env.example missing {var}"
 
 
 class TestDeployEnvContract:
@@ -33,16 +44,12 @@ class TestDeployEnvContract:
     def test_env_example_documents_backend_vars(self):
         content = _read(".env.example")
         for var in self.REQUIRED_BACKEND_VARS:
-            assert var in content, f".env.example missing {var}"
+            _assert_var_documented(content, var)
 
     def test_env_example_documents_frontend_vars(self):
         content = _read(".env.example")
         for var in self.REQUIRED_FRONTEND_VARS:
-            assert var in content, f".env.example missing {var}"
-
-    def test_port_documented(self):
-        content = _read(".env.example")
-        assert "PORT=" in content
+            _assert_var_documented(content, var)
 
     def test_nginx_conf_proxies_api_to_backend(self):
         content = _read("nginx.conf")

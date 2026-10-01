@@ -52,7 +52,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD python -c "import os,urllib.request; urllib.request.urlopen('http://localhost:'+os.getenv('HEALTH_CHECK_PORT','9090')+'/healthz',timeout=3)"
 
 # Streamlit needs $PORT; run the healthz sidecar in the same container.
-CMD ["sh", "-c", "python frontend/healthz.py & exec streamlit run frontend/app.py --server.port=${FRONTEND_PORT:-8501} --server.address=0.0.0.0 --server.headless=true"]
+CMD ["sh", "-c", "python frontend/healthz.py & exec streamlit run frontend/app.py --server.port=${PORT:-8501} --server.address=0.0.0.0 --server.headless=true"]
 
 # ---------- nginx reverse proxy ----------
 FROM nginx:1.27-alpine AS nginx

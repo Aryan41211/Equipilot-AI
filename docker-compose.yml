@@ -6,7 +6,8 @@ services:
       target: production
     image: equipilot-backend:local
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       ENVIRONMENT: development
       BACKEND_RELOAD: "false"
