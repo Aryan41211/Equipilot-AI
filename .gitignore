@@ -23,9 +23,10 @@ htmlcov/
 .nox/
 
 # -----------------------------
-# Streamlit / frontend caches
+# Streamlit (config.toml IS tracked; secrets.toml never is)
 # -----------------------------
-.streamlit/
+.streamlit/secrets.toml
+.streamlit/*.toml.local
 
 # -----------------------------
 # Logs

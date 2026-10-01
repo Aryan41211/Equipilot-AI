@@ -1,5 +1,6 @@
 # Keep docker builds small
 .git
+.github
 .gitignore
 __pycache__
 *.pyc
@@ -11,4 +12,12 @@ venv
 dist
 build
 tests
+archive
+docs
 runtime.txt
+*.md
+.streamlit/secrets.toml
+.pytest_cache
+.ruff_cache
+.coverage
+coverage.xml
