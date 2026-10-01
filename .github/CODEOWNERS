@@ -1,0 +1,9 @@
+# Default owners for everything
+*                       @your-org/equipilot-maintainers
+
+# Deployment-critical paths need explicit review
+/Dockerfile            @your-org/equipilot-maintainers
+/docker-compose.yml    @your-org/equipilot-maintainers
+/nginx.conf            @your-org/equipilot-maintainers
+/.github/workflows/    @your-org/equipilot-maintainers
+/backend/config.py     @your-org/equipilot-maintainers
