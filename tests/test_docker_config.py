@@ -10,6 +10,19 @@ def _read(path: str) -> str:
         return f.read()
 
 
+def _named_stages(content: str) -> list[str]:
+    """Ordered stage aliases from a Dockerfile, ignoring comments and blank lines."""
+    stages = []
+    for raw_line in content.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        match = re.match(r"^FROM\s+\S+(?:\s+AS\s+(\S+))?\s*$", line, re.IGNORECASE)
+        if match and match.group(1):
+            stages.append(match.group(1).lower())
+    return stages
+
+
 class TestDockerfileRuntime:
     """The image must actually start Streamlit in the frontend stage."""
 
@@ -61,6 +74,30 @@ class TestDockerfileRuntime:
         assert (
             "FRONTEND_PORT" not in frontend_stage
         ), "FRONTEND_PORT is dead: the CMD reads $PORT, so the leftover var invites a regression"
+
+    def test_production_stage_is_last(self):
+        """The final stage must be `production`.
+
+        WHY: `docker build .` with no `--target` builds the LAST stage. Railway
+        does not support `--target` for multi-stage Dockerfiles, so it deploys
+        whichever stage happens to be last. With `nginx` last, a Railway deploy
+        of this Dockerfile serves nginx and the backend CMD never runs -- the
+        deploy looks healthy and is entirely wrong. Stage order is therefore a
+        deployment contract, not a cosmetic choice.
+        """
+        stages = _named_stages(_read("Dockerfile"))
+        assert stages, "Dockerfile must declare named stages"
+        assert stages[-1] == "production", (
+            f"production must be the last stage so a bare `docker build .` yields the "
+            f"backend image; got order {stages}"
+        )
+
+    def test_all_named_stages_retained(self):
+        """Reordering must not drop a stage that compose or CI builds by name."""
+        stages = _named_stages(_read("Dockerfile"))
+        for required in ("base", "production", "frontend", "nginx"):
+            assert required in stages, f"Dockerfile is missing the {required} stage: {stages}"
+        assert len(stages) == len(set(stages)), f"duplicate stage aliases: {stages}"
 
 
 class TestComposeWiring:
