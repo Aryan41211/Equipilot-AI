@@ -69,6 +69,36 @@ def build_backend_url(path: str, *, request_id: str | None = None) -> str:
     return f"{normalized_base}/{p}"
 
 
+def build_health_url() -> str:
+    """
+    Resolve the backend health URL.
+
+    /health is registered at the application ROOT (backend/app.py registers
+    /, /health, /ready, /version, /metrics at root; only the research routes
+    live under settings.api_prefix). It therefore must NOT be built with
+    build_backend_url(), which unconditionally prefixes /api/v1 and would
+    produce the permanently-404 /api/v1/health.
+
+    Resolution order:
+      1. EQUIPILOT_HEALTH_URL, used verbatim (it is the documented override and
+         may point at a custom path or probe endpoint).
+      2. Fallback: EQUIPILOT_API_URL + '/health' at the root, tolerating an
+         operator-supplied '/api/v1' suffix the same way build_backend_url does.
+      3. Empty string when neither is configured -- callers must handle that
+         rather than request a relative URL.
+    """
+    health = (API_HEALTH_URL or "").rstrip("/")
+    if health:
+        return health
+
+    base = (API_BASE_URL or "").rstrip("/")
+    if not base:
+        return ""
+    if base.endswith("/api/v1"):
+        base = base[: -len("/api/v1")]
+    return f"{base}/health"
+
+
 T = TypeVar("T")
 
 

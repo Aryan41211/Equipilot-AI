@@ -341,3 +341,82 @@ class TestMainApp:
             patch.object(st, "caption"),
         ):
             render_structured_sections(sections)
+
+
+class TestBuildHealthUrl:
+    """`/health` lives at the app ROOT, not under `/api/v1`.
+
+    backend/app.py registers `/`, `/health`, `/ready`, `/version`, `/metrics`
+    at the root and prefixes only the research routes with `api_prefix`. So the
+    health URL must never be produced by `build_backend_url()`, which always
+    inserts `/api/v1` -- that yields the permanently-404 `/api/v1/health` and
+    makes the sidebar's System Status widget read "Error" on a healthy deploy.
+    """
+
+    @staticmethod
+    def _configured(monkeypatch, api_url: str, health_url: str) -> str:
+        import frontend.app as frontend_app
+
+        monkeypatch.setattr(frontend_app, "API_BASE_URL", api_url.rstrip("/"))
+        monkeypatch.setattr(frontend_app, "API_HEALTH_URL", health_url.rstrip("/"))
+        return frontend_app.build_health_url()
+
+    def test_explicit_health_url_is_used_verbatim(self, monkeypatch):
+        url = self._configured(
+            monkeypatch, "https://backend.example.com", "https://probe.example.com/custom-health"
+        )
+        assert url == "https://probe.example.com/custom-health"
+
+    def test_explicit_health_url_wins_over_api_url(self, monkeypatch):
+        """EQUIPILOT_HEALTH_URL is the documented source of truth."""
+        url = self._configured(
+            monkeypatch, "https://backend.example.com", "https://backend.example.com/health"
+        )
+        assert url == "https://backend.example.com/health"
+        assert "/api/v1" not in url
+
+    def test_unset_health_url_falls_back_to_root_health(self, monkeypatch):
+        url = self._configured(monkeypatch, "https://backend.example.com", "")
+        assert url == "https://backend.example.com/health"
+
+    def test_fallback_never_contains_api_prefix(self, monkeypatch):
+        """The regression this guards: build_backend_url('health') -> /api/v1/health."""
+        for base in ("https://backend.example.com", "https://backend.example.com/", ""):
+            url = self._configured(monkeypatch, base, "")
+            assert "/api/v1" not in url, f"health URL must be root-relative, got {url!r}"
+
+    def test_fallback_tolerates_api_url_with_api_prefix(self, monkeypatch):
+        """An operator may supply EQUIPILOT_API_URL already suffixed."""
+        url = self._configured(monkeypatch, "https://backend.example.com/api/v1", "")
+        assert url == "https://backend.example.com/health"
+
+    def test_no_configuration_returns_empty_string(self, monkeypatch):
+        """Callers must be able to detect 'not configured' without a bogus URL."""
+        assert self._configured(monkeypatch, "", "") == ""
+
+    def test_sidebar_requests_the_resolved_health_url(self, monkeypatch):
+        """render_system_status must request /health, never /api/v1/health."""
+        import frontend.app as frontend_app
+        import frontend.components.sidebar as sidebar
+
+        monkeypatch.setattr(frontend_app, "API_BASE_URL", "https://backend.example.com")
+        monkeypatch.setattr(frontend_app, "API_HEALTH_URL", "")
+        monkeypatch.setattr(sidebar, "API_BASE_URL", "https://backend.example.com")
+
+        from frontend.components.sidebar import render_system_status
+
+        with (
+            patch.object(st, "caption"),
+            patch.object(st, "markdown"),
+            patch.object(st, "columns", return_value=[Mock(), Mock()]),
+            patch("requests.get") as mock_get,
+        ):
+            response = Mock()
+            response.status_code = 200
+            response.json.return_value = {"services": {"openai": True, "news_api": True}}
+            mock_get.return_value = response
+            render_system_status()
+
+        requested = mock_get.call_args[0][0]
+        assert requested == "https://backend.example.com/health"
+        assert "/api/v1" not in requested

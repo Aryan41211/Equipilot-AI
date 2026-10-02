@@ -198,9 +198,13 @@ def render_system_status():
 
         import requests
 
-        from frontend.app import build_backend_url
+        from frontend.app import build_health_url
 
-        health_url = build_backend_url("health")
+        health_url = build_health_url()
+        if not health_url:
+            st.caption("Health URL not configured (set EQUIPILOT_HEALTH_URL).")
+            return
+
         response = requests.get(health_url, timeout=5)
         if response.status_code == 200:
             health = response.json()
@@ -251,9 +255,9 @@ def render_system_status():
         )
         if API_BASE_URL:
             try:
-                from frontend.app import build_backend_url
+                from frontend.app import build_health_url
 
-                st.caption(f"Checked: {build_backend_url('health')}")
+                st.caption(f"Checked: {build_health_url()}")
             except Exception:
                 st.caption("Checked: /health")
 
