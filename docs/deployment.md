@@ -146,31 +146,13 @@ Only the research API lives under `/api/v1`. Health endpoints are at the root, s
 
 ## Runbook A — Backend on Railway
 
-### A.0 Build-stage prerequisite — read this first
+### A.0 Build-stage prerequisite
 
-> [!WARNING]
-> **The repository's `Dockerfile` cannot be deployed to Railway as the backend service
-> yet.** This is a known repo gap, not a Railway misconfiguration.
->
-> `Dockerfile` declares four stages, in this order:
-> `base` → `production` → `frontend` → **`nginx`**.
->
-> Docker builds the **last** stage unless `--target` is given, and Railway does not
-> support `--target` for multi-stage Dockerfiles. Deploying the root `Dockerfile` to
-> Railway therefore builds and runs the **`nginx`** stage — the Streamlit UI and its
-> reverse proxy — and the backend `CMD` (`python -m backend.app`) never executes.
->
-> **Remedy.** Railway does support selecting *which Dockerfile file* to build:
->
-> - service variable `RAILWAY_DOCKERFILE_PATH`, or
-> - `build.dockerfilePath` in a config-as-code file.
->
-> Add a `Dockerfile.backend` to the repository whose `base` and `production` stages
-> match the existing ones and whose **final stage is `production`**, then point
-> Railway at it. The `production` stage body to copy verbatim is the block between
-> `FROM base AS production` and its `CMD` in `Dockerfile` (lines 11–31).
->
-> Until that file exists, stop here — steps A.1 onward assume you have it.
+The repository's root `Dockerfile` is deployable to Railway as-is. The
+`production` stage is the **last** stage in the multi-stage build, and Docker
+builds the last stage by default. Since Railway does not support `--target`,
+deploying the root `Dockerfile` builds and runs the `production` stage with the
+backend `CMD` (`python -m backend.app`). No additional Dockerfile is required.
 
 ### A.1 Create the service
 
@@ -179,9 +161,9 @@ Only the research API lives under `/api/v1`. Health endpoints are at the root, s
 3. Railway detects a root `Dockerfile` automatically. **Do not add a `Procfile`** — the
    image `CMD` is the single start command, and Railway errors out when both a build
    file and a start command compete.
-4. In the service's **build settings**, set the builder to `Dockerfile` and point the
-   Dockerfile path at `Dockerfile.backend` — either via the `RAILWAY_DOCKERFILE_PATH`
-   service variable or the dashboard's Dockerfile-path field (see A.0).
+4. In the service's **build settings**, set the builder to `Dockerfile` and use the
+   default Dockerfile path (the root `Dockerfile`). No `RAILWAY_DOCKERFILE_PATH` is
+   required.
 
 ### A.2 Variables
 
@@ -370,12 +352,13 @@ for the first few seconds; it should turn green within the 3-second health-check
 timeout plus cold-start time.
 
 > [!NOTE]
-> **Known cosmetic issue.** The sidebar's *System status* widget calls
-> `build_backend_url("health")`, which produces `https://<host>/api/v1/health` — the
-> `404` endpoint described in B.2. So that widget reports `Error` or `Unreachable` even
-> when the deployment is perfectly healthy. The header indicator uses
-> `EQUIPILOT_HEALTH_URL` and is accurate; trust it. Nothing about this indicates a
-> deployment problem.
+> The sidebar's *System status* widget now resolves the health check via the
+> `EQUIPILOT_HEALTH_URL` setting, with a root-relative `/health` fallback, hitting the
+> root `/health` endpoint (not under `/api/v1`). When `EQUIPILOT_HEALTH_URL` is
+> configured, the widget uses it verbatim; otherwise it falls back to
+> `build_backend_url("health")` behavior corrected to target `/health`. As a result,
+> the System Status widget reports **Connected** on a healthy deployment. The header
+> indicator also uses `EQUIPILOT_HEALTH_URL` when set and is accurate.
 
 ---
 
