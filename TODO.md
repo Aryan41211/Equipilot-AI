@@ -1,9 +1,17 @@
-- [ ] Ensure exactly one Railway start-command file: keep Dockerfile, comment-out/disable Procfile.
-- [ ] Move any OpenAI/news/sentiment client construction performed at module import time into lazy singleton / FastAPI dependency.
-- [ ] Add single-line startup logging for:
-  - [ ] PORT value being bound
-  - [ ] CORS_ORIGINS raw value + detected format (JSON array vs comma-separated)
-  - [ ] final parsed list
-  - [ ] whether OPENAI_API_KEY is present (no key value)
-- [ ] If CORS_ORIGINS parsing fails: log ERROR and refuse to start in production mode (raise during startup/config parse).
-- [ ] Run full test suite (pytest) and confirm no regressions.
+# Resolved Deployment TODOs
+
+All items below were closed during the deployment-completion pass.
+See `docs/superpowers/plans/2026-10-01-deployment-completion.md`.
+
+- [x] Exactly one Railway start command: `Procfile` deleted; the `Dockerfile` `CMD`
+      (`python -m backend.app`) is authoritative.
+- [x] OpenAI client construction is lazy (`backend/services/llm_service.py:_get_client`).
+- [x] Startup logging emits `StartupConfig` with the bound `port`, the `host`, the
+      `CORS_ORIGINS` raw value + detected format, the parsed list, and
+      `openai_api_key_present` (`backend/app.py` lifespan).
+- [x] Malformed `CORS_ORIGINS` in production raises during config parse
+      (`backend/config.py` `parse_cors_origins`), and a production value that parses to an
+      empty allow-list logs ERROR and raises (`enforce_environment_cors`).
+- [x] Full test suite green — 236 passed. `tests/test_deploy_config.py` and
+      `tests/test_docker_config.py` pin the deployment contract so these items cannot
+      silently regress.
