@@ -172,9 +172,9 @@ Under **Settings → Variables**, add:
 | Variable | Value | Consequence if wrong |
 |----------|-------|----------------------|
 | `OPENAI_API_KEY` | your key | **Startup error in production** — `validate_environment()` records `OPENAI_API_KEY is not set - LLM features unavailable`, so `/ready` returns `503` and `/health` reports `degraded` |
-| `SECRET_KEY` | `openssl rand -hex 32` | Warning only: `SECRET_KEY not set - session security may be compromised` |
+| `SECRET_KEY` | `openssl rand -hex 32` | **Required.** Startup aborts with `ConfigurationError` before the server binds a port |
 | `BACKEND_RELOAD` | `false` | Warning only: `BACKEND_RELOAD is enabled in production - disable for performance` |
-| `ENVIRONMENT` | `production` | Enables the strict CORS policy and the `OPENAI_API_KEY` check below |
+| `ENVIRONMENT` | `production` | Enables the strict CORS policy, the required-variable check, and the `OPENAI_API_KEY` check below |
 | `LOG_LEVEL` | `INFO` | Default; `DEBUG` is very noisy |
 | `LOG_FORMAT` | `json` | Structured logs, already the image default |
 | `CORS_ORIGINS` | frontend origin — see A.3 | **Set last** |
@@ -182,14 +182,20 @@ Under **Settings → Variables**, add:
 | `OPENAI_MODEL_MINI` | `gpt-4o-mini` (optional) | Classification and sentiment |
 | `NEWS_API_KEY` | optional | Without it, news falls back to free sources |
 
-Only `OPENAI_API_KEY` and a sub-1024 `PORT` are recorded as startup **errors**.
-`SECRET_KEY` and `BACKEND_RELOAD` produce `Configuration warning` log lines and nothing
-more — set them anyway, but do not expect the deploy to fail if you forget.
+`SECRET_KEY` is the only hard requirement. It is enforced by
+`enforce_required_configuration()` in `backend/app.py`, which runs at the very top of the
+FastAPI lifespan and raises `ConfigurationError` listing the missing variable *names*.
+Only `ENVIRONMENT=production` is strict; development and staging tolerate a missing
+`SECRET_KEY` so local Docker Compose keeps working.
 
-Startup errors never kill the process. They are collected into `app.state.startup_errors`,
-logged as `Startup completed with errors`, and surfaced by `/ready` as `503` and
-`/health` as `"status": "degraded"`. A service can therefore look "up" on Railway's
-dashboard while being unready — always check `/ready`.
+`OPENAI_API_KEY` and a sub-1024 `PORT` are recorded as startup **errors**, while
+`BACKEND_RELOAD` produces a `Configuration warning` log line only.
+
+Non-fatal startup errors never kill the process. They are collected into
+`app.state.startup_errors`, logged as `Startup completed with errors`, and surfaced by
+`/ready` as `503` and `/health` as `"status": "degraded"`. A service can therefore look
+"up" on Railway's dashboard while being unready — always check `/ready`. Only the missing
+required-variable check is fatal.
 
 The `production` image stage already bakes `ENVIRONMENT=production`,
 `BACKEND_RELOAD=false`, `LOG_FORMAT=json`, and `PORT=8000` as `ENV` defaults. Setting

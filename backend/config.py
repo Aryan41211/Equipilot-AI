@@ -14,6 +14,18 @@ from backend.core.constants import (
     VALID_LOG_LEVELS,
 )
 
+# Environment variables that MUST be present when ENVIRONMENT=production.
+# Maps each variable name to the Settings attribute holding its value.
+#
+# Only variables whose absence makes the deployment unsafe or unmanageable
+# belong here. Data-provider keys (OPENAI_API_KEY, NEWS_API_KEY) are excluded:
+# the application degrades gracefully to yfinance-derived sources and must keep
+# booting on the documented no-key deployment path. Values are never logged --
+# only the variable names are reported.
+REQUIRED_PRODUCTION_ENV_VARS: dict[str, str] = {
+    "SECRET_KEY": "secret_key",
+}
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
@@ -421,6 +433,13 @@ class Settings(BaseSettings):
     def validate_environment_variables(self) -> list[str]:
         """Validate that all required environment variables are set for the current environment.
 
+        Advisory only: the returned entries are diagnostics, never fatal. The
+        authoritative list of variables that gate startup is
+        ``REQUIRED_PRODUCTION_ENV_VARS``, exposed via
+        :meth:`missing_required_variables`. Note this method is stricter than
+        that list (it also flags OPENAI_API_KEY and BACKEND_RELOAD), which is
+        intentional -- those remain non-fatal.
+
         Returns:
             List of missing or invalid environment variable descriptions
         """
@@ -436,6 +455,25 @@ class Settings(BaseSettings):
                 errors.append("BACKEND_RELOAD must be false in production")
 
         return errors
+
+    def missing_required_variables(self) -> list[str]:
+        """Return the names of required environment variables that are unset.
+
+        Only production is strict. Development and staging always return an empty
+        list so the local Docker Compose flow and the test suite stay bootable
+        without a ``SECRET_KEY``.
+
+        Returns:
+            Sorted list of environment variable *names* (never values).
+        """
+        if not self.is_production:
+            return []
+
+        return sorted(
+            name
+            for name, attribute in REQUIRED_PRODUCTION_ENV_VARS.items()
+            if not getattr(self, attribute)
+        )
 
 
 @lru_cache(maxsize=1)

@@ -11,8 +11,9 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend.config import settings
+from backend.config import Settings, settings
 from backend.core.constants import APP_NAME, APP_VERSION, AppStatus
+from backend.core.exceptions import ConfigurationError
 from backend.exceptions.handlers import register_exception_handlers
 from backend.graphs.graph import create_first_graph, create_initial_state
 from backend.middleware.production import (
@@ -40,6 +41,26 @@ _research_store: dict[str, dict[str, Any]] = {}
 # Key: fingerprint derived from incoming request (query + tickers)
 # Value: dict with timestamps and associated request_id/state
 _idempotency_store: dict[str, dict[str, Any]] = {}
+
+
+def enforce_required_configuration(active_settings: Settings) -> None:
+    """Abort startup when required production configuration is missing.
+
+    Strict only in production (``Settings.is_production``). Everywhere else the
+    check is a no-op so development, staging and the test suite keep booting.
+
+    Args:
+        active_settings: The settings instance to validate.
+
+    Raises:
+        ConfigurationError: If a required variable is unset in production. The
+            message lists variable names only -- never secret values.
+    """
+    missing = active_settings.missing_required_variables()
+    if missing:
+        raise ConfigurationError(
+            "Missing required environment variables in production: " + ", ".join(missing)
+        )
 
 
 async def validate_environment() -> list:
@@ -80,6 +101,11 @@ async def validate_environment() -> list:
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager for startup/shutdown."""
     global research_graph  # Declare once at the top for all assignments
+
+    # Fail fast before doing any expensive work. This call is deliberately NOT
+    # wrapped in the try/except below: swallowing it here is exactly what let a
+    # misconfigured production deployment keep serving traffic.
+    enforce_required_configuration(settings)
 
     logger.info(
         "Starting EquiPilot AI backend",
