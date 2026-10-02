@@ -331,6 +331,54 @@ class TestConfigurationValidation:
         assert reload_settings.is_development is True
 
 
+class TestTestEnvironmentValue:
+    """`environment="test"` must be accepted -- CI exports ENVIRONMENT=test.
+
+    The `Run Tests` job sets ENVIRONMENT=test, so a validator that rejects it makes
+    every test module that imports ``backend.config`` fail at collection time.
+    """
+
+    def test_config_accepts_test_environment(self):
+        from backend.config import Settings
+
+        settings = Settings(environment="test")
+
+        assert settings.environment == "test"
+
+    def test_test_environment_is_normalized(self):
+        from backend.config import Settings
+
+        assert Settings(environment="TEST").environment == "test"
+
+    @pytest.mark.parametrize("invalid", ["prod", "prodution", "", "dev", "staging2"])
+    def test_config_still_rejects_invalid_environments(self, invalid):
+        """The validator must remain a real gate, not a no-op."""
+        from pydantic import ValidationError
+
+        from backend.config import Settings
+
+        with pytest.raises(ValidationError):
+            Settings(environment=invalid)
+
+    def test_test_environment_is_neither_production_nor_staging(self):
+        """Production-only strictness must not engage under test."""
+        from backend.config import Settings
+
+        settings = Settings(environment="test", secret_key="", backend_reload=False)
+
+        assert settings.is_production is False
+        assert settings.is_staging is False
+
+    def test_test_environment_requires_no_production_variables(self):
+        """The startup fail-fast path must stay permissive under test."""
+        from backend.config import Settings
+
+        settings = Settings(environment="test", secret_key="", _env_file=None)
+
+        assert settings.missing_required_variables() == []
+        assert settings.validate_environment_variables() == []
+
+
 class TestMetricsCollection:
     """Test metrics middleware."""
 
@@ -367,11 +415,17 @@ class TestMetricsCollection:
 class TestConfigFields:
     """Test configuration fields and defaults."""
 
-    def test_default_values(self):
-        """Settings should have correct default values."""
+    def test_default_values(self, monkeypatch):
+        """Settings should have correct default values.
+
+        ``ENVIRONMENT`` is cleared because CI's test job exports ENVIRONMENT=test;
+        without this the assertion reads the env var instead of the declared
+        default and the test fails on any environment that sets it.
+        """
         from backend.config import Settings
 
-        settings = Settings()
+        monkeypatch.delenv("ENVIRONMENT", raising=False)
+        settings = Settings(_env_file=None)
 
         assert settings.backend_host == "0.0.0.0"
         assert settings.backend_port == 8000

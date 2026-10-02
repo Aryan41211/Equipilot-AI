@@ -418,7 +418,7 @@ The dashboard will be available at `http://localhost:8501`.
 | `OPENAI_MODEL_MINI` | No | `gpt-4o-mini` | Cost-effective model for classification |
 | `NEWS_API_KEY` | No | — | News API key (NewsAPI, Alpha Vantage, Finnhub) |
 | `NEWS_API_PROVIDER` | No | `newsapi` | News provider selection |
-| `ENVIRONMENT` | No | `development` | `development`, `staging`, or `production` |
+| `ENVIRONMENT` | No | `development` | `development`, `staging`, `production`, or `test` |
 | `BACKEND_HOST` | No | `0.0.0.0` | Backend server bind address |
 | `BACKEND_PORT` | No | `8000` | Backend server port |
 | `BACKEND_RELOAD` | No | `true` | Enable auto-reload (disable in production) |

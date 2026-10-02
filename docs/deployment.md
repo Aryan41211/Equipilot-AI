@@ -185,8 +185,10 @@ Under **Settings → Variables**, add:
 `SECRET_KEY` is the only hard requirement. It is enforced by
 `enforce_required_configuration()` in `backend/app.py`, which runs at the very top of the
 FastAPI lifespan and raises `ConfigurationError` listing the missing variable *names*.
-Only `ENVIRONMENT=production` is strict; development and staging tolerate a missing
-`SECRET_KEY` so local Docker Compose keeps working.
+Only `ENVIRONMENT=production` is strict; development, staging and `test` tolerate a
+missing `SECRET_KEY` so local Docker Compose and the CI test job keep working. `test` is
+a valid environment value because the `Run Tests` CI job exports `ENVIRONMENT=test`; it
+is neither production nor staging, so no production-only strictness engages.
 
 `OPENAI_API_KEY` and a sub-1024 `PORT` are recorded as startup **errors**, while
 `BACKEND_RELOAD` produces a `Configuration warning` log line only.

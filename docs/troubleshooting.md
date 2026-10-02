@@ -103,7 +103,7 @@ log_level
 **Solution**: Check `.env` for typos. Valid values:
 - `LOG_LEVEL`: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
 - `LOG_FORMAT`: `json` or `text`
-- `ENVIRONMENT`: `development`, `staging`, or `production`
+- `ENVIRONMENT`: `development`, `staging`, `production`, or `test`
 - `NEWS_API_PROVIDER`: `newsapi`, `alphavantage`, or `finnhub`
 
 ### Production Validation Errors

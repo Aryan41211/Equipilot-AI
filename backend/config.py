@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     )
     environment: str = Field(
         default="development",
-        description="Deployment environment: development, staging, production",
+        description="Deployment environment: development, staging, production, test",
     )
 
     # -------------------------------------------------------------------------
@@ -270,8 +270,13 @@ class Settings(BaseSettings):
     @field_validator("environment")
     @classmethod
     def validate_environment(cls, v: str) -> str:
-        """Validate deployment environment."""
-        valid_environments = {"development", "staging", "production"}
+        """Validate deployment environment.
+
+        ``test`` is valid because the CI test job exports ``ENVIRONMENT=test``.
+        It is neither production nor staging, so production-only strictness
+        (required variables, CORS policy, reload checks) stays switched off.
+        """
+        valid_environments = {"development", "staging", "production", "test"}
         if v.lower() not in valid_environments:
             raise ValueError(f"environment must be one of {valid_environments}")
         return v.lower()
