@@ -8,7 +8,11 @@ from unittest.mock import Mock
 
 from langchain_core.tools import StructuredTool
 
+from backend.agents.synthesis_agent import SynthesisAgent
 from backend.graphs.state import GraphState, _get_timestamp
+from backend.schemas.market_data import MarketData
+from backend.schemas.news import NewsArticle
+from backend.schemas.sentiment import SentimentAnalysis
 from backend.tools.market_data_tool import fetch_market_data
 from backend.tools.news_tool import fetch_news
 from backend.tools.sentiment_tool import analyze_sentiment
@@ -795,11 +799,24 @@ async def research_node(state: GraphState) -> GraphState:
         executed_nodes.append("research")
 
     ticker = state.get("ticker")
-    report = (
-        f"Placeholder research report for {ticker}. "
-        f"Includes market_data and/or news results where available. "
-        f"(No LLM integration.)"
-    )
+
+    # Use the synthesized report if the synthesis agent produced one;
+    # otherwise fall back to the placeholder report.
+    synthesis_result = state.get("synthesis_result")
+    if synthesis_result:
+        report = synthesis_result.get("executive_summary", "")
+        if not report:
+            report = (
+                f"Placeholder research report for {ticker}. "
+                f"Includes market_data and/or news results where available. "
+                f"(No LLM integration.)"
+            )
+    else:
+        report = (
+            f"Placeholder research report for {ticker}. "
+            f"Includes market_data and/or news results where available. "
+            f"(No LLM integration.)"
+        )
 
     state = {**state, "report": report, "executed_nodes": executed_nodes}
 
@@ -807,7 +824,8 @@ async def research_node(state: GraphState) -> GraphState:
     if state_status not in ("success", "failed"):
         has_market = bool(state.get("market_data"))
         has_news = bool(state.get("news"))
-        state_status = "success" if (has_market or has_news) else "failed"
+        has_sentiment = bool(state.get("sentiment"))
+        state_status = "success" if (has_market or has_news or has_sentiment) else "failed"
 
     completed_at = _get_timestamp()
     started_at = state.get("started_at")
@@ -834,4 +852,161 @@ async def research_node(state: GraphState) -> GraphState:
         "research",
         ok=ok,
         error=None if ok else "Research produced but no tool data",
+    )
+
+
+async def synthesis_node(state: GraphState) -> GraphState:
+    """Synthesize research data into a grounded report with citations.
+
+    Attempts to use the LLM-backed SynthesisAgent to generate a structured
+    research report with citations and risk factors. If the LLM provider is
+    unavailable (no API key, provider error, or schema mismatch), falls back
+    to the placeholder report and records the degradation in execution
+    metadata.
+    """
+    state = _record_node_start(state, "synthesis")
+
+    executed_nodes = _ensure_list_field(state, "executed_nodes")
+    if "synthesis" not in executed_nodes:
+        executed_nodes.append("synthesis")
+
+    query = state.get("user_query", "")
+    ticker = state.get("ticker")
+    tickers = [ticker] if ticker else []
+
+    market_data = state.get("market_data", {}) or {}
+    news = state.get("news", {}) or {}
+    sentiment = state.get("sentiment", {}) or {}
+
+    news_articles = []
+    if isinstance(news, dict):
+        for a in news.get("articles", []) or []:
+            if isinstance(a, dict):
+                news_articles.append(a)
+
+    sentiment_analysis = None
+    if isinstance(sentiment, dict) and sentiment.get("ok"):
+        sentiment_analysis = sentiment.get("result")
+
+    report = (
+        f"Placeholder research report for {ticker}. "
+        f"Includes market_data and/or news results where available. "
+        f"(No LLM integration.)"
+    )
+    citations: list[dict[str, Any]] = []
+    synthesis_result: dict[str, Any] | None = None
+    synthesis_ok = False
+
+    try:
+        agent = SynthesisAgent()
+        # Convert state dicts to typed schemas expected by SynthesisAgent.
+        md_typed: dict[str, MarketData] = {}
+        for ticker_key, md in market_data.items():
+            if isinstance(md, dict):
+                md_typed[ticker_key] = MarketData(**md)
+
+        na_list: list[NewsArticle] = []
+        for a in news_articles:
+            if isinstance(a, dict) and a.get("url"):
+                na_list.append(NewsArticle(**a))
+
+        sa_typed: SentimentAnalysis | None = None
+        if sentiment_analysis and isinstance(sentiment_analysis, dict):
+            try:
+                sa_typed = SentimentAnalysis(**sentiment_analysis)
+            except Exception:
+                # Sentiment schema mismatch: pass None, synthesis will degrade
+                # gracefully without sentiment context.
+                sa_typed = None
+
+        report_obj = await agent.generate_report(
+            query=query,
+            tickers=tickers,
+            market_data=md_typed,
+            news_articles=na_list,
+            sentiment_analysis=sa_typed,
+            max_length=5000,
+        )
+
+        report = report_obj.executive_summary or report
+        citations = [
+            {
+                "id": c.id,
+                "type": c.type,
+                "title": c.title,
+                "source": c.source,
+                "url": str(c.url) if c.url else None,
+                "chunk_text": c.chunk_text,
+                "confidence": c.confidence,
+            }
+            for c in (
+                list(report_obj.market_data_sources)
+                + list(report_obj.news_sources)
+                + list(report_obj.sentiment_sources)
+            )
+        ]
+        synthesis_result = {
+            "executive_summary": report_obj.executive_summary,
+            "market_snapshot": report_obj.market_snapshot,
+            "news_summary": report_obj.news_summary,
+            "sentiment_summary": report_obj.sentiment_summary,
+            "key_observations": report_obj.key_observations,
+            "risks": report_obj.risks,
+            "confidence": report_obj.confidence_score,
+            "disclaimer": report_obj.disclaimer,
+            "total_citations": report_obj.total_citations,
+            "unique_sources": report_obj.unique_sources,
+        }
+        synthesis_ok = True
+    except Exception as exc:
+        # LLM unavailable, schema mismatch, or any other failure: fall back
+        # gracefully to the placeholder report. Do not crash the workflow or
+        # pollute the error list — degradation to placeholder is expected
+        # behavior when no LLM provider is configured.
+        logger.warning(
+            "Synthesis agent unavailable, using placeholder report",
+            error=str(exc),
+            request_id=state.get("request_id"),
+        )
+
+    state = {
+        **state,
+        "report": report,
+        "citations": citations,
+        "synthesis_result": synthesis_result,
+        "executed_nodes": executed_nodes,
+    }
+
+    state_status = state.get("status", "pending")
+    if state_status not in ("success", "failed"):
+        # Match original behavior: success if market_data or news dict is
+        # non-empty (i.e. the tool ran and returned a dict, even if empty).
+        has_market = bool(market_data)
+        has_news = bool(news)
+        state_status = "success" if (has_market or has_news) else "failed"
+
+    completed_at = _get_timestamp()
+    started_at = state.get("started_at")
+    total_ms = _duration_ms(started_at, completed_at)
+
+    execution_metadata = _ensure_execution_metadata(state)
+    if total_ms is not None:
+        execution_metadata["execution_time_ms"] = total_ms
+    execution_metadata["synthesis_ok"] = synthesis_ok
+
+    state = {
+        **state,
+        "status": state_status,
+        "completed_at": completed_at,
+        "execution_duration_ms": total_ms,
+        "execution_metadata": execution_metadata,
+    }
+
+    ok = synthesis_ok
+
+    return _record_node_finish(
+        state,
+        "synthesis",
+        ok=ok,
+        error=None if ok else "Synthesis produced no usable output",
     )

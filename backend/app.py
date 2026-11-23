@@ -643,6 +643,9 @@ def create_app() -> FastAPI:
         if t:
             tickers = [t]
 
+        # Return citations from the synthesis agent when available.
+        citations = state.get("citations") or None
+
         message = (
             "Research completed."
             if r_status == ResearchStatus.COMPLETED
@@ -660,7 +663,7 @@ def create_app() -> FastAPI:
             tickers=tickers,
             report=report,
             sections=None,
-            citations=None,
+            citations=citations,
             current_step=current_step,
             execution_metadata=execution_metadata,
             message=message,

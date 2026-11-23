@@ -328,6 +328,25 @@ class TestPerformance:
             patch("backend.graphs.nodes.fetch_market_data", mock_market),
             patch("backend.graphs.nodes.fetch_news", mock_news),
             patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment),
+            patch(
+                "backend.graphs.nodes.SynthesisAgent.generate_report",
+                new_callable=AsyncMock,
+                return_value=MagicMock(
+                    executive_summary="Mock synthesized report.",
+                    market_snapshot=None,
+                    news_summary=None,
+                    sentiment_summary=None,
+                    key_observations=[],
+                    risks=[],
+                    confidence=0.8,
+                    disclaimer="Mock disclaimer.",
+                    total_citations=0,
+                    unique_sources=0,
+                    market_data_sources=[],
+                    news_sources=[],
+                    sentiment_sources=[],
+                ),
+            ),
         ):
             start = time.time()
             result = await graph.ainvoke(state)
@@ -367,6 +386,25 @@ class TestPerformance:
             patch("backend.graphs.nodes.fetch_market_data", mock_market),
             patch("backend.graphs.nodes.fetch_news", mock_news),
             patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment),
+            patch(
+                "backend.graphs.nodes.SynthesisAgent.generate_report",
+                new_callable=AsyncMock,
+                return_value=MagicMock(
+                    executive_summary="Mock synthesized report.",
+                    market_snapshot=None,
+                    news_summary=None,
+                    sentiment_summary=None,
+                    key_observations=[],
+                    risks=[],
+                    confidence=0.8,
+                    disclaimer="Mock disclaimer.",
+                    total_citations=0,
+                    unique_sources=0,
+                    market_data_sources=[],
+                    news_sources=[],
+                    sentiment_sources=[],
+                ),
+            ),
         ):
             result = await graph.ainvoke(state)
 
@@ -411,6 +449,25 @@ class TestRegression:
             patch("backend.graphs.nodes.fetch_market_data", mock_market),
             patch("backend.graphs.nodes.fetch_news", mock_news),
             patch("backend.graphs.nodes.analyze_sentiment", mock_sentiment),
+            patch(
+                "backend.graphs.nodes.SynthesisAgent.generate_report",
+                new_callable=AsyncMock,
+                return_value=MagicMock(
+                    executive_summary="Mock synthesized report.",
+                    market_snapshot=None,
+                    news_summary=None,
+                    sentiment_summary=None,
+                    key_observations=[],
+                    risks=[],
+                    confidence=0.8,
+                    disclaimer="Mock disclaimer.",
+                    total_citations=0,
+                    unique_sources=0,
+                    market_data_sources=[],
+                    news_sources=[],
+                    sentiment_sources=[],
+                ),
+            ),
         ):
             result = await graph.ainvoke(state)
 

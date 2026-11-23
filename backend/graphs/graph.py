@@ -10,6 +10,7 @@ from backend.graphs.nodes import (
     parallel_tools_node,
     research_node,
     router_node,
+    synthesis_node,
 )
 from backend.graphs.state import GraphState, _get_timestamp
 
@@ -56,19 +57,25 @@ def route_after_sentiment(state: GraphState) -> Literal["merge_results", "__end_
 
 def create_first_graph():
     """
-    Create the optimized dynamically routed LangGraph workflow.
+    Create the dynamically routed LangGraph workflow.
 
-    Phase 3:
-      START -> router -> parallel_tools -> research -> END
+    Phase 4:
+      START -> router -> parallel_tools -> synthesis -> research -> END
 
     `parallel_tools_node` runs:
       - market_data + news concurrently
       - sentiment after news (depends on news articles)
+
+    `synthesis_node` runs the LLM-backed SynthesisAgent to generate a
+    grounded research report with citations and risk factors. If the LLM
+    provider is unavailable, it falls back to a placeholder report and the
+    workflow continues without failure.
     """
     workflow = StateGraph(GraphState)
 
     workflow.add_node("router", router_node)
     workflow.add_node("parallel_tools", parallel_tools_node)
+    workflow.add_node("synthesis", synthesis_node)
     workflow.add_node("research", research_node)
 
     # Legacy tool nodes are executed inside parallel_tools_node; they are not
@@ -87,8 +94,8 @@ def create_first_graph():
         },
     )
 
-    workflow.add_edge("parallel_tools", "merge_results")
-    workflow.add_edge("merge_results", "research")
+    workflow.add_edge("parallel_tools", "synthesis")
+    workflow.add_edge("synthesis", "research")
     workflow.add_edge("research", END)
 
     return workflow.compile(checkpointer=False)

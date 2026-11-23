@@ -46,8 +46,10 @@ class GraphState(TypedDict):
     news: dict[str, Any]
     sentiment: dict[str, Any]
 
-    # Placeholder research output
+    # Synthesis output (LLM-based report generation)
     report: str
+    citations: list[dict[str, Any]]
+    synthesis_result: dict[str, Any] | None
 
     # Error tracking
     errors: list[str]
