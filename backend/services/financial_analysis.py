@@ -34,7 +34,7 @@ def revenue_growth(current_revenue: float, previous_revenue: float) -> float | N
     Returns:
         Growth rate as decimal (e.g., 0.15 = 15% growth), or None if invalid
     """
-    if previous_revenue is None or previous_revenue == 0:
+    if current_revenue is None or previous_revenue is None or previous_revenue == 0:
         return None
     return (current_revenue - previous_revenue) / previous_revenue
 

@@ -1,0 +1,871 @@
+{
+  "reference_cases": {
+    "total": 4,
+    "passed": 1,
+    "all_passed": true,
+    "details": [
+      {
+        "case_id": "fin-001",
+        "company": "TechCorp",
+        "sector": "Technology",
+        "description": "Normal healthy company",
+        "all_passed": true,
+        "metric_results": {
+          "revenue_growth": {
+            "expected": 0.25,
+            "computed": 0.25,
+            "match": true
+          },
+          "gross_margin": {
+            "expected": 0.4,
+            "computed": 0.4,
+            "match": true
+          },
+          "operating_margin": {
+            "expected": 0.2,
+            "computed": 0.2,
+            "match": true
+          },
+          "net_margin": {
+            "expected": 0.15,
+            "computed": 0.15,
+            "match": true
+          },
+          "ebitda_margin": {
+            "expected": 0.25,
+            "computed": 0.25,
+            "match": true
+          },
+          "eps_growth": {
+            "expected": 0.25,
+            "computed": 0.25,
+            "match": true
+          },
+          "roe": {
+            "expected": 0.3,
+            "computed": 0.3,
+            "match": true
+          },
+          "roce": {
+            "expected": 0.2667,
+            "computed": 0.2667,
+            "match": true
+          },
+          "debt_to_equity": {
+            "expected": 0.5,
+            "computed": 0.5,
+            "match": true
+          },
+          "current_ratio": {
+            "expected": 2.0,
+            "computed": 2.0,
+            "match": true
+          },
+          "free_cash_flow": {
+            "expected": 130000.0,
+            "computed": 130000.0,
+            "match": true
+          },
+          "pe_ratio": {
+            "expected": 20.0,
+            "computed": 20.0,
+            "match": true
+          },
+          "pb_ratio": {
+            "expected": 5.0,
+            "computed": 5.0,
+            "match": true
+          },
+          "ps_ratio": {
+            "expected": 5.0,
+            "computed": 5.0,
+            "match": true
+          },
+          "ev_ebitda": {
+            "expected": 21.0,
+            "computed": 21.0,
+            "match": true
+          }
+        },
+        "validation": {
+          "revenue_growth": {
+            "value": 0.25,
+            "valid": true,
+            "warnings": []
+          },
+          "gross_margin": {
+            "value": 0.4,
+            "valid": true,
+            "warnings": []
+          },
+          "operating_margin": {
+            "value": 0.2,
+            "valid": true,
+            "warnings": []
+          },
+          "net_margin": {
+            "value": 0.15,
+            "valid": true,
+            "warnings": []
+          },
+          "ebitda_margin": {
+            "value": 0.25,
+            "valid": true,
+            "warnings": []
+          },
+          "eps_growth": {
+            "value": 0.25,
+            "valid": true,
+            "warnings": []
+          },
+          "roe": {
+            "value": 0.3,
+            "valid": true,
+            "warnings": []
+          },
+          "roce": {
+            "value": 0.26666666666666666,
+            "valid": true,
+            "warnings": []
+          },
+          "debt_to_equity": {
+            "value": 0.5,
+            "valid": true,
+            "warnings": []
+          },
+          "current_ratio": {
+            "value": 2.0,
+            "valid": true,
+            "warnings": []
+          },
+          "free_cash_flow": {
+            "value": 130000.0,
+            "valid": true,
+            "warnings": []
+          },
+          "pe_ratio": {
+            "value": 20.0,
+            "valid": true,
+            "warnings": []
+          },
+          "pb_ratio": {
+            "value": 5.0,
+            "valid": true,
+            "warnings": []
+          },
+          "ps_ratio": {
+            "value": 5.0,
+            "valid": true,
+            "warnings": []
+          },
+          "ev_ebitda": {
+            "value": 21.0,
+            "valid": true,
+            "warnings": []
+          }
+        },
+        "computed": {
+          "revenue_growth": 0.25,
+          "gross_margin": 0.4,
+          "operating_margin": 0.2,
+          "net_margin": 0.15,
+          "ebitda_margin": 0.25,
+          "eps_growth": 0.25,
+          "roe": 0.3,
+          "roce": 0.2667,
+          "debt_to_equity": 0.5,
+          "current_ratio": 2.0,
+          "free_cash_flow": 130000.0,
+          "pe_ratio": 20.0,
+          "pb_ratio": 5.0,
+          "ps_ratio": 5.0,
+          "ev_ebitda": 21.0
+        }
+      },
+      {
+        "case_id": "fin-002",
+        "company": "DistressedCo",
+        "sector": "Retail",
+        "description": "Company with negative margins",
+        "all_passed": true,
+        "metric_results": {
+          "revenue_growth": {
+            "expected": -0.1667,
+            "computed": -0.1667,
+            "match": true
+          },
+          "gross_margin": {
+            "expected": 0.2,
+            "computed": 0.2,
+            "match": true
+          },
+          "operating_margin": {
+            "expected": -0.1,
+            "computed": -0.1,
+            "match": true
+          },
+          "net_margin": {
+            "expected": -0.2,
+            "computed": -0.2,
+            "match": true
+          },
+          "ebitda_margin": {
+            "expected": 0.0,
+            "computed": 0.0,
+            "match": true
+          },
+          "eps_growth": {
+            "expected": -3.0,
+            "computed": -3.0,
+            "match": true
+          },
+          "roe": {
+            "expected": -0.5,
+            "computed": -0.5,
+            "match": true
+          },
+          "roce": {
+            "expected": -0.1667,
+            "computed": -0.1667,
+            "match": true
+          },
+          "debt_to_equity": {
+            "expected": 2.0,
+            "computed": 2.0,
+            "match": true
+          },
+          "current_ratio": {
+            "expected": 0.5,
+            "computed": 0.5,
+            "match": true
+          },
+          "free_cash_flow": {
+            "expected": -50000.0,
+            "computed": -50000.0,
+            "match": true
+          },
+          "pe_ratio": {
+            "expected": -2.5,
+            "computed": -2.5,
+            "match": true
+          },
+          "pb_ratio": {
+            "expected": 1.25,
+            "computed": 1.25,
+            "match": true
+          },
+          "ps_ratio": {
+            "expected": 1.0,
+            "computed": 1.0,
+            "match": true
+          },
+          "ev_ebitda": {
+            "expected": null,
+            "computed": null,
+            "match": true
+          }
+        },
+        "validation": {
+          "revenue_growth": {
+            "value": -0.16666666666666666,
+            "valid": true,
+            "warnings": []
+          },
+          "gross_margin": {
+            "value": 0.2,
+            "valid": true,
+            "warnings": []
+          },
+          "operating_margin": {
+            "value": -0.1,
+            "valid": true,
+            "warnings": []
+          },
+          "net_margin": {
+            "value": -0.2,
+            "valid": true,
+            "warnings": []
+          },
+          "ebitda_margin": {
+            "value": 0.0,
+            "valid": true,
+            "warnings": []
+          },
+          "eps_growth": {
+            "value": -3.0,
+            "valid": true,
+            "warnings": []
+          },
+          "roe": {
+            "value": -0.5,
+            "valid": true,
+            "warnings": []
+          },
+          "roce": {
+            "value": -0.16666666666666666,
+            "valid": true,
+            "warnings": []
+          },
+          "debt_to_equity": {
+            "value": 2.0,
+            "valid": true,
+            "warnings": []
+          },
+          "current_ratio": {
+            "value": 0.5,
+            "valid": true,
+            "warnings": []
+          },
+          "free_cash_flow": {
+            "value": -50000.0,
+            "valid": true,
+            "warnings": []
+          },
+          "pe_ratio": {
+            "value": -2.5,
+            "valid": false,
+            "warnings": [
+              "Negative P/E ratio"
+            ]
+          },
+          "pb_ratio": {
+            "value": 1.25,
+            "valid": true,
+            "warnings": []
+          },
+          "ps_ratio": {
+            "value": 1.0,
+            "valid": true,
+            "warnings": []
+          },
+          "ev_ebitda": {
+            "value": null,
+            "valid": false,
+            "warnings": [
+              "Value is None"
+            ]
+          }
+        },
+        "computed": {
+          "revenue_growth": -0.1667,
+          "gross_margin": 0.2,
+          "operating_margin": -0.1,
+          "net_margin": -0.2,
+          "ebitda_margin": 0.0,
+          "eps_growth": -3.0,
+          "roe": -0.5,
+          "roce": -0.1667,
+          "debt_to_equity": 2.0,
+          "current_ratio": 0.5,
+          "free_cash_flow": -50000.0,
+          "pe_ratio": -2.5,
+          "pb_ratio": 1.25,
+          "ps_ratio": 1.0,
+          "ev_ebitda": null
+        }
+      },
+      {
+        "case_id": "fin-003",
+        "company": "StartupCo",
+        "sector": "Biotech",
+        "description": "Pre-revenue startup",
+        "all_passed": true,
+        "metric_results": {
+          "revenue_growth": {
+            "expected": null,
+            "computed": null,
+            "match": true
+          },
+          "gross_margin": {
+            "expected": null,
+            "computed": null,
+            "match": true
+          },
+          "operating_margin": {
+            "expected": null,
+            "computed": null,
+            "match": true
+          },
+          "net_margin": {
+            "expected": null,
+            "computed": null,
+            "match": true
+          },
+          "ebitda_margin": {
+            "expected": null,
+            "computed": null,
+            "match": true
+          },
+          "eps_growth": {
+            "expected": 0.6667,
+            "computed": 0.6667,
+            "match": true
+          },
+          "roe": {
+            "expected": -0.6,
+            "computed": -0.6,
+            "match": true
+          },
+          "roce": {
+            "expected": -0.4167,
+            "computed": -0.4167,
+            "match": true
+          },
+          "debt_to_equity": {
+            "expected": 0.2,
+            "computed": 0.2,
+            "match": true
+          },
+          "current_ratio": {
+            "expected": 2.6667,
+            "computed": 2.6667,
+            "match": true
+          },
+          "free_cash_flow": {
+            "expected": -550000.0,
+            "computed": -550000.0,
+            "match": true
+          },
+          "pe_ratio": {
+            "expected": -3.0,
+            "computed": -3.0,
+            "match": true
+          },
+          "pb_ratio": {
+            "expected": 1.5,
+            "computed": 1.5,
+            "match": true
+          },
+          "ps_ratio": {
+            "expected": null,
+            "computed": null,
+            "match": true
+          },
+          "ev_ebitda": {
+            "expected": -3.25,
+            "computed": -3.25,
+            "match": true
+          }
+        },
+        "validation": {
+          "revenue_growth": {
+            "value": null,
+            "valid": false,
+            "warnings": [
+              "Value is None"
+            ]
+          },
+          "gross_margin": {
+            "value": null,
+            "valid": false,
+            "warnings": [
+              "Value is None"
+            ]
+          },
+          "operating_margin": {
+            "value": null,
+            "valid": false,
+            "warnings": [
+              "Value is None"
+            ]
+          },
+          "net_margin": {
+            "value": null,
+            "valid": false,
+            "warnings": [
+              "Value is None"
+            ]
+          },
+          "ebitda_margin": {
+            "value": null,
+            "valid": false,
+            "warnings": [
+              "Value is None"
+            ]
+          },
+          "eps_growth": {
+            "value": 0.6666666666666666,
+            "valid": true,
+            "warnings": []
+          },
+          "roe": {
+            "value": -0.6,
+            "valid": true,
+            "warnings": []
+          },
+          "roce": {
+            "value": -0.4166666666666667,
+            "valid": true,
+            "warnings": []
+          },
+          "debt_to_equity": {
+            "value": 0.2,
+            "valid": true,
+            "warnings": []
+          },
+          "current_ratio": {
+            "value": 2.6666666666666665,
+            "valid": true,
+            "warnings": []
+          },
+          "free_cash_flow": {
+            "value": -550000.0,
+            "valid": true,
+            "warnings": []
+          },
+          "pe_ratio": {
+            "value": -3.0,
+            "valid": false,
+            "warnings": [
+              "Negative P/E ratio"
+            ]
+          },
+          "pb_ratio": {
+            "value": 1.5,
+            "valid": true,
+            "warnings": []
+          },
+          "ps_ratio": {
+            "value": null,
+            "valid": false,
+            "warnings": [
+              "Value is None"
+            ]
+          },
+          "ev_ebitda": {
+            "value": -3.25,
+            "valid": true,
+            "warnings": []
+          }
+        },
+        "computed": {
+          "revenue_growth": null,
+          "gross_margin": null,
+          "operating_margin": null,
+          "net_margin": null,
+          "ebitda_margin": null,
+          "eps_growth": 0.6667,
+          "roe": -0.6,
+          "roce": -0.4167,
+          "debt_to_equity": 0.2,
+          "current_ratio": 2.6667,
+          "free_cash_flow": -550000.0,
+          "pe_ratio": -3.0,
+          "pb_ratio": 1.5,
+          "ps_ratio": null,
+          "ev_ebitda": -3.25
+        }
+      },
+      {
+        "case_id": "fin-004",
+        "company": "UtilityCo",
+        "sector": "Utilities",
+        "description": "Stable utility company",
+        "all_passed": true,
+        "metric_results": {
+          "revenue_growth": {
+            "expected": 0.0526,
+            "computed": 0.0526,
+            "match": true
+          },
+          "gross_margin": {
+            "expected": 0.4,
+            "computed": 0.4,
+            "match": true
+          },
+          "operating_margin": {
+            "expected": 0.2,
+            "computed": 0.2,
+            "match": true
+          },
+          "net_margin": {
+            "expected": 0.125,
+            "computed": 0.125,
+            "match": true
+          },
+          "ebitda_margin": {
+            "expected": 0.25,
+            "computed": 0.25,
+            "match": true
+          },
+          "eps_growth": {
+            "expected": 0.0714,
+            "computed": 0.0714,
+            "match": true
+          },
+          "roe": {
+            "expected": 0.125,
+            "computed": 0.125,
+            "match": true
+          },
+          "roce": {
+            "expected": 0.1333,
+            "computed": 0.1333,
+            "match": true
+          },
+          "debt_to_equity": {
+            "expected": 0.5,
+            "computed": 0.5,
+            "match": true
+          },
+          "current_ratio": {
+            "expected": 1.5,
+            "computed": 1.5,
+            "match": true
+          },
+          "free_cash_flow": {
+            "expected": 250000.0,
+            "computed": 250000.0,
+            "match": true
+          },
+          "pe_ratio": {
+            "expected": 10.0,
+            "computed": 10.0,
+            "match": true
+          },
+          "pb_ratio": {
+            "expected": 1.5,
+            "computed": 1.5,
+            "match": true
+          },
+          "ps_ratio": {
+            "expected": 1.5,
+            "computed": 1.5,
+            "match": true
+          },
+          "ev_ebitda": {
+            "expected": 8.0,
+            "computed": 8.0,
+            "match": true
+          }
+        },
+        "validation": {
+          "revenue_growth": {
+            "value": 0.05263157894736842,
+            "valid": true,
+            "warnings": []
+          },
+          "gross_margin": {
+            "value": 0.4,
+            "valid": true,
+            "warnings": []
+          },
+          "operating_margin": {
+            "value": 0.2,
+            "valid": true,
+            "warnings": []
+          },
+          "net_margin": {
+            "value": 0.125,
+            "valid": true,
+            "warnings": []
+          },
+          "ebitda_margin": {
+            "value": 0.25,
+            "valid": true,
+            "warnings": []
+          },
+          "eps_growth": {
+            "value": 0.0714285714285715,
+            "valid": true,
+            "warnings": []
+          },
+          "roe": {
+            "value": 0.125,
+            "valid": true,
+            "warnings": []
+          },
+          "roce": {
+            "value": 0.13333333333333333,
+            "valid": true,
+            "warnings": []
+          },
+          "debt_to_equity": {
+            "value": 0.5,
+            "valid": true,
+            "warnings": []
+          },
+          "current_ratio": {
+            "value": 1.5,
+            "valid": true,
+            "warnings": []
+          },
+          "free_cash_flow": {
+            "value": 250000.0,
+            "valid": true,
+            "warnings": []
+          },
+          "pe_ratio": {
+            "value": 10.0,
+            "valid": true,
+            "warnings": []
+          },
+          "pb_ratio": {
+            "value": 1.5,
+            "valid": true,
+            "warnings": []
+          },
+          "ps_ratio": {
+            "value": 1.5,
+            "valid": true,
+            "warnings": []
+          },
+          "ev_ebitda": {
+            "value": 8.0,
+            "valid": true,
+            "warnings": []
+          }
+        },
+        "computed": {
+          "revenue_growth": 0.0526,
+          "gross_margin": 0.4,
+          "operating_margin": 0.2,
+          "net_margin": 0.125,
+          "ebitda_margin": 0.25,
+          "eps_growth": 0.0714,
+          "roe": 0.125,
+          "roce": 0.1333,
+          "debt_to_equity": 0.5,
+          "current_ratio": 1.5,
+          "free_cash_flow": 250000.0,
+          "pe_ratio": 10.0,
+          "pb_ratio": 1.5,
+          "ps_ratio": 1.5,
+          "ev_ebitda": 8.0
+        }
+      }
+    ]
+  },
+  "edge_cases": {
+    "total": 11,
+    "passed": 11,
+    "details": [
+      {
+        "test": "zero_denominator_revenue_growth",
+        "function": "revenue_growth",
+        "input": {
+          "current_revenue": 100.0,
+          "previous_revenue": 0.0
+        },
+        "expected": null,
+        "actual": null,
+        "passed": true
+      },
+      {
+        "test": "zero_denominator_gross_margin",
+        "function": "gross_margin",
+        "input": {
+          "gross_profit": 50.0,
+          "revenue": 0.0
+        },
+        "expected": null,
+        "actual": null,
+        "passed": true
+      },
+      {
+        "test": "zero_denominator_roe",
+        "function": "roe",
+        "input": {
+          "net_income": 50.0,
+          "shareholders_equity": 0.0
+        },
+        "expected": null,
+        "actual": null,
+        "passed": true
+      },
+      {
+        "test": "zero_denominator_debt_to_equity",
+        "function": "debt_to_equity",
+        "input": {
+          "total_debt": 100.0,
+          "shareholders_equity": 0.0
+        },
+        "expected": null,
+        "actual": null,
+        "passed": true
+      },
+      {
+        "test": "zero_denominator_current_ratio",
+        "function": "current_ratio",
+        "input": {
+          "current_assets": 100.0,
+          "current_liabilities": 0.0
+        },
+        "expected": null,
+        "actual": null,
+        "passed": true
+      },
+      {
+        "test": "none_input_safe_divide",
+        "function": "safe_divide",
+        "input": {
+          "numerator": null,
+          "denominator": 10.0
+        },
+        "expected": null,
+        "actual": null,
+        "passed": true
+      },
+      {
+        "test": "none_input_revenue_growth",
+        "function": "revenue_growth",
+        "input": {
+          "current_revenue": null,
+          "previous_revenue": 100.0
+        },
+        "expected": null,
+        "actual": null,
+        "passed": true
+      },
+      {
+        "test": "negative_revenue_growth",
+        "function": "revenue_growth",
+        "input": {
+          "current_revenue": 80.0,
+          "previous_revenue": 100.0
+        },
+        "expected": -0.2,
+        "actual": -0.2,
+        "passed": true
+      },
+      {
+        "test": "negative_net_income_roe",
+        "function": "roe",
+        "input": {
+          "net_income": -50.0,
+          "shareholders_equity": 200.0
+        },
+        "expected": -0.25,
+        "actual": -0.25,
+        "passed": true
+      },
+      {
+        "test": "safe_divide_normal",
+        "function": "safe_divide",
+        "input": {
+          "numerator": 10.0,
+          "denominator": 2.0
+        },
+        "expected": 5.0,
+        "actual": 5.0,
+        "passed": true
+      },
+      {
+        "test": "safe_divide_none",
+        "function": "safe_divide",
+        "input": {
+          "numerator": null,
+          "denominator": null
+        },
+        "expected": null,
+        "actual": null,
+        "passed": true
+      }
+    ]
+  },
+  "overall": {
+    "total_tests": 15,
+    "total_passed": 12,
+    "pass_rate": 0.8
+  }
+}

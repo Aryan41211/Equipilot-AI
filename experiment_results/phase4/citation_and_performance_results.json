@@ -1,0 +1,172 @@
+{
+  "citation_metrics": {
+    "n_test_cases": 5,
+    "cases": [
+      {
+        "case_id": "cite-001",
+        "citation_precision": 1.0,
+        "citation_coverage": 1.0,
+        "unsupported_claim_rate": 0.0,
+        "expected_precision": 1.0,
+        "expected_coverage": 1.0,
+        "precision_match": true,
+        "coverage_match": true,
+        "n_citations": 2,
+        "n_sentences": 2
+      },
+      {
+        "case_id": "cite-002",
+        "citation_precision": 1.0,
+        "citation_coverage": 0.6667,
+        "unsupported_claim_rate": 0.3333,
+        "expected_precision": 1.0,
+        "expected_coverage": 0.67,
+        "precision_match": true,
+        "coverage_match": false,
+        "n_citations": 2,
+        "n_sentences": 3
+      },
+      {
+        "case_id": "cite-003",
+        "citation_precision": 1.0,
+        "citation_coverage": 1.0,
+        "unsupported_claim_rate": 0.0,
+        "expected_precision": 1.0,
+        "expected_coverage": 1.0,
+        "precision_match": true,
+        "coverage_match": true,
+        "n_citations": 2,
+        "n_sentences": 2
+      },
+      {
+        "case_id": "cite-004",
+        "citation_precision": 1.0,
+        "citation_coverage": 0.5,
+        "unsupported_claim_rate": 0.5,
+        "expected_precision": 1.0,
+        "expected_coverage": 0.5,
+        "precision_match": true,
+        "coverage_match": true,
+        "n_citations": 1,
+        "n_sentences": 2
+      },
+      {
+        "case_id": "cite-005",
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_claim_rate": 1.0,
+        "expected_precision": 0.0,
+        "expected_coverage": 0.0,
+        "precision_match": true,
+        "coverage_match": true,
+        "n_citations": 0,
+        "n_sentences": 1
+      }
+    ],
+    "aggregate": {
+      "mean_citation_precision": 0.8,
+      "mean_citation_coverage": 0.6333,
+      "mean_unsupported_claim_rate": 0.3667,
+      "precision_matches": 5,
+      "coverage_matches": 4,
+      "all_precision_match": true,
+      "all_coverage_match": false
+    }
+  },
+  "agent_performance": {
+    "n_test_queries": 5,
+    "executions": [
+      {
+        "query": "What is AAPL stock price?",
+        "status": "success",
+        "latency_ms": 22959.781,
+        "executed_nodes": [
+          "router",
+          "parallel_tools",
+          "market_data_tool",
+          "news_tool",
+          "sentiment_tool",
+          "synthesis",
+          "research",
+          "merge_results"
+        ],
+        "has_report": true,
+        "has_citations": false,
+        "n_citations": 0
+      },
+      {
+        "query": "Tell me about MSFT financials",
+        "status": "failed",
+        "latency_ms": 21827.110999999997,
+        "executed_nodes": [
+          "router",
+          "parallel_tools",
+          "market_data_tool",
+          "synthesis",
+          "research",
+          "merge_results"
+        ],
+        "has_report": true,
+        "has_citations": false,
+        "n_citations": 0
+      },
+      {
+        "query": "Analyze GOOGL market position",
+        "status": "success",
+        "latency_ms": 10839.434000000001,
+        "executed_nodes": [
+          "router",
+          "parallel_tools",
+          "news_tool",
+          "synthesis",
+          "research",
+          "merge_results"
+        ],
+        "has_report": true,
+        "has_citations": false,
+        "n_citations": 0
+      },
+      {
+        "query": "TSLA earnings report summary",
+        "status": "failed",
+        "latency_ms": 21397.003,
+        "executed_nodes": [
+          "router",
+          "parallel_tools",
+          "market_data_tool",
+          "synthesis",
+          "research",
+          "merge_results"
+        ],
+        "has_report": true,
+        "has_citations": false,
+        "n_citations": 0
+      },
+      {
+        "query": "AMZN revenue growth analysis",
+        "status": "failed",
+        "latency_ms": 21239.956,
+        "executed_nodes": [
+          "router",
+          "parallel_tools",
+          "market_data_tool",
+          "synthesis",
+          "research",
+          "merge_results"
+        ],
+        "has_report": true,
+        "has_citations": false,
+        "n_citations": 0
+      }
+    ],
+    "aggregate": {
+      "successful": 2,
+      "failed": 3,
+      "success_rate": 0.4,
+      "p50_latency_ms": 21397.0,
+      "p95_latency_ms": 22959.78,
+      "p99_latency_ms": 22959.78,
+      "mean_latency_ms": 19652.66
+    }
+  }
+}
