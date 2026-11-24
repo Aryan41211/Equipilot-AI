@@ -1,0 +1,54 @@
+{
+  "project": "EquiPilot AI",
+  "phase": 2,
+  "baseline_created": "2026-11-24T21:00:00Z",
+  "git_sha": "a58a5bdd30f314bea7c9115d72ff30ea1d4bd555",
+  "branch": "main",
+  "environment": {
+    "cpu_cores": 16,
+    "ram_gb": 15.65,
+    "gpu_available": false,
+    "python_version": "3.12",
+    "os": "win32"
+  },
+  "test_status": {
+    "tests_passed": 257,
+    "tests_failed": 3,
+    "failures": [
+      "test_env_example_documents_backend_vars",
+      "test_env_example_documents_frontend_vars",
+      "test_submit_research_connection_error"
+    ],
+    "failure_reason": "Pre-existing environment-related (deploy config docs, frontend connection)"
+  },
+  "agent_graph": {
+    "total_agent_classes": 5,
+    "compiled_graph_nodes": 5,
+    "nodes": ["router", "parallel_tools", "synthesis", "research", "merge_results"],
+    "synthesis_agent_wired": true,
+    "report_generation": "placeholder when LLM unavailable",
+    "citations": "returned when LLM available, None otherwise"
+  },
+  "agents": [
+    "RouterAgent (router_node)",
+    "Market Data Agent (market_data_tool_node)",
+    "News Agent (news_tool_node)",
+    "Sentiment Agent (sentiment_tool_node)",
+    "SynthesisAgent (synthesis_node)"
+  ],
+  "data_sources": {
+    "market_data": "yfinance",
+    "news": "News API / Alpha Vantage / Finnhub",
+    "sentiment": "LLM-based sentiment analysis",
+    "llm_provider": "OpenAI (GPT-4o / GPT-4o-mini)",
+    "llm_configured": false,
+    "openai_api_key": "not configured"
+  },
+  "limitations": [
+    "No OPENAI_API_KEY configured - LLM synthesis not measurable",
+    "No financial backtest or accuracy metric",
+    "No evaluation framework for research reports",
+    "No numerical financial calculation validation",
+    "SynthesisAgent falls back to placeholder when LLM unavailable"
+  ]
+}
