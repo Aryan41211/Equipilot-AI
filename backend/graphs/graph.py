@@ -96,7 +96,8 @@ def create_first_graph():
 
     workflow.add_edge("parallel_tools", "synthesis")
     workflow.add_edge("synthesis", "research")
-    workflow.add_edge("research", END)
+    workflow.add_edge("research", "merge_results")
+    workflow.add_edge("merge_results", END)
 
     return workflow.compile(checkpointer=False)
 
