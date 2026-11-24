@@ -1,0 +1,71 @@
+{
+  "project": "EquiPilot AI",
+  "phase": 2,
+  "evaluation_date": "2026-11-24",
+  "git_sha": "0fccaca",
+  "evaluation_framework": {
+    "metrics": [
+      "numerical_accuracy",
+      "citation_precision",
+      "citation_coverage",
+      "unsupported_claim_rate",
+      "completeness",
+      "risk_identification",
+      "source_freshness",
+      "overall_score"
+    ],
+    "weights": {
+      "numerical_accuracy": 0.25,
+      "citation_precision": 0.15,
+      "citation_coverage": 0.15,
+      "completeness": 0.20,
+      "risk_identification": 0.15,
+      "source_freshness": 0.10
+    },
+    "evaluation_samples": 0,
+    "label_source": "none",
+    "note": "No research report evaluation dataset created yet. Framework is implemented but needs human-validated samples."
+  },
+  "citation_audit": {
+    "total_citations_returned": 0,
+    "citation_structure": {
+      "id": "string",
+      "type": "market_data | news | sentiment",
+      "title": "string",
+      "source": "string",
+      "url": "string",
+      "chunk_text": "string",
+      "confidence": "float 0-1"
+    },
+    "citation_precision": "Not measured (no LLM key, no citations generated)",
+    "citation_coverage": "Not measured (no LLM key, no citations generated)",
+    "supported_claims": "Not measured (placeholder report when no LLM)",
+    "unsupported_claim_rate": "Not measured (placeholder report when no LLM)",
+    "note": "Citations are only generated when SynthesisAgent successfully calls LLM. Without OPENAI_API_KEY, synthesis falls back to placeholder report with no citations."
+  },
+  "financial_validation": {
+    "functions_implemented": 13,
+    "tests_passed": 39,
+    "tests_failed": 0,
+    "validation_rules": [
+      "margins must be in [-1, 1]",
+      "roe/roce should be in [-1, 5] (warning if outside)",
+      "debt_to_equity must be >= 0",
+      "current_ratio must be >= 0",
+      "pe_ratio must be >= 0"
+    ],
+    "supported_calculations": [
+      "revenue_growth", "gross_margin", "operating_margin", "net_margin",
+      "ebitda_margin", "eps_growth", "roe", "roce",
+      "debt_to_equity", "current_ratio", "free_cash_flow",
+      "pe_ratio", "pb_ratio", "ps_ratio", "ev_ebitda"
+    ]
+  },
+  "limitations": [
+    "No OPENAI_API_KEY configured — LLM synthesis not measurable",
+    "No research report evaluation dataset (need 100+ company cases)",
+    "No human review of report quality",
+    "No financial backtest or investment accuracy claims",
+    "yfinance rate-limited during execution — live data testing not possible"
+  ]
+}
