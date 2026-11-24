@@ -22,6 +22,13 @@ from backend.services.financial_analysis import (
     safe_divide,
     validate_financial_metrics,
 )
+from backend.services.report_evaluator import (
+    evaluate_citation_coverage,
+    evaluate_citation_precision,
+    evaluate_completeness,
+    evaluate_numerical_correctness,
+    evaluate_unsupported_claim_rate,
+)
 
 
 class TestSafeDivide:
@@ -236,3 +243,144 @@ class TestValidateFinancialMetrics:
         result = validate_financial_metrics({"pe_ratio": 2000})
         assert result["pe_ratio"]["valid"] is True
         assert "unusually high" in result["pe_ratio"]["warnings"][0]
+
+
+class TestFinancialEdgeCases:
+    """Edge case tests for financial calculations."""
+
+    def test_zero_values(self):
+        assert revenue_growth(0, 100) == -1.0
+        assert gross_margin(0, 100) == 0.0
+        assert net_margin(0, 100) == 0.0
+
+    def test_very_large_values(self):
+        result = gross_margin(1_000_000_000, 2_000_000_000)
+        assert result == 0.5
+
+    def test_tiny_values(self):
+        result = gross_margin(0.001, 0.002)
+        assert result == 0.5
+
+    def test_negative_revenue_growth(self):
+        result = revenue_growth(50, 100)
+        assert result == -0.5
+
+    def test_negative_eps_growth(self):
+        result = eps_growth(1.0, 2.0)
+        assert result == -0.5
+
+    def test_negative_roe(self):
+        result = roe(-100, 500)
+        assert result == -0.2
+
+    def test_zero_current_ratio(self):
+        assert current_ratio(0, 100) == 0.0
+
+    def test_negative_free_cash_flow(self):
+        result = free_cash_flow(10, 50)
+        assert result == -40
+
+    def test_precision_rounding(self):
+        result = gross_margin(1, 3)
+        assert abs(result - 0.333333) < 0.001
+
+    def test_all_none_compute_all(self):
+        result = compute_all_financials()
+        assert all(v is None for v in result.values())
+
+
+class TestFinancialDataValidation:
+    """Validate financial calculations against known company data."""
+
+    def test_apple_like_financials(self):
+        """Validate against Apple Inc.-like financials (approximate public data)."""
+        result = compute_all_financials(
+            revenue=394_328_000_000,
+            previous_revenue=365_817_000_000,
+            gross_profit=171_792_000_000,
+            operating_income=119_437_000_000,
+            net_income=99_803_000_000,
+            ebitda=129_000_000_000,
+            current_eps=6.11,
+            previous_eps=5.61,
+            shareholders_equity=65_339_000_000,
+            ebit=119_437_000_000,
+            capital_employed=352_756_000_000,
+            total_debt=124_693_000_000,
+            current_assets=135_356_000_000,
+            current_liabilities=153_885_000_000,
+            operating_cash_flow=110_543_000_000,
+            capital_expenditures=10_957_000_000,
+            market_price=150.0,
+            book_value_per_share=4.25,
+            market_cap=2_500_000_000_000,
+            enterprise_value=2_600_000_000_000,
+        )
+
+        # Revenue growth should be positive (~7.8%)
+        assert result["revenue_growth"] is not None
+        assert 0.05 < result["revenue_growth"] < 0.10
+
+        # Gross margin should be ~43%
+        assert result["gross_margin"] is not None
+        assert 0.40 < result["gross_margin"] < 0.45
+
+        # Net margin should be ~25%
+        assert result["net_margin"] is not None
+        assert 0.20 < result["net_margin"] < 0.30
+
+        # ROE should be > 1.0 (Apple has high ROE due to low equity)
+        assert result["roe"] is not None
+        assert result["roe"] > 1.0
+
+    def test_validation_catches_absurd_values(self):
+        """Ensure validation flags impossible financial values."""
+        result = validate_financial_metrics({"gross_margin": 2.5})
+        assert result["gross_margin"]["valid"] is False
+
+        result = validate_financial_metrics({"current_ratio": -5.0})
+        assert result["current_ratio"]["valid"] is False
+
+        result = validate_financial_metrics({"pe_ratio": -10.0})
+        assert result["pe_ratio"]["valid"] is False
+
+
+class TestReportEvaluatorEdgeCases:
+    """Edge case tests for report evaluation."""
+
+    def test_empty_report(self):
+        result = evaluate_completeness("")
+        assert result == 0.0
+
+    def test_empty_citations(self):
+        assert evaluate_citation_precision([]) == 0.0
+        assert evaluate_citation_coverage("text", []) == 0.0
+        assert evaluate_unsupported_claim_rate("text", []) == 1.0
+
+    def test_report_with_all_sections(self):
+        report = """
+        Company Overview: TechCorp Inc.
+        Financial Performance: Revenue grew 20%.
+        Growth Analysis: User base expanded 30%.
+        Profitability: Net margin 25%.
+        Balance Sheet Risk: Debt-to-equity 0.3.
+        Cash Flow Analysis: Operating cash flow $50M.
+        Risk Factors: Market competition.
+        Bull Case: Strong brand moat.
+        Bear Case: High valuation.
+        Neutral Case: Stable outlook.
+        """
+        result = evaluate_completeness(report)
+        assert result >= 0.9
+
+    def test_numerical_accuracy_with_tolerance(self):
+        report = "Revenue was approximately $100 million."
+        financial_data = {"revenue": 100.0}
+        result = evaluate_numerical_correctness(report, financial_data)
+        assert result["numerical_accuracy"] >= 0.5
+
+    def test_numerical_accuracy_wrong_value(self):
+        report = "Revenue was $1 billion."
+        financial_data = {"revenue": 100.0}
+        result = evaluate_numerical_correctness(report, financial_data)
+        assert result["numerical_accuracy"] == 0.0
