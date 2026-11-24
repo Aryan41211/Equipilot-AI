@@ -1,9 +1,9 @@
 # EquiPilot AI — Phase 2 Reproduction Guide
 
-**Project:** EquiPilot AI — Agentic Equity Research System  
-**Git SHA:** `0fccaca`  
-**Branch:** `main`  
-**Date:** 2026-11-24  
+**Project:** EquiPilot AI — Agentic Equity Research System
+**Git SHA:** `0fccaca`
+**Branch:** `main`
+**Date:** 2026-11-24
 **Environment:** 16 CPU cores, 15.65 GB RAM, CPU-only
 
 ---

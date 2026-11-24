@@ -1,7 +1,7 @@
 # EquiPilot AI — Citation Audit
 
-**Project:** EquiPilot AI  
-**Date:** 2026-11-24  
+**Project:** EquiPilot AI
+**Date:** 2026-11-24
 **Git SHA:** `0fccaca`
 
 ---
