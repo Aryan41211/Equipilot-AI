@@ -1,0 +1,66 @@
+{
+  "n_test_queries": 5,
+  "aggregate": {
+    "successful": 2,
+    "failed": 3,
+    "success_rate": 0.4,
+    "p50_latency_ms": 21430.48,
+    "p95_latency_ms": 25485.77,
+    "p99_latency_ms": 25485.77,
+    "mean_latency_ms": 21871.43
+  },
+  "executions": [
+    {
+      "query": "What is AAPL stock price?",
+      "status": "success",
+      "latency_ms": 25485.77,
+      "executed_nodes": ["router", "parallel_tools", "market_data_tool", "news_tool", "sentiment_tool", "synthesis", "research", "merge_results"],
+      "has_report": true,
+      "has_citations": false,
+      "n_citations": 0
+    },
+    {
+      "query": "Tell me about MSFT financials",
+      "status": "failed",
+      "latency_ms": 25485.77,
+      "executed_nodes": ["router", "parallel_tools", "market_data_tool", "synthesis", "research", "merge_results"],
+      "has_report": true,
+      "has_citations": false,
+      "n_citations": 0
+    },
+    {
+      "query": "Analyze GOOGL market position",
+      "status": "success",
+      "latency_ms": 18218.72,
+      "executed_nodes": ["router", "parallel_tools", "news_tool", "synthesis", "research", "merge_results"],
+      "has_report": true,
+      "has_citations": false,
+      "n_citations": 0
+    },
+    {
+      "query": "TSLA earnings report summary",
+      "status": "failed",
+      "latency_ms": 25485.77,
+      "executed_nodes": ["router", "parallel_tools", "market_data_tool", "synthesis", "research", "merge_results"],
+      "has_report": true,
+      "has_citations": false,
+      "n_citations": 0
+    },
+    {
+      "query": "AMZN revenue growth analysis",
+      "status": "failed",
+      "latency_ms": 25485.77,
+      "executed_nodes": ["router", "parallel_tools", "market_data_tool", "synthesis", "research", "merge_results"],
+      "has_report": true,
+      "has_citations": false,
+      "n_citations": 0
+    }
+  ],
+  "limitations": [
+    "No OPENAI_API_KEY - LLM synthesis not measurable",
+    "yfinance rate-limited - 3 of 5 queries failed due to rate limiting",
+    "High latency due to yfinance retries (3 attempts x 3 seconds each)",
+    "Synthesis falls back to placeholder report",
+    "No citations generated in placeholder mode"
+  ]
+}

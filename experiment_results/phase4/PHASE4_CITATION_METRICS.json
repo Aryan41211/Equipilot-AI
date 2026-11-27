@@ -1,0 +1,74 @@
+{
+  "n_test_cases": 5,
+  "aggregate": {
+    "mean_citation_precision": 0.8,
+    "mean_citation_coverage": 0.6333,
+    "mean_unsupported_claim_rate": 0.3667,
+    "precision_matches": 5,
+    "coverage_matches": 4,
+    "all_precision_match": true,
+    "all_coverage_match": false
+  },
+  "cases": [
+    {
+      "case_id": "cite-001",
+      "citation_precision": 1.0,
+      "citation_coverage": 1.0,
+      "unsupported_claim_rate": 0.0,
+      "expected_precision": 1.0,
+      "expected_coverage": 1.0,
+      "precision_match": true,
+      "coverage_match": true,
+      "n_citations": 2,
+      "n_sentences": 2
+    },
+    {
+      "case_id": "cite-002",
+      "citation_precision": 1.0,
+      "citation_coverage": 0.6667,
+      "unsupported_claim_rate": 0.3333,
+      "expected_precision": 1.0,
+      "expected_coverage": 0.67,
+      "precision_match": true,
+      "coverage_match": false,
+      "n_citations": 2,
+      "n_sentences": 3
+    },
+    {
+      "case_id": "cite-003",
+      "citation_precision": 1.0,
+      "citation_coverage": 1.0,
+      "unsupported_claim_rate": 0.0,
+      "expected_precision": 1.0,
+      "expected_coverage": 1.0,
+      "precision_match": true,
+      "coverage_match": true,
+      "n_citations": 2,
+      "n_sentences": 2
+    },
+    {
+      "case_id": "cite-004",
+      "citation_precision": 1.0,
+      "citation_coverage": 0.5,
+      "unsupported_claim_rate": 0.5,
+      "expected_precision": 1.0,
+      "expected_coverage": 0.5,
+      "precision_match": true,
+      "coverage_match": true,
+      "n_citations": 1,
+      "n_sentences": 2
+    },
+    {
+      "case_id": "cite-005",
+      "citation_precision": 0.0,
+      "citation_coverage": 0.0,
+      "unsupported_claim_rate": 1.0,
+      "expected_precision": 0.0,
+      "expected_coverage": 0.0,
+      "precision_match": true,
+      "coverage_match": true,
+      "n_citations": 0,
+      "n_sentences": 1
+    }
+  ]
+}

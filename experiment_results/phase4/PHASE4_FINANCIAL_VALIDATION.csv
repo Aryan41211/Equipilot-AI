@@ -1,0 +1,5 @@
+case_id,company,sector,description,revenue_growth,gross_margin,operating_margin,net_margin,ebitda_margin,eps_growth,roe,roce,debt_to_equity,current_ratio,free_cash_flow,pe_ratio,pb_ratio,ps_ratio,ev_ebitda,all_passed
+fin-001,TechCorp,Technology,Normal healthy company,0.2500,0.4000,0.2000,0.1500,0.2500,0.2500,0.3000,0.2667,0.5000,2.0000,130000.0000,20.0000,5.0000,5.0000,21.0000,True
+fin-002,DistressedCo,Retail,Company with negative margins,-0.1667,0.2000,-0.1000,-0.2000,0.0000,-3.0000,-0.5000,-0.1667,2.0000,0.5000,-50000.0000,-2.5000,1.2500,1.0000,None,True
+fin-003,StartupCo,Biotech,Pre-revenue startup,None,None,None,None,None,0.6667,-0.6000,-0.4167,0.2000,2.6667,-550000.0000,-3.0000,1.5000,None,-3.2500,True
+fin-004,UtilityCo,Utilities,Stable utility company,0.0526,0.4000,0.2000,0.1250,0.2500,0.0714,0.1250,0.1333,0.5000,1.5000,250000.0000,10.0000,1.5000,1.5000,8.0000,True
